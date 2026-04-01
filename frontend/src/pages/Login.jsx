@@ -16,14 +16,29 @@ function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    // evitar doble submit
+    if (loading) return;
+
     setError('');
     setLoading(true);
+
+    // validación básica
+    if (!email || !password) {
+      setError('Completa todos los campos');
+      setLoading(false);
+      return;
+    }
 
     try {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo iniciar sesión');
+      setError(
+        err?.response?.data?.message ||
+        err?.message ||
+        'No se pudo iniciar sesión'
+      );
     } finally {
       setLoading(false);
     }
@@ -33,13 +48,18 @@ function Login() {
     <main className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Ingreso al POS</h1>
+
         <label htmlFor="email">Email</label>
         <input
           id="email"
           type="email"
           required
+          autoFocus
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setError('');
+          }}
           placeholder="usuario@restosur.com"
         />
 
@@ -49,14 +69,27 @@ function Login() {
           type="password"
           required
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError('');
+          }}
           placeholder="••••••••"
         />
 
         {error && <p className="error-text">{error}</p>}
 
-        <button className="touch-btn btn-primary" type="submit" disabled={loading}>
-          {loading ? 'Ingresando...' : 'Iniciar sesión'}
+        <button
+          className="touch-btn btn-primary"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <span className="spinner" /> Ingresando...
+            </>
+          ) : (
+            'Iniciar sesión'
+          )}
         </button>
       </form>
     </main>
