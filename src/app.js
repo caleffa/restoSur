@@ -10,4 +10,8 @@ app.use(express.json());
 app.use('/api', routes);
 app.use(errorHandler);
 
+app.get('/', (req, res) => {
+  res.send('RestoSur | API funcionando 🚀');
+});
+
 module.exports = app;
