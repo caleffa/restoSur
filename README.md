@@ -63,3 +63,16 @@ npm run dev
 7. Facturar (`/api/invoices`).
 
 Más detalle en `POSTMAN.md`.
+
+## Frontend POS (React + Vite)
+Se agregó una app frontend en `frontend/` con autenticación JWT, rutas protegidas por rol y gestión táctil de mesas.
+
+### Ejecutar frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Variables:
+- `VITE_API_URL` (default: `http://localhost:3000/api`)
