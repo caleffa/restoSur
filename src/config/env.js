@@ -14,6 +14,6 @@ module.exports = {
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'change_me',
-    expiresIn: process.env.JWT_EXPIRES_IN || '8h',
+    expiresIn: process.env.JWT_EXPIRES_IN || '48h',
   },
 };
