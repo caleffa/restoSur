@@ -4,6 +4,7 @@ import Dashboard from '../pages/Dashboard';
 import Login from '../pages/Login';
 import POS from '../pages/POS';
 import Tables from '../pages/Tables';
+import TableAdmin from '../pages/TableAdmin';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -25,6 +26,16 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO, ROLES.MOZO]}>
             <Tables />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/admin/tables"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <TableAdmin />
           </ProtectedRoute>
         )}
       />
