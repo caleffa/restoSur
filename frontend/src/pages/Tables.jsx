@@ -17,9 +17,16 @@ function Tables() {
 
   const loadTables = useCallback(async () => {
     try {
+      setLoading(true);
+
       const response = await getTables();
 
-      const tablesData = response?.data || [];
+      // 🔥 soporta ambos formatos:
+      // 1) { ok, data }
+      // 2) directamente []
+      const tablesData = Array.isArray(response)
+        ? response
+        : response?.data || [];
 
       setTables(tablesData);
       setError('');
