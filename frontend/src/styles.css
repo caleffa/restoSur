@@ -193,3 +193,148 @@ body {
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+.dashboard-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.8rem;
+}
+
+.dashboard-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.kpi-card {
+  border: 1px solid #eef2ff;
+}
+
+.kpi-label {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.kpi-value {
+  font-size: 1.45rem;
+  color: #0f172a;
+}
+
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 0.9rem;
+}
+
+.dashboard-side-grid,
+.dashboard-bottom-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.dashboard-bottom-grid {
+  grid-template-columns: 1.3fr 1fr;
+}
+
+.dashboard-tables-grid {
+  max-height: 420px;
+}
+
+.dashboard-table-btn {
+  min-height: 118px;
+  border-radius: 12px;
+  border: none;
+  color: #fff;
+  padding: 0.8rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.dashboard-table-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.dashboard-table-btn:disabled {
+  opacity: 0.75;
+}
+
+.table-pill.table-bill {
+  color: #111827;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.list-row-btn,
+.list-row-split {
+  width: 100%;
+  border: none;
+  border-radius: 9px;
+  padding: 0.6rem 0.7rem;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.list-row-btn:hover {
+  background: #eef2ff;
+}
+
+.sales-chart {
+  min-height: 180px;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-top: 0.6rem;
+}
+
+.chart-bar-wrap {
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chart-bar {
+  width: 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #4f46e5 0%, #22d3ee 100%);
+}
+
+.alerts-list {
+  padding-left: 1rem;
+  margin-bottom: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (max-width: 991px) {
+  .dashboard-main-grid,
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
