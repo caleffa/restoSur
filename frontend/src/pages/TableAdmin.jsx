@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
+import Modal from '../components/Modal';
+import SimpleDataTable from '../components/SimpleDataTable';
 import { createTable, deleteTable, getTables, updateTable } from '../services/tableService';
 
 const TABLE_STATUS_OPTIONS = ['LIBRE', 'OCUPADA', 'CUENTA'];
@@ -13,6 +15,8 @@ function TableAdmin() {
   const [tables, setTables] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [pendingDeleteTable, setPendingDeleteTable] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -33,9 +37,10 @@ function TableAdmin() {
   const resetForm = () => {
     setForm(initialForm);
     setEditingId(null);
+    setIsFormModalOpen(false);
   };
 
-  const handleSubmit = async (event) => {
+  const onCreateOrUpdateTable = async (event) => {
     event.preventDefault();
     if (loading) return;
 
@@ -69,24 +74,32 @@ function TableAdmin() {
     }
   };
 
-  const handleEdit = (table) => {
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm(initialForm);
+    setIsFormModalOpen(true);
+  };
+
+  const openEditModal = (table) => {
     setEditingId(table.id);
     setForm({
       tableNumber: String(table.table_number),
       status: table.status,
     });
+    setIsFormModalOpen(true);
   };
 
-  const handleDelete = async (tableId) => {
-    if (loading) return;
+  const confirmDeleteTable = async () => {
+    if (!pendingDeleteTable || loading) return;
 
     try {
       setLoading(true);
       setError('');
-      await deleteTable(tableId);
+      await deleteTable(pendingDeleteTable.id);
+      setPendingDeleteTable(null);
       await loadTables();
 
-      if (editingId === tableId) {
+      if (editingId === pendingDeleteTable.id) {
         resetForm();
       }
     } catch {
@@ -99,69 +112,118 @@ function TableAdmin() {
   return (
     <div className="app-layout">
       <Navbar />
-      <main className="content table-admin-screen">
+      <main className="content admin-management-screen">
         <h2>Administración de mesas</h2>
+        <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+          Nueva mesa
+        </button>
 
         {error && <p className="error-text">{error}</p>}
 
-        <form className="admin-table-form" onSubmit={handleSubmit}>
-          <label htmlFor="tableNumber">Número de mesa</label>
-          <input
-            id="tableNumber"
-            type="number"
-            min="1"
-            value={form.tableNumber}
-            onChange={(event) => setForm((prev) => ({ ...prev, tableNumber: event.target.value }))}
-          />
+        <SimpleDataTable
+          title="Mesas"
+          rows={tables}
+          filters={[
+            {
+              key: 'status',
+              label: 'Estado',
+              accessor: (row) => row.status,
+              options: TABLE_STATUS_OPTIONS.map((status) => ({ value: status, label: status })),
+            },
+          ]}
+          columns={[
+            { key: 'tableNumber', label: 'Mesa', accessor: (row) => row.table_number, sortable: true },
+            { key: 'status', label: 'Estado', accessor: (row) => row.status, sortable: true },
+            {
+              key: 'actions',
+              label: 'Acciones',
+              accessor: () => '',
+              render: (row) => (
+                <div className="admin-actions-row">
+                  <button type="button" className="touch-btn" onClick={() => openEditModal(row)}>
+                    Editar
+                  </button>
+                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteTable(row)}>
+                    Eliminar
+                  </button>
+                </div>
+              ),
+            },
+          ]}
+        />
 
-          <label htmlFor="tableStatus">Estado</label>
-          <select
-            id="tableStatus"
-            value={form.status}
-            onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
+        {isFormModalOpen && (
+          <Modal
+            title={editingId ? 'Editar mesa' : 'Nueva mesa'}
+            onClose={() => {
+              if (loading) return;
+              resetForm();
+            }}
           >
-            {TABLE_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            <form className="admin-table-form modal-form" onSubmit={onCreateOrUpdateTable}>
+              <input
+                id="tableNumber"
+                type="number"
+                min="1"
+                placeholder="Número de mesa"
+                value={form.tableNumber}
+                onChange={(event) => setForm((prev) => ({ ...prev, tableNumber: event.target.value }))}
+                required
+              />
 
-          <div className="admin-actions-row">
-            <button type="submit" className="touch-btn btn-primary" disabled={loading}>
-              {editingId ? 'Guardar cambios' : 'Crear mesa'}
-            </button>
-            {editingId && (
-              <button type="button" className="touch-btn" onClick={resetForm} disabled={loading}>
-                Cancelar
-              </button>
-            )}
-          </div>
-        </form>
+              <select
+                id="tableStatus"
+                value={form.status}
+                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
+              >
+                {TABLE_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
 
-        <section className="admin-table-list">
-          {tables.map((table) => (
-            <article key={table.id} className="admin-table-item">
-              <div>
-                <strong>Mesa {table.table_number}</strong>
-                <p>Estado: {table.status}</p>
-              </div>
               <div className="admin-actions-row">
-                <button type="button" className="touch-btn" onClick={() => handleEdit(table)} disabled={loading}>
-                  Editar
+                <button type="submit" className="touch-btn btn-primary" disabled={loading}>
+                  {editingId ? 'Actualizar' : 'Crear'}
+                </button>
+                <button type="button" className="touch-btn" onClick={resetForm}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
+        {pendingDeleteTable && (
+          <Modal
+            title="Confirmar eliminación"
+            onClose={() => !loading && setPendingDeleteTable(null)}
+            actions={(
+              <>
+                <button
+                  type="button"
+                  className="touch-btn"
+                  onClick={() => setPendingDeleteTable(null)}
+                  disabled={loading}
+                >
+                  Cancelar
                 </button>
                 <button
                   type="button"
                   className="touch-btn btn-danger"
-                  onClick={() => handleDelete(table.id)}
+                  onClick={confirmDeleteTable}
                   disabled={loading}
                 >
-                  Eliminar
+                  Sí, eliminar
                 </button>
-              </div>
-            </article>
-          ))}
-        </section>
+              </>
+            )}
+            size="sm"
+          >
+            <p>¿Está seguro que desea eliminar esta mesa?</p>
+          </Modal>
+        )}
       </main>
     </div>
   );
