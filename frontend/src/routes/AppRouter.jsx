@@ -9,6 +9,9 @@ import AdminManagement from '../pages/AdminManagement';
 import AdminUsers from '../pages/AdminUsers';
 import AdminCategories from '../pages/AdminCategories';
 import AdminProducts from '../pages/AdminProducts';
+import CashRegisters from '../pages/CashRegisters';
+import Cash from '../pages/Cash';
+import CashReport from '../pages/CashReport';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -77,6 +80,34 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminProducts />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/cash/registers"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <CashRegisters />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/cash"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <Cash />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/cash/reports"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <CashReport />
           </ProtectedRoute>
         )}
       />

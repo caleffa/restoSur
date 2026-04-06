@@ -479,3 +479,53 @@ body {
   max-height: 420px;
   overflow-y: auto;
 }
+
+.cash-registers-screen,
+.cash-screen {
+  display: grid;
+  gap: 1rem;
+}
+
+.cash-status-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cash-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.9rem;
+}
+
+.cash-modal-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.cash-modal-form input,
+.cash-modal-form select,
+.cash-modal-form textarea,
+.cash-close-grid input,
+.cash-close-grid textarea {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}
+
+.cash-close-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cash-filters input,
+.cash-filters select {
+  margin-top: 0.2rem;
+}

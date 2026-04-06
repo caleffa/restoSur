@@ -13,10 +13,15 @@ export const MENU_BY_ROLE = {
     { label: 'Admin Usuarios', path: '/admin/management/users' },
     { label: 'Admin Categorías', path: '/admin/management/categories' },
     { label: 'Admin Productos', path: '/admin/management/products' },
+    { label: 'Cajas', path: '/cash/registers' },
+    { label: 'Caja', path: '/cash' },
+    { label: 'Reportes Caja', path: '/cash/reports' },
   ],
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Mesas', path: '/tables' },
+    { label: 'Caja', path: '/cash' },
+    { label: 'Reportes Caja', path: '/cash/reports' },
   ],
   [ROLES.MOZO]: [
     { label: 'Mesas', path: '/tables' },
