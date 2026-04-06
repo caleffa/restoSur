@@ -50,7 +50,7 @@ async function addItem(saleId, { productId, quantity, notes }) {
   }
 }
 
-async function paySale(saleId, user) {
+async function paySale(saleId, user, paymentData = {}) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -61,8 +61,8 @@ async function paySale(saleId, user) {
     const items = await salesRepo.listItemsBySale(saleId, conn);
     if (!items.length) throw new AppError('No permitir cobrar venta sin items', 400);
 
-    const cashbox = await cashRepo.getOpenCashboxByBranch(sale.branch_id, conn);
-    if (!cashbox) throw new AppError('Debe existir caja abierta para cobrar', 400);
+    const shift = await cashRepo.getOpenShiftByBranch(sale.branch_id, conn);
+    if (!shift) throw new AppError('Debe existir caja abierta para cobrar', 400);
 
     const total = items.reduce((acc, it) => acc + Number(it.quantity) * Number(it.unit_price), 0);
 
@@ -85,12 +85,17 @@ async function paySale(saleId, user) {
 
     await cashRepo.insertMovement(
       {
-        cashboxId: cashbox.id,
+        shiftId: shift.id,
+        registerId: shift.register_id,
+        branchId: sale.branch_id,
         saleId,
         userId: user.id,
-        type: 'INGRESO',
+        type: 'VENTA',
         amount: total,
-        description: `Cobro venta ${saleId}`,
+        paymentMethod: String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase(),
+        reference: `sale-${saleId}`,
+        reason: `Cobro venta ${saleId}`,
+        affectsBalance: String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase() === 'EFECTIVO',
       },
       conn
     );

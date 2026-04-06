@@ -12,7 +12,7 @@ const addItem = asyncHandler(async (req, res) => {
 });
 
 const paySale = asyncHandler(async (req, res) => {
-  const data = await service.paySale(Number(req.params.id), req.user);
+  const data = await service.paySale(Number(req.params.id), req.user, req.body || {});
   res.json({ ok: true, data });
 });
 
