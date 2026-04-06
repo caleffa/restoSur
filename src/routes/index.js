@@ -10,6 +10,7 @@ const kitchenRoutes = require('../modules/kitchen/kitchen.routes');
 const afipRoutes = require('../modules/afip/afip.routes');
 const invoicesRoutes = require('../modules/invoices/invoices.routes');
 const tablesRoutes = require('../modules/tables/tables.routes');
+const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
 
 const router = express.Router();
 
@@ -26,5 +27,6 @@ router.use('/', kitchenRoutes);
 router.use('/', afipRoutes);
 router.use('/', invoicesRoutes);
 router.use('/', tablesRoutes);
+router.use('/', dashboardRoutes);
 
 module.exports = router;

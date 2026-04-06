@@ -21,4 +21,9 @@ const getById = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
-module.exports = { createSale, addItem, paySale, getById };
+const listOpen = asyncHandler(async (req, res) => {
+  const data = await service.listOpenSales(Number(req.user.branchId));
+  res.json({ ok: true, data });
+});
+
+module.exports = { createSale, addItem, paySale, getById, listOpen };

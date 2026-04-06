@@ -132,4 +132,12 @@ async function getSaleDetail(saleId) {
   return { ...sale, items };
 }
 
-module.exports = { createSale, addItem, paySale, getSaleDetail };
+async function listOpenSales(branchId) {
+  if (!Number.isInteger(branchId) || branchId <= 0) {
+    throw new AppError('Sucursal inválida', 400);
+  }
+
+  return salesRepo.listOpenSalesByBranch(branchId);
+}
+
+module.exports = { createSale, addItem, paySale, getSaleDetail, listOpenSales };

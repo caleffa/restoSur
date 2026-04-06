@@ -14,6 +14,23 @@ async function findSaleById(id, conn) {
   return rows[0] || null;
 }
 
+async function listOpenSalesByBranch(branchId) {
+  return query(
+    `SELECT
+      s.id,
+      s.table_id AS tableId,
+      tr.table_number AS tableName,
+      s.total,
+      s.status,
+      s.opened_at AS openedAt
+    FROM sales s
+    JOIN tables_restaurant tr ON tr.id = s.table_id
+    WHERE s.branch_id = ? AND s.status = 'ABIERTA'
+    ORDER BY s.opened_at DESC`,
+    [branchId]
+  );
+}
+
 async function addSaleItem({ saleId, productId, quantity, unitPrice, notes }, conn) {
   const result = await query(
     'INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, notes) VALUES (?, ?, ?, ?, ?)',
@@ -45,6 +62,7 @@ async function markTableOccupied(tableId, status, conn) {
 module.exports = {
   createSale,
   findSaleById,
+  listOpenSalesByBranch,
   addSaleItem,
   listItemsBySale,
   updateSaleTotalsAndStatus,
