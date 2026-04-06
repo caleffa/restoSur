@@ -93,6 +93,10 @@ async function ensureCashSchema() {
     await query('ALTER TABLE cash_movements ADD COLUMN register_id INT NULL AFTER shift_id');
   }
 
+  if (!(await columnExists('cash_movements', 'branch_id'))) {
+    await query('ALTER TABLE cash_movements ADD COLUMN branch_id INT NULL AFTER register_id');
+  }
+
   if (!(await foreignKeyExists('cash_movements', 'shift_id'))) {
     await query(
       `ALTER TABLE cash_movements
@@ -106,6 +110,14 @@ async function ensureCashSchema() {
       `ALTER TABLE cash_movements
        ADD CONSTRAINT fk_cash_movements_register
        FOREIGN KEY (register_id) REFERENCES cash_registers(id)`
+    );
+  }
+
+  if (!(await foreignKeyExists('cash_movements', 'branch_id'))) {
+    await query(
+      `ALTER TABLE cash_movements
+       ADD CONSTRAINT fk_cash_movements_branch
+       FOREIGN KEY (branch_id) REFERENCES branches(id)`
     );
   }
 }
