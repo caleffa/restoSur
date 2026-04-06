@@ -464,3 +464,18 @@ body {
   box-shadow: none;
   padding: 0;
 }
+
+.pos-screen {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pos-orders-table td,
+.pos-orders-table th {
+  white-space: nowrap;
+}
+
+.pos-kitchen-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
