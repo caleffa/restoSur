@@ -14,6 +14,15 @@ async function findSaleById(id, conn) {
   return rows[0] || null;
 }
 
+async function findOpenSaleByTable(tableId, conn) {
+  const rows = await query(
+    'SELECT * FROM sales WHERE table_id = ? AND status = "ABIERTA" ORDER BY opened_at DESC LIMIT 1',
+    [tableId],
+    conn
+  );
+  return rows[0] || null;
+}
+
 async function listOpenSalesByBranch(branchId) {
   return query(
     `SELECT
@@ -62,6 +71,7 @@ async function markTableOccupied(tableId, status, conn) {
 module.exports = {
   createSale,
   findSaleById,
+  findOpenSaleByTable,
   listOpenSalesByBranch,
   addSaleItem,
   listItemsBySale,

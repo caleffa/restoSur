@@ -29,7 +29,8 @@ function buildMockSale(tableId) {
     id: `mock-sale-${tableId}`,
     tableId: Number(tableId),
     table_id: Number(tableId),
-    status: 'OCUPADA',
+    tableStatus: 'OCUPADA',
+    status: 'ABIERTA',
     items: [],
   };
 }
@@ -55,7 +56,8 @@ function normalizeSale(tableId, payload) {
     id: payload.id ?? `sale-${tableId}`,
     tableId: Number(payload.tableId ?? payload.table_id ?? tableId),
     table_id: Number(payload.table_id ?? payload.tableId ?? tableId),
-    status: payload.status || 'OCUPADA',
+    tableStatus: payload.tableStatus ?? payload.table_status ?? payload.status_table ?? 'OCUPADA',
+    status: payload.status || 'ABIERTA',
     items,
   };
 }
@@ -64,7 +66,7 @@ export async function getSaleByTable(tableId) {
   const storageKey = `${SALE_PREFIX}${tableId}`;
 
   try {
-    const { data } = await http.get(`/sales/${tableId}`);
+    const { data } = await http.get(`/sales/table/${tableId}`);
     const sale = normalizeSale(tableId, unwrap(data));
     saveStorage(storageKey, sale);
     return sale;
@@ -74,9 +76,9 @@ export async function getSaleByTable(tableId) {
   }
 }
 
-export async function addSaleItem(tableId, payload) {
+export async function addSaleItem(saleId, payload) {
   try {
-    const { data } = await http.post(`/sales/${tableId}/items`, payload);
+    const { data } = await http.post(`/sales/${saleId}/items`, payload);
     return unwrap(data);
   } catch {
     return { ok: true, mocked: true };
@@ -99,6 +101,22 @@ export async function deleteSaleItem(itemId) {
   } catch {
     return { ok: true, mocked: true };
   }
+}
+
+
+export async function updateTableStatus(tableId, status) {
+  const { data } = await http.put(`/tables/${tableId}/status`, { status });
+  return unwrap(data);
+}
+
+export async function paySale(saleId, payload = {}) {
+  const { data } = await http.post(`/sales/${saleId}/pay`, payload);
+  return unwrap(data);
+}
+
+export async function closeSale(saleId) {
+  const { data } = await http.post(`/sales/${saleId}/close`);
+  return unwrap(data);
 }
 
 export async function getProducts() {
@@ -140,16 +158,6 @@ export async function createKitchenOrder(payload) {
     };
     saveStorage(storageKey, [mockOrder, ...current]);
     return mockOrder;
-  }
-}
-
-export async function closeSale(tableId, payload = {}) {
-  try {
-    const { data } = await http.post(`/sales/${tableId}/close`, payload);
-    return unwrap(data);
-  } catch {
-    const { data } = await http.post(`/sales/${tableId}/pay`, payload);
-    return unwrap(data);
   }
 }
 

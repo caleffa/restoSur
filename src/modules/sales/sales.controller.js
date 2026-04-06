@@ -11,8 +11,18 @@ const addItem = asyncHandler(async (req, res) => {
   res.status(201).json({ ok: true, data });
 });
 
+const requestBill = asyncHandler(async (req, res) => {
+  const data = await service.requestBill(Number(req.params.id));
+  res.json({ ok: true, data });
+});
+
 const paySale = asyncHandler(async (req, res) => {
   const data = await service.paySale(Number(req.params.id), req.user, req.body || {});
+  res.json({ ok: true, data });
+});
+
+const closeSale = asyncHandler(async (req, res) => {
+  const data = await service.closeSale(Number(req.params.id));
   res.json({ ok: true, data });
 });
 
@@ -21,9 +31,14 @@ const getById = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const getByTable = asyncHandler(async (req, res) => {
+  const data = await service.getSaleDetailByTable(Number(req.params.tableId));
+  res.json({ ok: true, data });
+});
+
 const listOpen = asyncHandler(async (req, res) => {
   const data = await service.listOpenSales(Number(req.user.branchId));
   res.json({ ok: true, data });
 });
 
-module.exports = { createSale, addItem, paySale, getById, listOpen };
+module.exports = { createSale, addItem, requestBill, paySale, closeSale, getById, getByTable, listOpen };

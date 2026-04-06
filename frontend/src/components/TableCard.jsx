@@ -1,7 +1,8 @@
 const STATUS_STYLES = {
   LIBRE: 'table-card table-free',
   OCUPADA: 'table-card table-busy',
-  CUENTA: 'table-card table-bill',
+  CUENTA_PEDIDA: 'table-card table-bill',
+  CERRADA: 'table-card table-closed',
 };
 
 function TableCard({ table, onClick, disabled = false }) {

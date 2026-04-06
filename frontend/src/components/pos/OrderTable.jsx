@@ -7,7 +7,7 @@ const statusClassMap = {
   SIN_COMANDA: 'text-bg-secondary',
 };
 
-function OrderTable({ items, onChangeQuantity, onDelete }) {
+function OrderTable({ items, onChangeQuantity, onDelete, disabled = false }) {
   const [editingRow, setEditingRow] = useState(null);
   const [nextQty, setNextQty] = useState(1);
 
@@ -24,6 +24,7 @@ function OrderTable({ items, onChangeQuantity, onDelete }) {
   return (
     <section className="card shadow-sm">
       <div className="card-body">
+        {disabled && <p className="text-warning mb-3">La mesa está con cuenta pedida. Edición bloqueada.</p>}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Consumos</h5>
           <span className="fw-semibold">Total: ${total.toFixed(2)}</span>
@@ -64,6 +65,7 @@ function OrderTable({ items, onChangeQuantity, onDelete }) {
                           min="1"
                           value={nextQty}
                           onChange={(event) => setNextQty(Number(event.target.value) || 1)}
+                          disabled={disabled}
                         />
                       ) : (
                         <span>{item.quantity}</span>
@@ -82,6 +84,7 @@ function OrderTable({ items, onChangeQuantity, onDelete }) {
                             <button
                               type="button"
                               className="btn btn-success btn-sm"
+                              disabled={disabled}
                               onClick={() => {
                                 onChangeQuantity(item, nextQty);
                                 setEditingRow(null);
@@ -94,11 +97,11 @@ function OrderTable({ items, onChangeQuantity, onDelete }) {
                             </button>
                           </>
                         ) : (
-                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => startEdit(item)}>
+                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => startEdit(item)} disabled={disabled}>
                             Editar
                           </button>
                         )}
-                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => onDelete(item)}>
+                        <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => onDelete(item)} disabled={disabled}>
                           Eliminar
                         </button>
                       </div>
