@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
 import {
   createProduct,
@@ -13,11 +13,12 @@ import {
 const initialProduct = { name: '', price: '', categoryId: '', hasStock: true, active: true };
 
 function AdminProducts() {
-  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [productForm, setProductForm] = useState(initialProduct);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [pendingDeleteProduct, setPendingDeleteProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -64,9 +65,42 @@ function AdminProducts() {
 
       setProductForm(initialProduct);
       setEditingProductId(null);
+      setIsFormModalOpen(false);
       await loadData();
     } catch {
       setError('No se pudo guardar el producto.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingProductId(null);
+    setProductForm(initialProduct);
+    setIsFormModalOpen(true);
+  };
+
+  const openEditModal = (row) => {
+    setEditingProductId(row.id);
+    setProductForm({
+      name: row.name,
+      price: row.price,
+      categoryId: row.category_id ?? row.categoryId,
+      hasStock: Boolean(row.has_stock ?? row.hasStock),
+      active: row.active === 1 || row.active === true,
+    });
+    setIsFormModalOpen(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!pendingDeleteProduct || loading) return;
+    setLoading(true);
+    try {
+      await deleteProduct(pendingDeleteProduct.id);
+      setPendingDeleteProduct(null);
+      await loadData();
+    } catch {
+      setError('No se pudo eliminar el producto.');
     } finally {
       setLoading(false);
     }
@@ -77,30 +111,11 @@ function AdminProducts() {
       <Navbar />
       <main className="content admin-management-screen">
         <h2>Administración de productos</h2>
-
-        <div className="admin-actions-row">
-          <Link className="touch-btn" to="/admin/management/users">Usuarios</Link>
-          <Link className="touch-btn" to="/admin/management/categories">Categorías</Link>
-          <Link className={`touch-btn ${location.pathname.includes('/products') ? 'active' : ''}`} to="/admin/management/products">Productos</Link>
-        </div>
+        <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+          Nuevo producto
+        </button>
 
         {error && <p className="error-text">{error}</p>}
-
-        <form className="admin-table-form" onSubmit={onCreateOrUpdateProduct}>
-          <h3>{editingProductId ? 'Editar producto' : 'Nuevo producto'}</h3>
-          <input placeholder="Nombre" value={productForm.name} onChange={(e) => setProductForm((p) => ({ ...p, name: e.target.value }))} required />
-          <input type="number" min="0" step="0.01" placeholder="Precio" value={productForm.price} onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))} required />
-          <select value={productForm.categoryId} onChange={(e) => setProductForm((p) => ({ ...p, categoryId: e.target.value }))} required>
-            <option value="">Seleccionar categoría</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
-          <label><input type="checkbox" checked={productForm.hasStock} onChange={(e) => setProductForm((p) => ({ ...p, hasStock: e.target.checked }))} /> Maneja stock</label>
-          <label><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>
-          <div className="admin-actions-row">
-            <button className="touch-btn btn-primary" type="submit" disabled={loading}>{editingProductId ? 'Actualizar' : 'Crear'}</button>
-            {editingProductId && <button type="button" className="touch-btn" onClick={() => { setEditingProductId(null); setProductForm(initialProduct); }}>Cancelar</button>}
-          </div>
-        </form>
 
         <SimpleDataTable
           title="Productos"
@@ -136,33 +151,60 @@ function AdminProducts() {
               accessor: () => '',
               render: (row) => (
                 <div className="admin-actions-row">
-                  <button type="button" className="touch-btn" onClick={() => {
-                    setEditingProductId(row.id);
-                    setProductForm({
-                      name: row.name,
-                      price: row.price,
-                      categoryId: row.category_id ?? row.categoryId,
-                      hasStock: Boolean(row.has_stock ?? row.hasStock),
-                      active: row.active === 1 || row.active === true,
-                    });
-                  }}>Editar</button>
-                  <button type="button" className="touch-btn btn-danger" onClick={async () => {
-                    if (loading) return;
-                    setLoading(true);
-                    try {
-                      await deleteProduct(row.id);
-                      await loadData();
-                    } catch {
-                      setError('No se pudo eliminar el producto.');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}>Eliminar</button>
+                  <button type="button" className="touch-btn" onClick={() => openEditModal(row)}>Editar</button>
+                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteProduct(row)}>Eliminar</button>
                 </div>
               ),
             },
           ]}
         />
+
+        {isFormModalOpen && (
+          <Modal
+            title={editingProductId ? 'Editar producto' : 'Nuevo producto'}
+            onClose={() => {
+              if (loading) return;
+              setIsFormModalOpen(false);
+              setEditingProductId(null);
+              setProductForm(initialProduct);
+            }}
+          >
+            <form className="admin-table-form modal-form" onSubmit={onCreateOrUpdateProduct}>
+              <input placeholder="Nombre" value={productForm.name} onChange={(e) => setProductForm((p) => ({ ...p, name: e.target.value }))} required />
+              <input type="number" min="0" step="0.01" placeholder="Precio" value={productForm.price} onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))} required />
+              <select value={productForm.categoryId} onChange={(e) => setProductForm((p) => ({ ...p, categoryId: e.target.value }))} required>
+                <option value="">Seleccionar categoría</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+              <label><input type="checkbox" checked={productForm.hasStock} onChange={(e) => setProductForm((p) => ({ ...p, hasStock: e.target.checked }))} /> Maneja stock</label>
+              <label><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>
+              <div className="admin-actions-row">
+                <button className="touch-btn btn-primary" type="submit" disabled={loading}>{editingProductId ? 'Actualizar' : 'Crear'}</button>
+                <button type="button" className="touch-btn" onClick={() => {
+                  setIsFormModalOpen(false);
+                  setEditingProductId(null);
+                  setProductForm(initialProduct);
+                }}>Cancelar</button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
+        {pendingDeleteProduct && (
+          <Modal
+            title="Confirmar eliminación"
+            onClose={() => !loading && setPendingDeleteProduct(null)}
+            actions={(
+              <>
+                <button type="button" className="touch-btn" onClick={() => setPendingDeleteProduct(null)} disabled={loading}>Cancelar</button>
+                <button type="button" className="touch-btn btn-danger" onClick={confirmDeleteProduct} disabled={loading}>Sí, eliminar</button>
+              </>
+            )}
+            size="sm"
+          >
+            <p>¿Está seguro que desea eliminar este producto?</p>
+          </Modal>
+        )}
       </main>
     </div>
   );
