@@ -24,6 +24,8 @@ Configurar credenciales en `.env`.
 mysql -u root -p < sql/schema.sql
 ```
 
+> Si la base ya existía de una versión anterior, al iniciar el backend se auto-crean las tablas de caja faltantes (`cash_registers`, `cash_shifts`, `cash_movements`) para evitar errores 500 por tablas inexistentes.
+
 ## Levantar servidor
 ```bash
 npm run dev
