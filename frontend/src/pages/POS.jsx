@@ -282,7 +282,7 @@ function POS() {
       clearLocalPOS(tableId);
       setShowPaymentModal(false);
       setToastMessage('Pago realizado correctamente');
-      navigate('/tables');
+      navigate('/dashboard');
     } catch {
       setError('No se pudo cerrar la cuenta.');
     } finally {
