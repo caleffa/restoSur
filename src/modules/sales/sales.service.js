@@ -102,7 +102,9 @@ async function paySale(saleId, user) {
     return { saleId, total, status: 'PAGADA' };
   } catch (e) {
     await conn.rollback();
+    console.log('Error: '+e);
     throw e;
+
   } finally {
     conn.release();
   }

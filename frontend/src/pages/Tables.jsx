@@ -68,7 +68,7 @@ function Tables() {
     if (table.status === 'LIBRE' && canCreateSale(user?.role)) {
       try {
         setBusyTableId(table.id);
-        await createSale(table.id);
+        await createSale(1,table.id);
         await loadTables();
       } catch (err) {
         setError(

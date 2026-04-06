@@ -37,6 +37,7 @@ export async function deleteTable(tableId) {
 
 // 📌 SALES
 export async function createSale(tableId) {
-  const { data } = await http.post('/sales', { tableId });
+  const branchId = 1;
+  const { data } = await http.post('/sales', { branchId, tableId });
   return unwrap(data);
 }

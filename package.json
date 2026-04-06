@@ -13,14 +13,19 @@
     "check": "node --check src/server.js"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
+    "framer-motion": "^12.38.0",
     "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.7.0",
     "morgan": "^1.10.1",
-    "mysql2": "^3.20.0"
+    "mysql2": "^3.20.0",
+    "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
