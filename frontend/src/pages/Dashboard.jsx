@@ -41,7 +41,12 @@ function Dashboard() {
       ]);
 
       setSummary(summaryData);
-      setTables(Array.isArray(tablesData) ? tablesData : []);
+      setTables(
+        (Array.isArray(tablesData) ? tablesData : []).map((table) => ({
+          ...table,
+          name: table.name || table.table_number || `Mesa ${table.id}`,
+        }))
+      );
       setOpenSales(salesData);
       setTopProducts(productsData);
       setSalesByHour(hourlyData);

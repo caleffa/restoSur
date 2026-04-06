@@ -17,4 +17,8 @@ const deleteProduct = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
-module.exports = { listProducts, getProductById, createProduct, updateProduct, deleteProduct };
+const listTopProducts = asyncHandler(async (req, res) =>
+  res.json({ ok: true, data: await service.listTopProducts(Number(req.user.branchId)) })
+);
+
+module.exports = { listProducts, getProductById, createProduct, updateProduct, deleteProduct, listTopProducts };

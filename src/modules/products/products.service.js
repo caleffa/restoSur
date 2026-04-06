@@ -61,4 +61,9 @@ async function removeProduct(id) {
   await repo.removeProduct(id);
 }
 
-module.exports = { listProducts, getProductById, createProduct, updateProduct, removeProduct };
+async function listTopProducts(branchId) {
+  if (!branchId || branchId <= 0) throw new AppError('Sucursal inválida', 400);
+  return repo.listTopProductsByBranch(branchId, 8);
+}
+
+module.exports = { listProducts, getProductById, createProduct, updateProduct, removeProduct, listTopProducts };
