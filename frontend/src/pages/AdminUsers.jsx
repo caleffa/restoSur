@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { createUser, deleteUser, getUsers, updateUser } from '../services/adminService';
 
@@ -8,10 +8,11 @@ const ROLE_OPTIONS = ['ADMIN', 'CAJERO', 'MOZO', 'COCINA'];
 const initialUser = { name: '', email: '', password: '', role: 'MOZO', branchId: 1, active: true };
 
 function AdminUsers() {
-  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [userForm, setUserForm] = useState(initialUser);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,9 +54,43 @@ function AdminUsers() {
 
       setUserForm(initialUser);
       setEditingUserId(null);
+      setIsFormModalOpen(false);
       await loadUsers();
     } catch {
       setError('No se pudo guardar el usuario.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingUserId(null);
+    setUserForm(initialUser);
+    setIsFormModalOpen(true);
+  };
+
+  const openEditModal = (row) => {
+    setEditingUserId(row.id);
+    setUserForm({
+      name: row.name,
+      email: row.email,
+      password: '',
+      role: row.role,
+      branchId: row.branchId,
+      active: Boolean(row.active),
+    });
+    setIsFormModalOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!pendingDeleteUser || loading) return;
+    setLoading(true);
+    try {
+      await deleteUser(pendingDeleteUser.id);
+      setPendingDeleteUser(null);
+      await loadUsers();
+    } catch {
+      setError('No se pudo eliminar el usuario.');
     } finally {
       setLoading(false);
     }
@@ -66,32 +101,11 @@ function AdminUsers() {
       <Navbar />
       <main className="content admin-management-screen">
         <h2>Administración de usuarios</h2>
-
-        <div className="admin-actions-row">
-          <Link className={`touch-btn ${location.pathname.includes('/users') ? 'active' : ''}`} to="/admin/management/users">Usuarios</Link>
-          <Link className="touch-btn" to="/admin/management/categories">Categorías</Link>
-          <Link className="touch-btn" to="/admin/management/products">Productos</Link>
-        </div>
+        <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+          Nuevo usuario
+        </button>
 
         {error && <p className="error-text">{error}</p>}
-
-        <form className="admin-table-form" onSubmit={onCreateOrUpdateUser}>
-          <h3>{editingUserId ? 'Editar usuario' : 'Nuevo usuario'}</h3>
-          <input placeholder="Nombre" value={userForm.name} onChange={(e) => setUserForm((p) => ({ ...p, name: e.target.value }))} required />
-          <input type="email" placeholder="Email" value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))} required />
-          {!editingUserId && (
-            <input type="password" placeholder="Contraseña" value={userForm.password} onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))} required />
-          )}
-          <select value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}>
-            {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
-          </select>
-          <input type="number" min="1" placeholder="Sucursal" value={userForm.branchId} onChange={(e) => setUserForm((p) => ({ ...p, branchId: e.target.value }))} />
-          <label><input type="checkbox" checked={userForm.active} onChange={(e) => setUserForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>
-          <div className="admin-actions-row">
-            <button className="touch-btn btn-primary" type="submit" disabled={loading}>{editingUserId ? 'Actualizar' : 'Crear'}</button>
-            {editingUserId && <button type="button" className="touch-btn" onClick={() => { setEditingUserId(null); setUserForm(initialUser); }}>Cancelar</button>}
-          </div>
-        </form>
 
         <SimpleDataTable
           title="Usuarios"
@@ -125,34 +139,62 @@ function AdminUsers() {
               accessor: () => '',
               render: (row) => (
                 <div className="admin-actions-row">
-                  <button type="button" className="touch-btn" onClick={() => {
-                    setEditingUserId(row.id);
-                    setUserForm({
-                      name: row.name,
-                      email: row.email,
-                      password: '',
-                      role: row.role,
-                      branchId: row.branchId,
-                      active: Boolean(row.active),
-                    });
-                  }}>Editar</button>
-                  <button type="button" className="touch-btn btn-danger" onClick={async () => {
-                    if (loading) return;
-                    setLoading(true);
-                    try {
-                      await deleteUser(row.id);
-                      await loadUsers();
-                    } catch {
-                      setError('No se pudo eliminar el usuario.');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}>Eliminar</button>
+                  <button type="button" className="touch-btn" onClick={() => openEditModal(row)}>Editar</button>
+                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteUser(row)}>Eliminar</button>
                 </div>
               ),
             },
           ]}
         />
+
+        {isFormModalOpen && (
+          <Modal
+            title={editingUserId ? 'Editar usuario' : 'Nuevo usuario'}
+            onClose={() => {
+              if (loading) return;
+              setIsFormModalOpen(false);
+              setEditingUserId(null);
+              setUserForm(initialUser);
+            }}
+          >
+            <form className="admin-table-form modal-form" onSubmit={onCreateOrUpdateUser}>
+              <input placeholder="Nombre" value={userForm.name} onChange={(e) => setUserForm((p) => ({ ...p, name: e.target.value }))} required />
+              <input type="email" placeholder="Email" value={userForm.email} onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))} required />
+              {!editingUserId && (
+                <input type="password" placeholder="Contraseña" value={userForm.password} onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))} required />
+              )}
+              <select value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}>
+                {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+              </select>
+              <input type="number" min="1" placeholder="Sucursal" value={userForm.branchId} onChange={(e) => setUserForm((p) => ({ ...p, branchId: e.target.value }))} />
+              <label><input type="checkbox" checked={userForm.active} onChange={(e) => setUserForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>
+              <div className="admin-actions-row">
+                <button className="touch-btn btn-primary" type="submit" disabled={loading}>{editingUserId ? 'Actualizar' : 'Crear'}</button>
+                <button type="button" className="touch-btn" onClick={() => {
+                  setIsFormModalOpen(false);
+                  setEditingUserId(null);
+                  setUserForm(initialUser);
+                }}>Cancelar</button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
+        {pendingDeleteUser && (
+          <Modal
+            title="Confirmar eliminación"
+            onClose={() => !loading && setPendingDeleteUser(null)}
+            actions={(
+              <>
+                <button type="button" className="touch-btn" onClick={() => setPendingDeleteUser(null)} disabled={loading}>Cancelar</button>
+                <button type="button" className="touch-btn btn-danger" onClick={confirmDeleteUser} disabled={loading}>Sí, eliminar</button>
+              </>
+            )}
+            size="sm"
+          >
+            <p>¿Está seguro que desea eliminar este usuario?</p>
+          </Modal>
+        )}
       </main>
     </div>
   );

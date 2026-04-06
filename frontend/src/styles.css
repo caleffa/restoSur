@@ -412,3 +412,55 @@ body {
   padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
 }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-card {
+  width: min(640px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.22);
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.modal-sm {
+  width: min(420px, 100%);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-content p {
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.modal-form {
+  box-shadow: none;
+  padding: 0;
+}
