@@ -81,14 +81,14 @@ function Dashboard() {
       return;
     }
 
-    if ((table.status === 'OCUPADA' || table.status === 'CUENTA') && canAccessPOS(user?.role)) {
+    if ((table.status === 'OCUPADA' || table.status === 'CUENTA_PEDIDA') && canAccessPOS(user?.role)) {
       navigate(`/pos/${table.id}`);
     }
   };
 
   const alerts = useMemo(() => {
     const outOfStockProducts = topProducts.filter((product) => product.quantity === 0);
-    const pendingBillTables = tables.filter((table) => table.status === 'CUENTA');
+    const pendingBillTables = tables.filter((table) => table.status === 'CUENTA_PEDIDA');
     const delayedOrders = openSales.filter((sale) => {
       if (!sale.openedAt) return false;
       const openedAtMs = new Date(sale.openedAt).getTime();

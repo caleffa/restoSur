@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-function ProductSelector({ products, onAdd }) {
+function ProductSelector({ products, onAdd, disabled = false }) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -41,11 +41,12 @@ function ProductSelector({ products, onAdd }) {
               placeholder="Ej: Milanesa napolitana"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
+              disabled={disabled}
             />
           </div>
           <div className="col-md-3">
             <label className="form-label">Categoría</label>
-            <select className="form-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+            <select className="form-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} disabled={disabled}>
               <option value="">Todas</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>{category.name}</option>
@@ -60,6 +61,7 @@ function ProductSelector({ products, onAdd }) {
               className="form-control"
               value={quantity}
               onChange={(event) => setQuantity(Number(event.target.value) || 1)}
+              disabled={disabled}
             />
           </div>
         </div>
@@ -67,7 +69,7 @@ function ProductSelector({ products, onAdd }) {
         <div className="row g-2 align-items-end">
           <div className="col-md-9">
             <label className="form-label">Producto</label>
-            <select className="form-select" value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)}>
+            <select className="form-select" value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} disabled={disabled}>
               <option value="">Seleccionar producto...</option>
               {filteredProducts.map((product) => (
                 <option key={product.id} value={product.id}>
@@ -80,7 +82,7 @@ function ProductSelector({ products, onAdd }) {
             <button
               type="button"
               className="btn btn-primary btn-lg"
-              disabled={!selectedProductId}
+              disabled={!selectedProductId || disabled}
               onClick={() => {
                 const selected = products.find((product) => String(product.id) === String(selectedProductId));
                 if (!selected) return;

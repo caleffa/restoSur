@@ -68,7 +68,7 @@ function Tables() {
     if (table.status === 'LIBRE' && canCreateSale(user?.role)) {
       try {
         setBusyTableId(table.id);
-        await createSale(1,table.id);
+        await createSale(table.id);
         await loadTables();
       } catch (err) {
         setError(
@@ -83,7 +83,7 @@ function Tables() {
 
     // 🔵 Ir al POS
     if (
-      (table.status === 'OCUPADA' || table.status === 'CUENTA') &&
+      (table.status === 'OCUPADA' || table.status === 'CUENTA_PEDIDA') &&
       canAccessPOS(user?.role)
     ) {
       navigate(`/pos/${table.id}`);

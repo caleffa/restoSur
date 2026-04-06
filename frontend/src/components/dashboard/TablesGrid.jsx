@@ -1,11 +1,13 @@
 function getTableStatusClass(status) {
   if (status === 'LIBRE') return 'table-pill table-free';
   if (status === 'OCUPADA') return 'table-pill table-busy';
-  return 'table-pill table-bill';
+  if (status === 'CUENTA_PEDIDA') return 'table-pill table-bill';
+  return 'table-pill table-closed';
 }
 
 function getActionLabel(status) {
   if (status === 'LIBRE') return 'Abrir venta';
+  if (status === 'CERRADA') return 'En cierre';
   return 'Abrir POS';
 }
 

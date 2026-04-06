@@ -5,6 +5,8 @@ import KitchenOrders from '../components/pos/KitchenOrders';
 import OrderTable from '../components/pos/OrderTable';
 import PaymentModal from '../components/pos/PaymentModal';
 import ProductSelector from '../components/pos/ProductSelector';
+import TableActions from '../components/pos/TableActions';
+import { useAuth } from '../context/AuthContext';
 import {
   addSaleItem,
   clearLocalPOS,
@@ -14,7 +16,9 @@ import {
   getProducts,
   getSaleByTable,
   listKitchenOrders,
+  paySale,
   persistLocalSale,
+  updateTableStatus,
   updateSaleItem,
 } from '../services/posService';
 
@@ -42,9 +46,32 @@ function playKitchenSound() {
   }
 }
 
+function playBillRequestedSound() {
+  try {
+    const context = new window.AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(1046, context.currentTime);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, context.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.35);
+
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.36);
+  } catch {
+    // Ignorar errores de audio si el navegador bloquea autoplay.
+  }
+}
+
 function POS() {
   const { tableId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [sale, setSale] = useState(null);
   const [products, setProducts] = useState([]);
@@ -53,7 +80,13 @@ function POS() {
   const [saving, setSaving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [error, setError] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const [wsConnected, setWsConnected] = useState(false);
+
+  const canEditWhenBillRequested = user?.role === 'ADMIN';
+  const tableStatus = sale?.tableStatus || 'OCUPADA';
+  const isBillRequested = tableStatus === 'CUENTA_PEDIDA';
+  const canEdit = !isBillRequested || canEditWhenBillRequested;
 
   const loadData = useCallback(async () => {
     try {
@@ -78,6 +111,13 @@ function POS() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!toastMessage) return undefined;
+
+    const timeout = setTimeout(() => setToastMessage(''), 2500);
+    return () => clearTimeout(timeout);
+  }, [toastMessage]);
 
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_KITCHEN_WS_URL;
@@ -125,14 +165,38 @@ function POS() {
     });
   }, [tableId]);
 
-  const handleAddProduct = async (product, quantity) => {
+  const handleRequestBill = async () => {
     if (!sale || saving) return;
+    if (!sale?.items?.length) {
+      setError('No se puede pedir cuenta si la venta no tiene productos.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await updateTableStatus(sale.tableId, "CUENTA_PEDIDA");
+      playBillRequestedSound();
+      upsertSaleAndPersist((current) => ({
+        ...current,
+        tableStatus: 'CUENTA_PEDIDA',
+      }));
+      setToastMessage('Cuenta solicitada');
+      setError('');
+    } catch {
+      setError('No se pudo pedir la cuenta.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddProduct = async (product, quantity) => {
+    if (!sale || saving || !canEdit) return;
 
     try {
       setSaving(true);
       const parsedQty = Number(quantity || 1);
 
-      await addSaleItem(sale.id ?? tableId, { productId: product.id, quantity: parsedQty });
+      await addSaleItem(sale.id, { productId: product.id, quantity: parsedQty });
 
       const newItem = {
         id: `tmp-${Date.now()}`,
@@ -160,7 +224,7 @@ function POS() {
   };
 
   const handleChangeQuantity = async (item, nextQuantity) => {
-    if (saving) return;
+    if (saving || !canEdit) return;
 
     try {
       setSaving(true);
@@ -187,7 +251,7 @@ function POS() {
   };
 
   const handleDeleteItem = async (item) => {
-    if (saving) return;
+    if (saving || !canEdit) return;
 
     try {
       setSaving(true);
@@ -206,11 +270,18 @@ function POS() {
 
   const handleCloseSale = async (paymentMethod) => {
     if (!sale || saving) return;
+    if (!sale?.items?.length) {
+      setError('No se puede cobrar una venta sin productos.');
+      return;
+    }
+
     try {
       setSaving(true);
-      await closeSale(sale.id ?? tableId, { paymentMethod });
+      await paySale(sale.id, { paymentMethod });
+      await closeSale(sale.id);
       clearLocalPOS(tableId);
       setShowPaymentModal(false);
+      setToastMessage('Pago realizado correctamente');
       navigate('/tables');
     } catch {
       setError('No se pudo cerrar la cuenta.');
@@ -232,12 +303,16 @@ function POS() {
     <div className="app-layout">
       <Navbar />
       <main className="content pos-screen">
+        {toastMessage && <div className="alert alert-success py-2 mb-3">{toastMessage}</div>}
+
         <section className="card shadow-sm">
           <div className="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
               <h3 className="mb-1">Mesa {sale?.tableId || tableId}</h3>
               <div className="d-flex gap-2 align-items-center flex-wrap">
-                <span className="badge text-bg-danger">{sale?.status || 'OCUPADA'}</span>
+                <span className={`badge ${tableStatus === 'CUENTA_PEDIDA' ? 'text-bg-warning' : 'text-bg-danger'}`}>
+                  {tableStatus}
+                </span>
                 <span className="fw-semibold">Total acumulado: ${totals.total.toFixed(2)}</span>
                 {import.meta.env.VITE_KITCHEN_WS_URL && (
                   <small className={wsConnected ? 'text-success' : 'text-muted'}>
@@ -247,19 +322,29 @@ function POS() {
               </div>
             </div>
 
-            <button type="button" className="btn btn-danger btn-lg" onClick={() => setShowPaymentModal(true)} disabled={saving}>
-              Cerrar cuenta
-            </button>
+            <TableActions
+              tableStatus={tableStatus}
+              hasItems={(sale?.items || []).length > 0}
+              loading={saving}
+              canEdit={canEdit}
+              onRequestBill={handleRequestBill}
+              onOpenPayment={() => setShowPaymentModal(true)}
+            />
           </div>
         </section>
 
         {error && <p className="error-text">{error}</p>}
 
-        <ProductSelector products={products} onAdd={handleAddProduct} />
+        <ProductSelector products={products} onAdd={handleAddProduct} disabled={!canEdit} />
 
         <div className="row g-3">
           <div className="col-lg-8">
-            <OrderTable items={sale?.items || []} onChangeQuantity={handleChangeQuantity} onDelete={handleDeleteItem} />
+            <OrderTable
+              items={sale?.items || []}
+              onChangeQuantity={handleChangeQuantity}
+              onDelete={handleDeleteItem}
+              disabled={!canEdit}
+            />
           </div>
           <div className="col-lg-4">
             <KitchenOrders orders={kitchenOrders} />
@@ -277,6 +362,7 @@ function POS() {
       {showPaymentModal && (
         <PaymentModal
           total={totals.total}
+          hasItems={(sale?.items || []).length > 0}
           loading={saving}
           onClose={() => !saving && setShowPaymentModal(false)}
           onConfirm={handleCloseSale}

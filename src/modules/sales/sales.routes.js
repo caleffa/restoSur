@@ -7,8 +7,11 @@ router.use(authMiddleware);
 
 router.post('/', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.createSale);
 router.get('/open', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.listOpen);
+router.get('/table/:tableId', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.getByTable);
 router.get('/:id', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.getById);
 router.post('/:id/items', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.addItem);
+router.post('/:id/request-bill', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.requestBill);
 router.post('/:id/pay', roleMiddleware('ADMIN', 'CAJERO'), controller.paySale);
+router.post('/:id/close', roleMiddleware('ADMIN', 'CAJERO'), controller.closeSale);
 
 module.exports = router;

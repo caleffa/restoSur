@@ -12,5 +12,6 @@ module.exports = {
   },
   update: (id, data) =>
     query('UPDATE tables_restaurant SET table_number=?, status=? WHERE id=?', [data.tableNumber, data.status, id]),
+  updateStatus: (id, status) => query('UPDATE tables_restaurant SET status=? WHERE id=?', [status, id]),
   remove: (id) => query('DELETE FROM tables_restaurant WHERE id=?', [id]),
 };

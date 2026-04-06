@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { createTable, deleteTable, getTables, updateTable } from '../services/tableService';
 
-const TABLE_STATUS_OPTIONS = ['LIBRE', 'OCUPADA', 'CUENTA'];
+const TABLE_STATUS_OPTIONS = ['LIBRE', 'OCUPADA', 'CUENTA_PEDIDA', 'CERRADA'];
 
 const initialForm = {
   tableNumber: '',

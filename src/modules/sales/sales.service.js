@@ -5,7 +5,6 @@ const productRepo = require('../products/products.repository');
 const stockRepo = require('../stock/stock.repository');
 const cashRepo = require('../cash/cash.repository');
 
-
 function validateSaleId(saleId) {
   if (!Number.isInteger(saleId) || saleId <= 0) {
     throw new AppError('Id de venta inválido', 400);
@@ -58,6 +57,27 @@ async function addItem(saleId, { productId, quantity, notes }) {
   }
 }
 
+async function requestBill(saleId) {
+  validateSaleId(saleId);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const sale = await salesRepo.findSaleById(saleId, conn);
+    if (!sale) throw new AppError('Venta no encontrada', 404);
+    if (sale.status !== 'ABIERTA') throw new AppError('Solo se puede pedir cuenta para ventas ABIERTAS', 400);
+
+    await salesRepo.markTableOccupied(sale.table_id, 'CUENTA_PEDIDA', conn);
+    await conn.commit();
+
+    return { saleId, tableId: sale.table_id, tableStatus: 'CUENTA_PEDIDA' };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
 async function paySale(saleId, user, paymentData = {}) {
   validateSaleId(saleId);
   const conn = await pool.getConnection();
@@ -92,6 +112,8 @@ async function paySale(saleId, user, paymentData = {}) {
       }
     }
 
+    const paymentMethod = String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase();
+
     await cashRepo.insertMovement(
       {
         shiftId: shift.id,
@@ -101,10 +123,10 @@ async function paySale(saleId, user, paymentData = {}) {
         userId: user.id,
         type: 'VENTA',
         amount: total,
-        paymentMethod: String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase(),
+        paymentMethod,
         reference: `sale-${saleId}`,
         reason: `Cobro venta ${saleId}`,
-        affectsBalance: String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase() === 'EFECTIVO',
+        affectsBalance: paymentMethod === 'EFECTIVO',
       },
       conn
     );
@@ -113,15 +135,28 @@ async function paySale(saleId, user, paymentData = {}) {
     await salesRepo.markTableOccupied(sale.table_id, 'LIBRE', conn);
 
     await conn.commit();
-    return { saleId, total, status: 'PAGADA' };
+    return { saleId, total, status: 'PAGADA', tableStatus: 'LIBRE' };
   } catch (e) {
     await conn.rollback();
-    console.log('Error: '+e);
     throw e;
-
   } finally {
     conn.release();
   }
+}
+
+async function closeSale(saleId) {
+  validateSaleId(saleId);
+  const sale = await salesRepo.findSaleById(saleId);
+  if (!sale) throw new AppError('Venta no encontrada', 404);
+  if (sale.status !== 'PAGADA') {
+    throw new AppError('Debe registrar el pago antes de cerrar la venta', 400);
+  }
+
+  return {
+    saleId,
+    status: 'CLOSED',
+    tableStatus: 'LIBRE',
+  };
 }
 
 async function getSaleDetail(saleId) {
@@ -129,6 +164,20 @@ async function getSaleDetail(saleId) {
   const sale = await salesRepo.findSaleById(saleId);
   if (!sale) throw new AppError('Venta no encontrada', 404);
   const items = await salesRepo.listItemsBySale(saleId);
+  return { ...sale, items };
+}
+
+async function getSaleDetailByTable(tableId) {
+  if (!Number.isInteger(tableId) || tableId <= 0) {
+    throw new AppError('Id de mesa inválido', 400);
+  }
+
+  const sale = await salesRepo.findOpenSaleByTable(tableId);
+  if (!sale) {
+    throw new AppError('La mesa no tiene una venta ABIERTA', 404);
+  }
+
+  const items = await salesRepo.listItemsBySale(sale.id);
   return { ...sale, items };
 }
 
@@ -140,4 +189,13 @@ async function listOpenSales(branchId) {
   return salesRepo.listOpenSalesByBranch(branchId);
 }
 
-module.exports = { createSale, addItem, paySale, getSaleDetail, listOpenSales };
+module.exports = {
+  createSale,
+  addItem,
+  requestBill,
+  paySale,
+  closeSale,
+  getSaleDetail,
+  getSaleDetailByTable,
+  listOpenSales,
+};

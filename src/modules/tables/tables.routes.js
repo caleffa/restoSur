@@ -7,6 +7,7 @@ router.use(authMiddleware);
 router.get('/tables', controller.list);
 router.post('/tables', roleMiddleware('ADMIN'), controller.create);
 router.put('/tables/:id', roleMiddleware('ADMIN'), controller.update);
+router.put('/tables/:id/status', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.updateStatus);
 router.delete('/tables/:id', roleMiddleware('ADMIN'), controller.remove);
 
 module.exports = router;

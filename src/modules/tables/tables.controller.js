@@ -13,9 +13,15 @@ const update = asyncHandler(async (req, res) => {
   await repo.update(Number(req.params.id), req.body);
   res.json({ ok: true });
 });
+
+const updateStatus = asyncHandler(async (req, res) => {
+  await repo.updateStatus(Number(req.params.id), req.body.status);
+  res.json({ ok: true });
+});
+
 const remove = asyncHandler(async (req, res) => {
   await repo.remove(Number(req.params.id));
   res.json({ ok: true });
 });
 
-module.exports = { list, create, update, remove };
+module.exports = { list, create, update, updateStatus, remove };
