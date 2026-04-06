@@ -5,6 +5,13 @@ const productRepo = require('../products/products.repository');
 const stockRepo = require('../stock/stock.repository');
 const cashRepo = require('../cash/cash.repository');
 
+
+function validateSaleId(saleId) {
+  if (!Number.isInteger(saleId) || saleId <= 0) {
+    throw new AppError('Id de venta inválido', 400);
+  }
+}
+
 async function createSale(data, user) {
   const conn = await pool.getConnection();
   try {
@@ -22,6 +29,7 @@ async function createSale(data, user) {
 }
 
 async function addItem(saleId, { productId, quantity, notes }) {
+  validateSaleId(saleId);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -51,6 +59,7 @@ async function addItem(saleId, { productId, quantity, notes }) {
 }
 
 async function paySale(saleId, user, paymentData = {}) {
+  validateSaleId(saleId);
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -116,6 +125,7 @@ async function paySale(saleId, user, paymentData = {}) {
 }
 
 async function getSaleDetail(saleId) {
+  validateSaleId(saleId);
   const sale = await salesRepo.findSaleById(saleId);
   if (!sale) throw new AppError('Venta no encontrada', 404);
   const items = await salesRepo.listItemsBySale(saleId);
