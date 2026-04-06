@@ -5,6 +5,7 @@ import Login from '../pages/Login';
 import POS from '../pages/POS';
 import Tables from '../pages/Tables';
 import TableAdmin from '../pages/TableAdmin';
+import AdminManagement from '../pages/AdminManagement';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -36,6 +37,16 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <TableAdmin />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/admin/management"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminManagement />
           </ProtectedRoute>
         )}
       />
