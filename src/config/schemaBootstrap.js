@@ -27,6 +27,13 @@ async function foreignKeyExists(tableName, columnName) {
   return Boolean(rows[0]);
 }
 
+async function ensureColumn(tableName, columnName, definition, afterColumn = null) {
+  if (await columnExists(tableName, columnName)) return;
+
+  const afterClause = afterColumn ? ` AFTER ${afterColumn}` : '';
+  await query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}${afterClause}`);
+}
+
 async function ensureCashSchema() {
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
@@ -85,17 +92,14 @@ async function ensureCashSchema() {
     )`
   );
 
-  if (!(await columnExists('cash_movements', 'shift_id'))) {
-    await query('ALTER TABLE cash_movements ADD COLUMN shift_id INT NULL AFTER id');
-  }
-
-  if (!(await columnExists('cash_movements', 'register_id'))) {
-    await query('ALTER TABLE cash_movements ADD COLUMN register_id INT NULL AFTER shift_id');
-  }
-
-  if (!(await columnExists('cash_movements', 'branch_id'))) {
-    await query('ALTER TABLE cash_movements ADD COLUMN branch_id INT NULL AFTER register_id');
-  }
+  await ensureColumn('cash_movements', 'shift_id', 'INT NULL', 'id');
+  await ensureColumn('cash_movements', 'register_id', 'INT NULL', 'shift_id');
+  await ensureColumn('cash_movements', 'branch_id', 'INT NULL', 'register_id');
+  await ensureColumn('cash_movements', 'payment_method', 'VARCHAR(30) NULL', 'type');
+  await ensureColumn('cash_movements', 'reference', 'VARCHAR(60) NULL', 'payment_method');
+  await ensureColumn('cash_movements', 'reason', 'VARCHAR(255) NULL', 'amount');
+  await ensureColumn('cash_movements', 'observation', 'VARCHAR(255) NULL', 'reason');
+  await ensureColumn('cash_movements', 'affects_balance', 'TINYINT(1) DEFAULT 1', 'observation');
 
   if (!(await foreignKeyExists('cash_movements', 'shift_id'))) {
     await query(
