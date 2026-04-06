@@ -12,7 +12,7 @@ async function listProducts() {
 async function createProduct(data) {
   const result = await query(
     'INSERT INTO products (category_id, name, price, has_stock, active) VALUES (?, ?, ?, ?, ?)',
-    [data.categoryId, data.name, data.price, data.hasStock ? 1 : 0, data.active ?? 1]
+    [data.categoryId, data.name, data.price, data.hasStock ? 1 : 0, data.active ? 1 : 0]
   );
   return { id: result.insertId, ...data };
 }
@@ -23,7 +23,7 @@ async function updateProduct(id, data) {
     data.name,
     data.price,
     data.hasStock ? 1 : 0,
-    data.active ?? 1,
+    data.active ? 1 : 0,
     id,
   ]);
 }
@@ -32,21 +32,10 @@ async function removeProduct(id) {
   await query('DELETE FROM products WHERE id=?', [id]);
 }
 
-async function listCategories() {
-  return query('SELECT * FROM categories ORDER BY id DESC');
-}
-
-async function createCategory(name) {
-  const result = await query('INSERT INTO categories (name) VALUES (?)', [name]);
-  return { id: result.insertId, name };
-}
-
 module.exports = {
   findById,
   listProducts,
   createProduct,
   updateProduct,
   removeProduct,
-  listCategories,
-  createCategory,
 };
