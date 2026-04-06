@@ -146,17 +146,29 @@ async function paySale(saleId, user, paymentData = {}) {
 
 async function closeSale(saleId) {
   validateSaleId(saleId);
-  const sale = await salesRepo.findSaleById(saleId);
-  if (!sale) throw new AppError('Venta no encontrada', 404);
-  if (sale.status !== 'PAGADA') {
-    throw new AppError('Debe registrar el pago antes de cerrar la venta', 400);
-  }
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const sale = await salesRepo.findSaleById(saleId, conn);
+    if (!sale) throw new AppError('Venta no encontrada', 404);
+    if (sale.status !== 'PAGADA') {
+      throw new AppError('Debe registrar el pago antes de cerrar la venta', 400);
+    }
 
-  return {
-    saleId,
-    status: 'CLOSED',
-    tableStatus: 'LIBRE',
-  };
+    await salesRepo.markTableOccupied(sale.table_id, 'LIBRE', conn);
+
+    await conn.commit();
+    return {
+      saleId,
+      status: 'CLOSED',
+      tableStatus: 'LIBRE',
+    };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
 }
 
 async function getSaleDetail(saleId) {
