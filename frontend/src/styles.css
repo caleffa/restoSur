@@ -338,3 +338,77 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.admin-management-screen {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.9rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.admin-table-toolbar input,
+.admin-filters-row select {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0 10px;
+}
+
+.admin-filters-row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.admin-filters-row label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-sort-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
+}
+
+.admin-pagination-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.admin-card .touch-btn {
+  min-height: 34px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}

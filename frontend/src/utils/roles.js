@@ -10,6 +10,7 @@ export const MENU_BY_ROLE = {
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Mesas', path: '/tables' },
     { label: 'Admin Mesas', path: '/admin/tables' },
+    { label: 'Admin Gestión', path: '/admin/management' },
   ],
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },
