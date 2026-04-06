@@ -1,5 +1,32 @@
 const { query } = require('../repositories/baseRepository');
 
+async function columnExists(tableName, columnName) {
+  const rows = await query(
+    `SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  return Boolean(rows[0]);
+}
+
+async function foreignKeyExists(tableName, columnName) {
+  const rows = await query(
+    `SELECT 1
+     FROM information_schema.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+       AND REFERENCED_TABLE_NAME IS NOT NULL
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  return Boolean(rows[0]);
+}
+
 async function ensureCashSchema() {
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
@@ -57,6 +84,18 @@ async function ensureCashSchema() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )`
   );
+
+  if (!(await columnExists('cash_movements', 'shift_id'))) {
+    await query('ALTER TABLE cash_movements ADD COLUMN shift_id INT NULL AFTER id');
+  }
+
+  if (!(await foreignKeyExists('cash_movements', 'shift_id'))) {
+    await query(
+      `ALTER TABLE cash_movements
+       ADD CONSTRAINT fk_cash_movements_shift
+       FOREIGN KEY (shift_id) REFERENCES cash_shifts(id)`
+    );
+  }
 }
 
 module.exports = {
