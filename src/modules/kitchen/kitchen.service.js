@@ -23,7 +23,18 @@ async function sendToKitchen(saleId) {
 
 module.exports = {
   sendToKitchen,
-  list: (branchId) => repo.listPending(branchId),
+  list: async (branchId) => {
+    const rows = await repo.listPending(branchId);
+    return rows.map((row) => ({
+      id: row.id,
+      saleId: row.sale_id,
+      branchId: row.branch_id,
+      tableId: row.table_id,
+      status: row.status,
+      createdAt: row.sent_at,
+      updatedAt: row.updated_at,
+    }));
+  },
   updateStatus: (id, status) => repo.updateKitchenStatus(id, status),
   listByTable: async (tableId, branchId) => {
     const rows = await repo.listByTable(tableId, branchId);

@@ -13,6 +13,12 @@ const STATUS_CLASS = {
   LISTO: 'text-bg-success',
 };
 
+function formatDateTime(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('es-AR');
+}
+
 function Comandas() {
   const { user } = useAuth();
 
@@ -168,8 +174,8 @@ function Comandas() {
                     <tr key={order.id}>
                       <td className="fw-semibold">#{order.id}</td>
                       <td>#{order.saleId}</td>
-                      <td>{new Date(order.createdAt).toLocaleString('es-AR')}</td>
-                      <td>{new Date(order.updatedAt || order.createdAt).toLocaleString('es-AR')}</td>
+                      <td>{formatDateTime(order.createdAt)}</td>
+                      <td>{formatDateTime(order.updatedAt || order.createdAt)}</td>
                       <td>
                         <span className={`badge ${STATUS_CLASS[order.status] || 'text-bg-secondary'}`}>{order.status}</span>
                       </td>
