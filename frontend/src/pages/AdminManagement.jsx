@@ -17,6 +17,11 @@ const ADMIN_MODULES = [
     description: 'Gestión del catálogo de productos y su estado.',
     path: '/admin/management/products',
   },
+  {
+    title: 'Ventas',
+    description: 'Reportes de ventas con filtros por fecha, estado y método de pago.',
+    path: '/sales/management',
+  },
 ];
 
 function AdminManagement() {

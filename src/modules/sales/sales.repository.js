@@ -93,6 +93,60 @@ async function markTableOccupied(tableId, status, conn) {
   await query('UPDATE tables_restaurant SET status = ? WHERE id = ?', [status, tableId], conn);
 }
 
+async function getSalesReportByBranch(branchId, filters = {}) {
+  const conditions = ['s.branch_id = ?'];
+  const values = [branchId];
+
+  if (filters.from) {
+    conditions.push('DATE(COALESCE(s.paid_at, s.opened_at)) >= ?');
+    values.push(filters.from);
+  }
+  if (filters.to) {
+    conditions.push('DATE(COALESCE(s.paid_at, s.opened_at)) <= ?');
+    values.push(filters.to);
+  }
+  if (filters.status) {
+    conditions.push('s.status = ?');
+    values.push(filters.status);
+  }
+  if (filters.userId) {
+    conditions.push('s.user_id = ?');
+    values.push(filters.userId);
+  }
+  if (filters.tableId) {
+    conditions.push('s.table_id = ?');
+    values.push(filters.tableId);
+  }
+  if (filters.paymentMethod) {
+    conditions.push('cm.payment_method = ?');
+    values.push(filters.paymentMethod);
+  }
+
+  return query(
+    `SELECT
+      s.id,
+      s.status,
+      s.total,
+      s.opened_at AS openedAt,
+      s.paid_at AS paidAt,
+      tr.table_number AS tableNumber,
+      u.id AS userId,
+      u.name AS userName,
+      COALESCE(cm.payment_method, '-') AS paymentMethod,
+      COUNT(si.id) AS itemsCount,
+      COALESCE(SUM(si.quantity), 0) AS itemsQty
+    FROM sales s
+    JOIN tables_restaurant tr ON tr.id = s.table_id
+    JOIN users u ON u.id = s.user_id
+    LEFT JOIN sale_items si ON si.sale_id = s.id
+    LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    WHERE ${conditions.join(' AND ')}
+    GROUP BY s.id, s.status, s.total, s.opened_at, s.paid_at, tr.table_number, u.id, u.name, cm.payment_method
+    ORDER BY COALESCE(s.paid_at, s.opened_at) DESC`,
+    values
+  );
+}
+
 module.exports = {
   createSale,
   findSaleById,
@@ -105,4 +159,5 @@ module.exports = {
   deleteSaleItemById,
   updateSaleTotalsAndStatus,
   markTableOccupied,
+  getSalesReportByBranch,
 };

@@ -6,6 +6,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.post('/', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.createSale);
+router.get('/reports', roleMiddleware('ADMIN', 'CAJERO'), controller.report);
 router.get('/open', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.listOpen);
 router.get('/table/:tableId', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.getByTable);
 router.get('/:id', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.getById);

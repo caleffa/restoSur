@@ -51,6 +51,11 @@ const listOpen = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const report = asyncHandler(async (req, res) => {
+  const data = await service.getSalesReport(Number(req.user.branchId), req.query || {});
+  res.json({ ok: true, data });
+});
+
 module.exports = {
   createSale,
   addItem,
@@ -62,4 +67,5 @@ module.exports = {
   getById,
   getByTable,
   listOpen,
+  report,
 };

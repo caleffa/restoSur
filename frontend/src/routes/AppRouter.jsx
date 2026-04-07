@@ -13,6 +13,7 @@ import CashRegisters from '../pages/CashRegisters';
 import Cash from '../pages/Cash';
 import CashReport from '../pages/CashReport';
 import Comandas from '../pages/Comandas';
+import SalesManagement from '../pages/SalesManagement';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -119,6 +120,15 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO, ROLES.COCINA]}>
             <Comandas />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/sales/management"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <SalesManagement />
           </ProtectedRoute>
         )}
       />
