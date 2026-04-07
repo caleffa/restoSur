@@ -51,6 +51,7 @@ npm run dev
     /stock
     /tables
     /invoices
+    /comandas
   app.js
   server.js
 ```
@@ -78,3 +79,11 @@ npm run dev
 
 Variables:
 - `VITE_API_URL` (default: `http://localhost:3000/api`)
+
+## Comandas
+- Acceso permitido para roles `ADMIN` y `COCINA`.
+- GET `/comandas`
+- GET `/comandas/:id`
+- POST `/comandas`
+- PATCH `/comandas/:id/status`
+- DELETE `/comandas/:id`
