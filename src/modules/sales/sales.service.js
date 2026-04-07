@@ -266,6 +266,65 @@ async function listOpenSales(branchId) {
   return salesRepo.listOpenSalesByBranch(branchId);
 }
 
+function validateISODate(value, label) {
+  if (!value) return null;
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (!valid) throw new AppError(`${label} inválida`, 400);
+  return value;
+}
+
+async function getSalesReport(branchId, rawFilters = {}) {
+  if (!Number.isInteger(branchId) || branchId <= 0) {
+    throw new AppError('Sucursal inválida', 400);
+  }
+
+  const filters = {
+    from: validateISODate(rawFilters.from, 'Fecha desde'),
+    to: validateISODate(rawFilters.to, 'Fecha hasta'),
+    status: rawFilters.status ? String(rawFilters.status).toUpperCase() : '',
+    paymentMethod: rawFilters.paymentMethod ? String(rawFilters.paymentMethod).toUpperCase() : '',
+    userId: rawFilters.userId ? Number(rawFilters.userId) : null,
+    tableId: rawFilters.tableId ? Number(rawFilters.tableId) : null,
+  };
+
+  if (filters.from && filters.to && filters.from > filters.to) {
+    throw new AppError('El rango de fechas es inválido', 400);
+  }
+
+  const rows = await salesRepo.getSalesReportByBranch(branchId, filters);
+
+  const totals = rows.reduce(
+    (acc, row) => {
+      const amount = Number(row.total || 0);
+      const qty = Number(row.itemsQty || 0);
+      acc.totalAmount += amount;
+      acc.totalItems += qty;
+      if (row.status === 'PAGADA') acc.totalPaid += amount;
+      if (row.status === 'ABIERTA') acc.totalOpen += amount;
+      if (row.status === 'CANCELADA') acc.totalCanceled += amount;
+      return acc;
+    },
+    {
+      tickets: rows.length,
+      totalAmount: 0,
+      totalPaid: 0,
+      totalOpen: 0,
+      totalCanceled: 0,
+      totalItems: 0,
+    }
+  );
+
+  const averageTicket = totals.tickets ? totals.totalAmount / totals.tickets : 0;
+
+  return {
+    totals: {
+      ...totals,
+      averageTicket: Number(averageTicket.toFixed(2)),
+    },
+    rows,
+  };
+}
+
 module.exports = {
   createSale,
   addItem,
@@ -277,4 +336,5 @@ module.exports = {
   getSaleDetail,
   getSaleDetailByTable,
   listOpenSales,
+  getSalesReport,
 };
