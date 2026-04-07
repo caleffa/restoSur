@@ -17,4 +17,48 @@ async function updateKitchenStatus(id, status) {
   await query('UPDATE kitchen_orders SET status=? WHERE id=?', [status, id]);
 }
 
-module.exports = { createKitchenOrder, updateSaleItemsAsSent, listPending, updateKitchenStatus };
+async function findById(id) {
+  const rows = await query(
+    `SELECT
+      ko.id,
+      ko.sale_id,
+      ko.branch_id,
+      ko.status,
+      ko.sent_at,
+      ko.updated_at,
+      s.table_id
+    FROM kitchen_orders ko
+    JOIN sales s ON s.id = ko.sale_id
+    WHERE ko.id = ?
+    LIMIT 1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+async function listByTable(tableId, branchId) {
+  return query(
+    `SELECT
+      ko.id,
+      ko.sale_id,
+      ko.branch_id,
+      ko.status,
+      ko.sent_at,
+      ko.updated_at,
+      s.table_id
+    FROM kitchen_orders ko
+    JOIN sales s ON s.id = ko.sale_id
+    WHERE s.table_id = ? AND ko.branch_id = ?
+    ORDER BY ko.id DESC`,
+    [tableId, branchId]
+  );
+}
+
+module.exports = {
+  createKitchenOrder,
+  updateSaleItemsAsSent,
+  listPending,
+  updateKitchenStatus,
+  findById,
+  listByTable,
+};
