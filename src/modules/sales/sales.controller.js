@@ -11,6 +11,16 @@ const addItem = asyncHandler(async (req, res) => {
   res.status(201).json({ ok: true, data });
 });
 
+const updateItem = asyncHandler(async (req, res) => {
+  const data = await service.updateItem(Number(req.params.itemId), req.body || {});
+  res.json({ ok: true, data });
+});
+
+const deleteItem = asyncHandler(async (req, res) => {
+  const data = await service.deleteItem(Number(req.params.itemId));
+  res.json({ ok: true, data });
+});
+
 const requestBill = asyncHandler(async (req, res) => {
   const data = await service.requestBill(Number(req.params.id));
   res.json({ ok: true, data });
@@ -41,4 +51,15 @@ const listOpen = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
-module.exports = { createSale, addItem, requestBill, paySale, closeSale, getById, getByTable, listOpen };
+module.exports = {
+  createSale,
+  addItem,
+  updateItem,
+  deleteItem,
+  requestBill,
+  paySale,
+  closeSale,
+  getById,
+  getByTable,
+  listOpen,
+};

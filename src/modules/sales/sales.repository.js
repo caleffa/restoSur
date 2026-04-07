@@ -60,6 +60,31 @@ async function listItemsBySale(saleId, conn) {
   );
 }
 
+async function findSaleItemById(itemId, conn) {
+  const rows = await query(
+    `SELECT
+      si.*,
+      s.status AS sale_status,
+      s.table_id,
+      s.branch_id
+    FROM sale_items si
+    JOIN sales s ON s.id = si.sale_id
+    WHERE si.id = ?
+    LIMIT 1`,
+    [itemId],
+    conn
+  );
+  return rows[0] || null;
+}
+
+async function updateSaleItemQuantity(itemId, quantity, conn) {
+  await query('UPDATE sale_items SET quantity = ? WHERE id = ?', [quantity, itemId], conn);
+}
+
+async function deleteSaleItemById(itemId, conn) {
+  await query('DELETE FROM sale_items WHERE id = ?', [itemId], conn);
+}
+
 async function updateSaleTotalsAndStatus(saleId, total, status, conn) {
   await query('UPDATE sales SET total = ?, status = ?, paid_at = NOW() WHERE id = ?', [total, status, saleId], conn);
 }
@@ -75,6 +100,9 @@ module.exports = {
   listOpenSalesByBranch,
   addSaleItem,
   listItemsBySale,
+  findSaleItemById,
+  updateSaleItemQuantity,
+  deleteSaleItemById,
   updateSaleTotalsAndStatus,
   markTableOccupied,
 };

@@ -57,6 +57,71 @@ async function addItem(saleId, { productId, quantity, notes }) {
   }
 }
 
+async function updateItem(itemId, { quantity }) {
+  if (!Number.isInteger(itemId) || itemId <= 0) {
+    throw new AppError('Id de item inválido', 400);
+  }
+
+  const normalizedQuantity = Number(quantity);
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
+    throw new AppError('Cantidad inválida', 400);
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const item = await salesRepo.findSaleItemById(itemId, conn);
+    if (!item) throw new AppError('Item de venta no encontrado', 404);
+    if (item.sale_status === 'PAGADA') {
+      throw new AppError('No se puede editar un item de una venta PAGADA', 400);
+    }
+
+    await salesRepo.updateSaleItemQuantity(itemId, normalizedQuantity, conn);
+    await conn.commit();
+
+    return {
+      id: itemId,
+      saleId: item.sale_id,
+      quantity: normalizedQuantity,
+    };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+async function deleteItem(itemId) {
+  if (!Number.isInteger(itemId) || itemId <= 0) {
+    throw new AppError('Id de item inválido', 400);
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const item = await salesRepo.findSaleItemById(itemId, conn);
+    if (!item) throw new AppError('Item de venta no encontrado', 404);
+    if (item.sale_status === 'PAGADA') {
+      throw new AppError('No se puede eliminar un item de una venta PAGADA', 400);
+    }
+
+    await salesRepo.deleteSaleItemById(itemId, conn);
+    await conn.commit();
+
+    return {
+      id: itemId,
+      saleId: item.sale_id,
+      deleted: true,
+    };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
 async function requestBill(saleId) {
   validateSaleId(saleId);
   const conn = await pool.getConnection();
@@ -204,6 +269,8 @@ async function listOpenSales(branchId) {
 module.exports = {
   createSale,
   addItem,
+  updateItem,
+  deleteItem,
   requestBill,
   paySale,
   closeSale,
