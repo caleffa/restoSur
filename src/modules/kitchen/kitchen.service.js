@@ -2,6 +2,15 @@ const { pool } = require('../../config/database');
 const salesRepo = require('../sales/sales.repository');
 const repo = require('./kitchen.repository');
 const AppError = require('../../utils/appError');
+const ALLOWED_STATUS = ['PENDIENTE', 'PREPARANDO', 'LISTO'];
+
+function normalizeKitchenStatus(status) {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+  if (!ALLOWED_STATUS.includes(normalizedStatus)) {
+    throw new AppError(`Estado inválido. Debe ser: ${ALLOWED_STATUS.join(', ')}`, 400);
+  }
+  return normalizedStatus;
+}
 
 async function sendToKitchen(saleId) {
   const conn = await pool.getConnection();
@@ -35,7 +44,29 @@ module.exports = {
       updatedAt: row.updated_at,
     }));
   },
-  updateStatus: (id, status) => repo.updateKitchenStatus(id, status),
+  updateStatus: async (id, status) => {
+    const kitchenOrderId = Number(id);
+    if (!Number.isInteger(kitchenOrderId) || kitchenOrderId <= 0) {
+      throw new AppError('ID de comanda inválido', 400);
+    }
+
+    const normalizedStatus = normalizeKitchenStatus(status);
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const existingOrder = await repo.findById(kitchenOrderId, conn);
+      if (!existingOrder) throw new AppError('Comanda no encontrada', 404);
+
+      await repo.updateKitchenStatus(kitchenOrderId, normalizedStatus, conn);
+      await repo.syncSaleItemsKitchenStatusByOrderId(kitchenOrderId, normalizedStatus, conn);
+      await conn.commit();
+    } catch (error) {
+      await conn.rollback();
+      throw error;
+    } finally {
+      conn.release();
+    }
+  },
   listByTable: async (tableId, branchId) => {
     const rows = await repo.listByTable(tableId, branchId);
     return rows.map((row) => ({

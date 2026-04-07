@@ -27,11 +27,11 @@ async function listPending(branchId) {
   );
 }
 
-async function updateKitchenStatus(id, status) {
-  await query('UPDATE kitchen_orders SET status=? WHERE id=?', [status, id]);
+async function updateKitchenStatus(id, status, conn) {
+  await query('UPDATE kitchen_orders SET status=? WHERE id=?', [status, id], conn);
 }
 
-async function findById(id) {
+async function findById(id, conn) {
   const rows = await query(
     `SELECT
       ko.id,
@@ -45,9 +45,30 @@ async function findById(id) {
     JOIN sales s ON s.id = ko.sale_id
     WHERE ko.id = ?
     LIMIT 1`,
-    [id]
+    [id],
+    conn
   );
   return rows[0] || null;
+}
+
+async function syncSaleItemsKitchenStatusByOrderId(orderId, kitchenOrderStatus, conn) {
+  const statusMap = {
+    PENDIENTE: 'ENVIADO',
+    PREPARANDO: 'PREPARANDO',
+    LISTO: 'LISTO',
+  };
+  const saleItemsStatus = statusMap[kitchenOrderStatus];
+  if (!saleItemsStatus) return;
+
+  await query(
+    `UPDATE sale_items si
+     JOIN kitchen_orders ko ON ko.sale_id = si.sale_id
+     SET si.kitchen_status = ?
+     WHERE ko.id = ?
+       AND si.kitchen_status <> "LISTO"`,
+    [saleItemsStatus, orderId],
+    conn
+  );
 }
 
 async function listByTable(tableId, branchId) {
@@ -73,6 +94,7 @@ module.exports = {
   updateSaleItemsAsSent,
   listPending,
   updateKitchenStatus,
+  syncSaleItemsKitchenStatusByOrderId,
   findById,
   listByTable,
 };
