@@ -16,18 +16,21 @@ export const MENU_BY_ROLE = {
     { label: 'Cajas', path: '/cash/registers' },
     { label: 'Caja', path: '/cash' },
     { label: 'Reportes Caja', path: '/cash/reports' },
+    { label: 'Comandas', path: '/comandas' },
   ],
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Mesas', path: '/tables' },
     { label: 'Caja', path: '/cash' },
     { label: 'Reportes Caja', path: '/cash/reports' },
+    { label: 'Comandas', path: '/comandas' },
   ],
   [ROLES.MOZO]: [
     { label: 'Mesas', path: '/tables' },
   ],
   [ROLES.COCINA]: [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Comandas', path: '/comandas' },
   ],
 };
 
