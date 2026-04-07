@@ -14,10 +14,11 @@ function summarizeMovements(movements = []) {
   return movements.reduce(
     (acc, movement) => {
       const amount = Number(movement.amount || 0);
+      const affectsBalance = Number(movement.affects_balance) === 1;
       switch (movement.type) {
         case 'VENTA':
           acc.sales += amount;
-          if (movement.affects_balance) acc.cashSales += amount;
+          if (affectsBalance) acc.cashSales += amount;
           break;
         case 'INGRESO':
           acc.incomes += amount;
