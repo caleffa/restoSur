@@ -556,3 +556,33 @@ body {
 .table-closed {
   background: #374151;
 }
+
+.kitchen-modal-content {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.kitchen-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.kitchen-modal-header p {
+  margin: 0;
+}
+
+.kitchen-status-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.kitchen-status-actions .touch-btn {
+  min-height: 42px;
+}
+
+.kitchen-items-list .list-row-split {
+  border: 1px solid #eef2ff;
+}

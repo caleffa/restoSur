@@ -5,6 +5,8 @@ import SalesList from '../components/dashboard/SalesList';
 import StatsCards from '../components/dashboard/StatsCards';
 import TablesGrid from '../components/dashboard/TablesGrid';
 import TopProducts from '../components/dashboard/TopProducts';
+import KitchenOrdersGrid from '../components/dashboard/KitchenOrdersGrid';
+import KitchenOrderModal from '../components/dashboard/KitchenOrderModal';
 import { createSale, getTables } from '../services/tableService';
 import {
   getDashboardSummary,
@@ -12,8 +14,9 @@ import {
   getSalesByHour,
   getTopProducts,
 } from '../services/dashboardService';
-import { canAccessPOS, canCreateSale } from '../utils/roles';
+import { canAccessPOS, canCreateSale, ROLES } from '../utils/roles';
 import { useAuth } from '../context/AuthContext';
+import { getKitchenOrders, getSaleDetail, updateKitchenOrderStatus } from '../services/kitchenService';
 
 function Dashboard() {
   const [summary, setSummary] = useState(null);
@@ -23,21 +26,29 @@ function Dashboard() {
   const [salesByHour, setSalesByHour] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyTableId, setBusyTableId] = useState(null);
+  const [kitchenOrders, setKitchenOrders] = useState([]);
+  const [selectedKitchenOrder, setSelectedKitchenOrder] = useState(null);
+  const [selectedSaleDetail, setSelectedSaleDetail] = useState(null);
+  const [kitchenModalLoading, setKitchenModalLoading] = useState(false);
+  const [kitchenStatusLoading, setKitchenStatusLoading] = useState(false);
   const [error, setError] = useState('');
 
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const isKitchenRole = user?.role === ROLES.COCINA;
+
   const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
 
-      const [summaryData, tablesData, salesData, productsData, hourlyData] = await Promise.all([
+      const [summaryData, tablesData, salesData, productsData, hourlyData, kitchenData] = await Promise.all([
         getDashboardSummary(),
         getTables(),
         getOpenSales(),
         getTopProducts(),
         getSalesByHour(),
+        isKitchenRole ? getKitchenOrders() : Promise.resolve([]),
       ]);
 
       setSummary(summaryData);
@@ -50,13 +61,14 @@ function Dashboard() {
       setOpenSales(salesData);
       setTopProducts(productsData);
       setSalesByHour(hourlyData);
+      setKitchenOrders(kitchenData);
       setError('');
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudieron cargar los datos del dashboard.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isKitchenRole]);
 
   useEffect(() => {
     loadDashboard();
@@ -83,6 +95,45 @@ function Dashboard() {
 
     if ((table.status === 'OCUPADA' || table.status === 'CUENTA_PEDIDA') && canAccessPOS(user?.role)) {
       navigate(`/pos/${table.id}`);
+    }
+  };
+
+  const handleKitchenOrderSelect = async (order) => {
+    if (!order) return;
+    setSelectedKitchenOrder(order);
+    setKitchenModalLoading(true);
+
+    try {
+      const detail = await getSaleDetail(order.saleId);
+      setSelectedSaleDetail({
+        ...detail,
+        tableName: detail?.tableName || detail?.table?.name,
+      });
+      setError('');
+    } catch (err) {
+      setSelectedSaleDetail(null);
+      setError(err?.response?.data?.message || 'No se pudo cargar el detalle de la comanda.');
+    } finally {
+      setKitchenModalLoading(false);
+    }
+  };
+
+  const handleKitchenStatusChange = async (status) => {
+    if (!selectedKitchenOrder || kitchenStatusLoading) return;
+
+    try {
+      setKitchenStatusLoading(true);
+      await updateKitchenOrderStatus(selectedKitchenOrder.id, status);
+
+      setSelectedKitchenOrder((prev) => (prev ? { ...prev, status } : prev));
+      setKitchenOrders((prev) => prev.map((order) => (
+        order.id === selectedKitchenOrder.id ? { ...order, status } : order
+      )));
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'No se pudo actualizar el estado de la comanda.');
+    } finally {
+      setKitchenStatusLoading(false);
     }
   };
 
@@ -125,12 +176,20 @@ function Dashboard() {
         <StatsCards summary={summary} loading={loading} />
 
         <section className="dashboard-main-grid mt-3">
-          <TablesGrid
-            tables={tables}
-            loading={loading}
-            busyTableId={busyTableId}
-            onTableClick={handleTableClick}
-          />
+          {isKitchenRole ? (
+            <KitchenOrdersGrid
+              orders={kitchenOrders}
+              loading={loading}
+              onSelectOrder={handleKitchenOrderSelect}
+            />
+          ) : (
+            <TablesGrid
+              tables={tables}
+              loading={loading}
+              busyTableId={busyTableId}
+              onTableClick={handleTableClick}
+            />
+          )}
 
           <div className="dashboard-side-grid">
             <SalesList sales={openSales} loading={loading} onSaleClick={(sale) => navigate(`/pos/${sale.tableId}`)} />
@@ -183,6 +242,19 @@ function Dashboard() {
             </ul>
           </article>
         </section>
+        {selectedKitchenOrder ? (
+          <KitchenOrderModal
+            order={selectedKitchenOrder}
+            saleDetail={selectedSaleDetail}
+            loading={kitchenModalLoading}
+            statusUpdating={kitchenStatusLoading}
+            onClose={() => {
+              setSelectedKitchenOrder(null);
+              setSelectedSaleDetail(null);
+            }}
+            onChangeStatus={handleKitchenStatusChange}
+          />
+        ) : null}
       </main>
     </div>
   );
