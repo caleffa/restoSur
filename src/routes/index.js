@@ -11,6 +11,7 @@ const afipRoutes = require('../modules/afip/afip.routes');
 const invoicesRoutes = require('../modules/invoices/invoices.routes');
 const tablesRoutes = require('../modules/tables/tables.routes');
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
+const comandasRoutes = require('../modules/comandas/comandas.routes');
 
 const router = express.Router();
 
@@ -28,5 +29,6 @@ router.use('/', afipRoutes);
 router.use('/', invoicesRoutes);
 router.use('/', tablesRoutes);
 router.use('/', dashboardRoutes);
+router.use('/', comandasRoutes);
 
 module.exports = router;

@@ -36,3 +36,11 @@ Base URL: `http://localhost:3000/api`
 ## AFIP/CAEA
 - GET `/afip/caea`
 - POST `/afip/caea`
+
+
+## Comandas (ADMIN/COCINA)
+- GET `/comandas`
+- GET `/comandas/:id`
+- POST `/comandas` { `saleId`, `status?` }
+- PATCH `/comandas/:id/status` { `status`: `PENDIENTE|PREPARANDO|LISTO` }
+- DELETE `/comandas/:id`
