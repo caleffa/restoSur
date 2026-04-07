@@ -25,4 +25,36 @@ module.exports = {
   sendToKitchen,
   list: (branchId) => repo.listPending(branchId),
   updateStatus: (id, status) => repo.updateKitchenStatus(id, status),
+  listByTable: async (tableId, branchId) => {
+    const rows = await repo.listByTable(tableId, branchId);
+    return rows.map((row) => ({
+      id: row.id,
+      saleId: row.sale_id,
+      branchId: row.branch_id,
+      tableId: row.table_id,
+      status: row.status,
+      createdAt: row.sent_at,
+      updatedAt: row.updated_at,
+    }));
+  },
+  createByTable: async ({ tableId, branchId, status = 'PENDIENTE' }) => {
+    const sale = await salesRepo.findOpenSaleByTable(tableId);
+    if (!sale) throw new AppError('Venta abierta no encontrada para la mesa', 404);
+
+    const created = await repo.createKitchenOrder({ saleId: sale.id, branchId: sale.branch_id || branchId });
+    if (status && status !== 'PENDIENTE') {
+      await repo.updateKitchenStatus(created.id, status);
+    }
+    const order = await repo.findById(created.id);
+
+    return {
+      id: order.id,
+      saleId: order.sale_id,
+      branchId: order.branch_id,
+      tableId: order.table_id,
+      status: status || order.status,
+      createdAt: order.sent_at,
+      updatedAt: order.updated_at,
+    };
+  },
 };
