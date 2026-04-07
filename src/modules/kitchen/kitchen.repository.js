@@ -10,7 +10,21 @@ async function updateSaleItemsAsSent(saleId, conn) {
 }
 
 async function listPending(branchId) {
-  return query('SELECT * FROM kitchen_orders WHERE branch_id=? AND status IN ("PENDIENTE","PREPARANDO") ORDER BY id DESC', [branchId]);
+  return query(
+    `SELECT
+      ko.id,
+      ko.sale_id,
+      ko.branch_id,
+      ko.status,
+      ko.sent_at,
+      ko.updated_at,
+      s.table_id
+    FROM kitchen_orders ko
+    JOIN sales s ON s.id = ko.sale_id
+    WHERE ko.branch_id = ?
+    ORDER BY ko.id DESC`,
+    [branchId]
+  );
 }
 
 async function updateKitchenStatus(id, status) {
