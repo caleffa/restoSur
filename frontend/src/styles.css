@@ -137,6 +137,10 @@ body {
   color: #111827;
 }
 
+.table-closed {
+  background: #212529;
+}
+
 .error-text {
   color: #dc2626;
   margin: 0;
@@ -268,12 +272,25 @@ body {
   opacity: 0.75;
 }
 
+.table-pill {
+  background: #6b7280;
+}
+
+.table-pill.table-free {
+  background: #16a34a;
+}
+
+.table-pill.table-busy {
+  background: #dc2626;
+}
+
 .table-pill.table-bill {
+  background: #facc15;
   color: #111827;
 }
 
-.table-pill {
-  background: #6b7280;
+.table-pill.table-closed {
+  background: #212529;
 }
 
 .section-title {
