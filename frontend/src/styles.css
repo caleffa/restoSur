@@ -133,7 +133,7 @@ body {
 }
 
 .table-bill {
-  background: #f59e0b;
+  background: #facc15;
   color: #111827;
 }
 
@@ -270,6 +270,10 @@ body {
 
 .table-pill.table-bill {
   color: #111827;
+}
+
+.table-pill {
+  background: #6b7280;
 }
 
 .section-title {
