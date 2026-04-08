@@ -14,6 +14,7 @@ import Cash from '../pages/Cash';
 import CashReport from '../pages/CashReport';
 import Comandas from '../pages/Comandas';
 import SalesManagement from '../pages/SalesManagement';
+import AdminInvoices from '../pages/AdminInvoices';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -82,6 +83,16 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminProducts />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/admin/management/invoices"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <AdminInvoices />
           </ProtectedRoute>
         )}
       />
