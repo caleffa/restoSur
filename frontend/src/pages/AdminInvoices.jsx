@@ -30,6 +30,13 @@ const INITIAL_INVOICE_FORM = {
   caeaId: '',
 };
 
+
+const getApiErrorMessage = (error, fallback) => {
+  const apiMessage = error?.response?.data?.message;
+  const genericMessage = error?.message;
+  return apiMessage || (genericMessage && genericMessage !== 'Network Error' ? genericMessage : fallback);
+};
+
 function AdminInvoices() {
   const [searchParams] = useSearchParams();
   const [configForm, setConfigForm] = useState(INITIAL_AFIP_CONFIG);
@@ -98,8 +105,8 @@ function AdminInvoices() {
       });
       setMessage('Configuración AFIP guardada.');
       await loadData();
-    } catch {
-      setError('No se pudo guardar la configuración AFIP.');
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'No se pudo guardar la configuración AFIP.'));
     } finally {
       setLoading(false);
     }
@@ -114,8 +121,8 @@ function AdminInvoices() {
       await requestCaea({});
       setMessage('CAEA generado/recuperado correctamente.');
       await loadData();
-    } catch {
-      setError('No se pudo solicitar el CAEA. Revise configuración AFIP.');
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'No se pudo solicitar el CAEA. Revise configuración AFIP.'));
     } finally {
       setLoading(false);
     }
@@ -153,8 +160,8 @@ function AdminInvoices() {
       setMessage('Factura emitida con éxito.');
       setInvoiceForm(INITIAL_INVOICE_FORM);
       await loadData();
-    } catch {
-      setError('No se pudo emitir la factura.');
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'No se pudo emitir la factura.'));
     } finally {
       setLoading(false);
     }
