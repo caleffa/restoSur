@@ -34,6 +34,19 @@ async function ensureColumn(tableName, columnName, definition, afterColumn = nul
   await query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}${afterClause}`);
 }
 
+async function getColumnType(tableName, columnName) {
+  const rows = await query(
+    `SELECT COLUMN_TYPE
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [tableName, columnName]
+  );
+  return rows[0]?.COLUMN_TYPE || null;
+}
+
 async function ensureCashSchema() {
   await ensureAfipSchema();
   await query(
@@ -137,7 +150,7 @@ async function ensureAfipSchema() {
       cuit VARCHAR(20) NULL,
       point_of_sale INT NOT NULL,
       environment ENUM('HOMOLOGACION','PRODUCCION') NOT NULL DEFAULT 'HOMOLOGACION',
-      ws_mode ENUM('MOCK','MANUAL') NOT NULL DEFAULT 'MOCK',
+      ws_mode ENUM('MOCK','MANUAL','AFIP') NOT NULL DEFAULT 'MOCK',
       cert_path VARCHAR(255) NULL,
       key_path VARCHAR(255) NULL,
       service_tax_id VARCHAR(20) NULL,
@@ -150,6 +163,11 @@ async function ensureAfipSchema() {
   await ensureColumn('invoices', 'created_by', 'INT NULL', 'total');
   await ensureColumn('invoices', 'voucher_number', 'INT NULL', 'authorization_code');
   await ensureColumn('invoices', 'afip_response', 'JSON NULL', 'caea_id');
+
+  const wsModeColumnType = await getColumnType('afip_configs', 'ws_mode');
+  if (wsModeColumnType && !wsModeColumnType.includes(\"'AFIP'\")) {
+    await query(\"ALTER TABLE afip_configs MODIFY ws_mode ENUM('MOCK','MANUAL','AFIP') NOT NULL DEFAULT 'MOCK'\");
+  }
 
   if (!(await foreignKeyExists('invoices', 'created_by'))) {
     await query(

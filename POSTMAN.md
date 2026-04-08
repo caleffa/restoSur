@@ -12,6 +12,10 @@ Base URL: `http://localhost:3000/api`
 4. PATCH `/kitchen/:id` { `status`: `PENDIENTE|PREPARANDO|LISTO` }
 5. POST `/sales/:id/pay`
 6. POST `/invoices` { `saleId`, `invoiceType`, `authorizationType`, `authorizationCode?|caeaId`, `caeExpiration?` }
+   - Si `authorizationType=CAE` y **no** se envía `authorizationCode`:
+     - `wsMode=AFIP`: consulta AFIP y obtiene CAE + nro comprobante.
+     - `wsMode=MOCK`: genera CAE local + nro comprobante local.
+     - `wsMode=MANUAL`: devuelve validación (debe enviarse `authorizationCode`).
    - Si `authorizationType=CAE` y **no** se envía `authorizationCode`, el backend consulta AFIP (según config) para obtener CAE y número de comprobante.
 
 ## Caja

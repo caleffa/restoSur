@@ -202,6 +202,22 @@ async function getLastAuthorizedVoucher({ config, credentials, cbteTipo, timeout
 }
 
 async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
+  try {
+    const cbteTipo = INVOICE_TYPE_TO_CBTE[invoiceType];
+    if (!cbteTipo) throw new AppError(`Tipo de factura no soportado: ${invoiceType}`, 400);
+
+    const wsfeUrl = WSFE_URLS[config.environment];
+    const credentials = await getWsaaCredentials(config, timeoutMs);
+    const { token, sign } = credentials;
+    const last = await getLastAuthorizedVoucher({ config, credentials, cbteTipo, timeoutMs });
+    const nextVoucher = last + 1;
+    const issueDate = formatDateYYYYMMDD(new Date());
+
+    const amount = Number(total);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new AppError(`Total inválido para AFIP: ${total}`, 400);
+    }
+    const body = `<FECAESolicitar xmlns="http://ar.gov.afip.dif.FEV1/">
   const cbteTipo = INVOICE_TYPE_TO_CBTE[invoiceType];
   if (!cbteTipo) throw new AppError(`Tipo de factura no soportado: ${invoiceType}`, 400);
 
@@ -246,6 +262,36 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
     </FeCAEReq>
   </FECAESolicitar>`;
 
+    const soap = await callSoap(wsfeUrl, 'http://ar.gov.afip.dif.FEV1/FECAESolicitar', body, timeoutMs);
+
+    const result = extractTag(soap, 'Resultado');
+    const cae = extractTag(soap, 'CAE');
+    const caeDue = extractTag(soap, 'CAEFchVto');
+    const observedVoucher = Number(extractTag(soap, 'CbteDesde') || nextVoucher);
+
+    if (result !== 'A' || !cae) {
+      const errorsSection = extractTag(soap, 'Errors');
+      const eventsSection = extractTag(soap, 'Events');
+      const msg = extractTag(errorsSection || eventsSection || soap, 'Msg') || 'AFIP rechazó el comprobante';
+      throw new AppError(`AFIP FECAESolicitar rechazado: ${msg}`, 502);
+    }
+
+    return {
+      voucherNumber: observedVoucher,
+      cae,
+      caeExpiration: caeDue ? `${caeDue.slice(0, 4)}-${caeDue.slice(4, 6)}-${caeDue.slice(6, 8)}` : null,
+      rawResult: {
+        resultado: result,
+        cae,
+        caeVto: caeDue,
+        cbteTipo,
+        puntoVenta: Number(config.point_of_sale),
+      },
+    };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(`Error inesperado integrando AFIP: ${error.message}`, 502);
+  }
   const soap = await callSoap(wsfeUrl, 'http://ar.gov.afip.dif.FEV1/FECAESolicitar', body, timeoutMs);
 
   const result = extractTag(soap, 'Resultado');

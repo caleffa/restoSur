@@ -182,6 +182,7 @@ function AdminInvoices() {
             <select value={configForm.wsMode} onChange={(e) => setConfigForm((prev) => ({ ...prev, wsMode: e.target.value }))}>
               <option value="MOCK">Integración mock (dev)</option>
               <option value="MANUAL">Manual (ingresar CAEA)</option>
+              <option value="AFIP">AFIP WSFE (real)</option>
             </select>
             <input placeholder="Ruta certificado (opcional)" value={configForm.certPath} onChange={(e) => setConfigForm((prev) => ({ ...prev, certPath: e.target.value }))} />
             <input placeholder="Ruta llave privada (opcional)" value={configForm.keyPath} onChange={(e) => setConfigForm((prev) => ({ ...prev, keyPath: e.target.value }))} />

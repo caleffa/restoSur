@@ -9,6 +9,10 @@ function getTimeoutMs() {
   return Number.isFinite(raw) && raw > 0 ? raw : 10000;
 }
 
+function generateMockCae() {
+  return `${Date.now()}`.slice(-14).padStart(14, '0');
+}
+
 async function createInvoice(data, user) {
   const sale = await salesRepo.findSaleById(data.saleId);
   if (!sale) throw new AppError('Venta no encontrada', 404);
@@ -33,6 +37,28 @@ async function createInvoice(data, user) {
     const config = await afipRepo.getConfig(sale.branch_id);
     if (!config) throw new AppError('Primero debe configurar AFIP para esta sucursal', 400);
 
+    if (config.ws_mode === 'MANUAL') {
+      throw new AppError('En modo MANUAL debe informar authorizationCode para CAE', 400);
+    }
+
+    if (config.ws_mode === 'AFIP') {
+      const afipResult = await requestCaeForInvoice({
+        config,
+        invoiceType: data.invoiceType,
+        total: sale.total,
+        timeoutMs: getTimeoutMs(),
+      });
+
+      authorizationCode = afipResult.cae;
+      voucherNumber = afipResult.voucherNumber;
+      caeExpiration = afipResult.caeExpiration || caeExpiration;
+      afipResponse = afipResult.rawResult;
+    } else {
+      const lastVoucher = await repo.getLastVoucherNumber(sale.branch_id, data.invoiceType);
+      authorizationCode = generateMockCae();
+      voucherNumber = lastVoucher + 1;
+      afipResponse = { mode: 'MOCK', message: 'CAE generado localmente' };
+    }
     const afipResult = await requestCaeForInvoice({
       config,
       invoiceType: data.invoiceType,

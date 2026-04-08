@@ -27,6 +27,18 @@ async function findBySaleId(saleId) {
   return rows[0] || null;
 }
 
+async function getLastVoucherNumber(branchId, invoiceType) {
+  const rows = await query(
+    `SELECT MAX(voucher_number) AS last_voucher
+     FROM invoices
+     WHERE branch_id = ?
+       AND invoice_type = ?
+       AND authorization_type = 'CAE'`,
+    [branchId, invoiceType]
+  );
+  return Number(rows[0]?.last_voucher || 0);
+}
+
 async function listByBranch(branchId) {
   return query(
     `SELECT i.*, s.table_id, t.table_number, u.name AS created_by_name
@@ -40,4 +52,4 @@ async function listByBranch(branchId) {
   );
 }
 
-module.exports = { createInvoice, findBySaleId, listByBranch };
+module.exports = { createInvoice, findBySaleId, getLastVoucherNumber, listByBranch };
