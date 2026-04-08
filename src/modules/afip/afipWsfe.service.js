@@ -24,6 +24,16 @@ const INVOICE_TYPE_TO_CBTE = {
   C: 11,
 };
 
+const CONDICION_IVA_RECEPTOR = {
+  RESPONSABLE_INSCRIPTO: 1,
+  SUJETO_EXENTO: 4,
+  CONSUMIDOR_FINAL: 5,
+  IVA_NO_ALCANZADO: 7,
+  MONOTRIBUTISTA: 13,
+  MONOTRIBUTO_SOCIAL: 15,
+  PEQUENIO_CONTRIBUYENTE_EVENTUAL: 16,
+};
+
 function xmlEscape(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -251,6 +261,22 @@ async function getLastAuthorizedVoucher({ config, credentials, cbteTipo, timeout
   return Number.isFinite(cbteNro) ? cbteNro : 0;
 }
 
+function getCondicionIvaReceptor({ invoiceType, docTipo, docNro }) {
+  // RG 5616: en FECAESolicitar es obligatorio informar CondicionIVAReceptorId.
+  // Con DocTipo=99 y DocNro=0 se factura a Consumidor Final.
+  if (Number(docTipo) === 99 && Number(docNro) === 0) {
+    return CONDICION_IVA_RECEPTOR.CONSUMIDOR_FINAL;
+  }
+
+  // Fallback seguro para el flujo actual: si no hay padrón de clientes,
+  // mantener Consumidor Final en comprobantes B/C.
+  if (invoiceType === 'B' || invoiceType === 'C') {
+    return CONDICION_IVA_RECEPTOR.CONSUMIDOR_FINAL;
+  }
+
+  return CONDICION_IVA_RECEPTOR.RESPONSABLE_INSCRIPTO;
+}
+
 async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
   try {
     const cbteTipo = INVOICE_TYPE_TO_CBTE[invoiceType];
@@ -267,6 +293,11 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new AppError(`Total inválido para AFIP: ${total}`, 400);
     }
+
+    const docTipo = 99;
+    const docNro = 0;
+    const condicionIvaReceptorId = getCondicionIvaReceptor({ invoiceType, docTipo, docNro });
+
     const body = `<FECAESolicitar xmlns="http://ar.gov.afip.dif.FEV1/">
     <Auth>
       <Token>${xmlEscape(token)}</Token>
@@ -282,8 +313,9 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
       <FeDetReq>
         <FECAEDetRequest>
           <Concepto>1</Concepto>
-          <DocTipo>99</DocTipo>
-          <DocNro>0</DocNro>
+          <DocTipo>${docTipo}</DocTipo>
+          <DocNro>${docNro}</DocNro>
+          <CondicionIVAReceptorId>${condicionIvaReceptorId}</CondicionIVAReceptorId>
           <CbteDesde>${nextVoucher}</CbteDesde>
           <CbteHasta>${nextVoucher}</CbteHasta>
           <CbteFch>${issueDate}</CbteFch>
