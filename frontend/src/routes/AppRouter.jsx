@@ -9,6 +9,7 @@ import AdminManagement from '../pages/AdminManagement';
 import AdminUsers from '../pages/AdminUsers';
 import AdminCategories from '../pages/AdminCategories';
 import AdminProducts from '../pages/AdminProducts';
+import AdminStock from '../pages/AdminStock';
 import CashRegisters from '../pages/CashRegisters';
 import Cash from '../pages/Cash';
 import CashReport from '../pages/CashReport';
@@ -87,6 +88,14 @@ function AppRouter() {
         )}
       />
 
+      <Route
+        path="/admin/management/stock"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <AdminStock />
+          </ProtectedRoute>
+        )}
+      />
 
       <Route
         path="/admin/management/invoices"

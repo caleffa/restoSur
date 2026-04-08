@@ -17,6 +17,12 @@ const ADMIN_MODULES = [
     description: 'Gestión del catálogo de productos y su estado.',
     path: '/admin/management/products',
   },
+
+  {
+    title: 'Stock',
+    description: 'Control de existencias y carga de movimientos de inventario.',
+    path: '/admin/management/stock',
+  },
   {
     title: 'Ventas',
     description: 'Reportes de ventas con filtros por fecha, estado y método de pago.',
