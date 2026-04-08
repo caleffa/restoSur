@@ -122,5 +122,5 @@ export async function createInvoice(payload) {
 
 export async function getSalesReport(filters = {}) {
   const { data } = await http.get('/sales/reports', { params: filters });
-  return unwrap(data) || [];
+  return unwrap(data) || { totals: {}, rows: [] };
 }
