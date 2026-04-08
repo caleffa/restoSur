@@ -72,42 +72,26 @@ async function signCms({ certPath, keyPath, traXml }) {
   const tempBase = path.join(os.tmpdir(), `restosur-afip-${crypto.randomUUID()}`);
   const traPath = `${tempBase}.xml`;
   const cmsPath = `${tempBase}.cms`;
+  const opensslArgs = [
+    'cms',
+    '-sign',
+    '-in',
+    traPath,
+    '-signer',
+    certPath,
+    '-inkey',
+    keyPath,
+    '-nodetach',
+    '-binary',
+    '-outform',
+    'DER',
+    '-out',
+    cmsPath,
+  ];
 
   try {
     await fs.promises.writeFile(traPath, traXml, 'utf8');
-
-    await execFileAsync(getOpenSslBin(), [
-      'cms',
-      '-sign',
-      '-in',
-      traPath,
-      '-signer',
-      certPath,
-      '-inkey',
-      keyPath,
-      '-nodetach',
-      '-binary',
-      '-outform',
-      'DER',
-      '-out',
-      cmsPath,
-    ];
-
-    const candidates = getOpenSslCandidates();
-    let lastError = null;
-
-    for (const bin of candidates) {
-      try {
-        await execFileAsync(bin, opensslArgs);
-        const cmsDer = await fs.promises.readFile(cmsPath);
-        return cmsDer.toString('base64');
-      } catch (error) {
-        if (error?.code !== 'ENOENT') {
-          throw new AppError(`No se pudo firmar el TRA de AFIP: ${error.message}`, 500);
-        }
-        lastError = error;
-      }
-    }
+    await execFileAsync(getOpenSslBin(), opensslArgs);
 
     const cmsDer = await fs.promises.readFile(cmsPath);
     return cmsDer.toString('base64');
