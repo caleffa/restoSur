@@ -68,33 +68,52 @@ function getOpenSslBin() {
   return process.env.AFIP_OPENSSL_BIN || 'openssl';
 }
 
+function getOpenSslCandidates() {
+  const preferred = getOpenSslBin();
+
+  if (process.platform !== 'win32') {
+    return [preferred];
+  }
+
+  const windowsCandidates = [
+    preferred,
+    'openssl.exe',
+    'C:\\OpenSSL-Win64\\bin\\openssl.exe',
+    'C:\\OpenSSL-Win32\\bin\\openssl.exe',
+    'C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe',
+    'C:\\Program Files (x86)\\OpenSSL-Win32\\bin\\openssl.exe',
+    'C:\\Program Files\\Git\\usr\\bin\\openssl.exe',
+    'C:\\Program Files\\Git\\mingw64\\bin\\openssl.exe',
+  ];
+
+  return [...new Set(windowsCandidates.filter(Boolean))];
+}
+
 async function signCms({ certPath, keyPath, traXml }) {
   const tempBase = path.join(os.tmpdir(), `restosur-afip-${crypto.randomUUID()}`);
   const traPath = `${tempBase}.xml`;
   const cmsPath = `${tempBase}.cms`;
+  const opensslArgs = [
+    'cms',
+    '-sign',
+    '-in',
+    traPath,
+    '-signer',
+    certPath,
+    '-inkey',
+    keyPath,
+    '-nodetach',
+    '-binary',
+    '-outform',
+    'DER',
+    '-out',
+    cmsPath,
+  ];
 
   try {
     await fs.promises.writeFile(traPath, traXml, 'utf8');
-
-    await execFileAsync(getOpenSslBin(), [
-      'cms',
-      '-sign',
-      '-in',
-      traPath,
-      '-signer',
-      certPath,
-      '-inkey',
-      keyPath,
-      '-nodetach',
-      '-binary',
-      '-outform',
-      'DER',
-      '-out',
-      cmsPath,
-    ];
-
     const candidates = getOpenSslCandidates();
-    let lastError = null;
+    let lastEnoentError = null;
 
     for (const bin of candidates) {
       try {
@@ -102,15 +121,19 @@ async function signCms({ certPath, keyPath, traXml }) {
         const cmsDer = await fs.promises.readFile(cmsPath);
         return cmsDer.toString('base64');
       } catch (error) {
-        if (error?.code !== 'ENOENT') {
-          throw new AppError(`No se pudo firmar el TRA de AFIP: ${error.message}`, 500);
+        if (error?.code === 'ENOENT') {
+          lastEnoentError = error;
+          continue;
         }
-        lastError = error;
+        throw new AppError(`No se pudo firmar el TRA de AFIP: ${error.message}`, 500);
       }
     }
 
-    const cmsDer = await fs.promises.readFile(cmsPath);
-    return cmsDer.toString('base64');
+    if (lastEnoentError) {
+      throw lastEnoentError;
+    }
+
+    throw new AppError('No se pudo firmar el TRA de AFIP con los binarios configurados', 500);
   } catch (error) {
     if (error?.code === 'ENOENT') {
       throw new AppError(
