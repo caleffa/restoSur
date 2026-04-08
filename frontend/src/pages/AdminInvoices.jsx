@@ -114,6 +114,24 @@ function AdminInvoices() {
     event.preventDefault();
     if (loading) return;
 
+    if (!invoiceForm.saleId) {
+      setError('Seleccioná una venta pagada para facturar.');
+      setMessage('');
+      return;
+    }
+
+    if (invoiceForm.authorizationType === 'CAE' && !invoiceForm.authorizationCode.trim()) {
+      setError('Ingresá el código CAE para emitir la factura.');
+      setMessage('');
+      return;
+    }
+
+    if (invoiceForm.authorizationType === 'CAEA' && !invoiceForm.caeaId) {
+      setError('Seleccioná un CAEA válido para emitir la factura.');
+      setMessage('');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setMessage('');
@@ -187,8 +205,8 @@ function AdminInvoices() {
 
         <section className="admin-table-form">
           <h3>Emitir factura</h3>
-          <form className="modal-form" onSubmit={onCreateInvoice}>
-            <select value={invoiceForm.saleId} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, saleId: e.target.value }))} required>
+          <form className="modal-form" onSubmit={onCreateInvoice} noValidate>
+            <select value={invoiceForm.saleId} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, saleId: e.target.value }))}>
               <option value="">Venta pagada</option>
               {createInvoiceOptions.map((sale) => (
                 <option key={sale.id} value={sale.id}>Venta #{sale.id} - Mesa {sale.tableNumber || sale.table_number} - ${Number(sale.total).toFixed(2)}</option>
@@ -205,11 +223,11 @@ function AdminInvoices() {
             </select>
             {invoiceForm.authorizationType === 'CAE' ? (
               <>
-                <input placeholder="Código CAE" value={invoiceForm.authorizationCode} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, authorizationCode: e.target.value }))} required />
+                <input placeholder="Código CAE" value={invoiceForm.authorizationCode} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, authorizationCode: e.target.value }))} />
                 <input type="date" value={invoiceForm.caeExpiration} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, caeExpiration: e.target.value }))} />
               </>
             ) : (
-              <select value={invoiceForm.caeaId} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, caeaId: e.target.value }))} required>
+              <select value={invoiceForm.caeaId} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, caeaId: e.target.value }))}>
                 <option value="">Seleccionar CAEA</option>
                 {caeaList.map((caea) => (
                   <option key={caea.id} value={caea.id}>{caea.caea_code} - {caea.period_year}/{caea.period_half}</option>
