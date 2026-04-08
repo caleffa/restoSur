@@ -16,6 +16,7 @@ Base URL: `http://localhost:3000/api`
      - `wsMode=AFIP`: consulta AFIP y obtiene CAE + nro comprobante.
      - `wsMode=MOCK`: genera CAE local + nro comprobante local.
      - `wsMode=MANUAL`: devuelve validación (debe enviarse `authorizationCode`).
+   - Si `authorizationType=CAE` y **no** se envía `authorizationCode`, el backend consulta AFIP (según config) para obtener CAE y número de comprobante.
 
 ## Caja
 - POST `/cash/open`

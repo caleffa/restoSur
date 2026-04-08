@@ -59,6 +59,17 @@ async function createInvoice(data, user) {
       voucherNumber = lastVoucher + 1;
       afipResponse = { mode: 'MOCK', message: 'CAE generado localmente' };
     }
+    const afipResult = await requestCaeForInvoice({
+      config,
+      invoiceType: data.invoiceType,
+      total: sale.total,
+      timeoutMs: getTimeoutMs(),
+    });
+
+    authorizationCode = afipResult.cae;
+    voucherNumber = afipResult.voucherNumber;
+    caeExpiration = afipResult.caeExpiration || caeExpiration;
+    afipResponse = afipResult.rawResult;
   }
 
   if (!authorizationCode) throw new AppError('authorizationCode requerido', 400);
