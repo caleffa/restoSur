@@ -64,21 +64,8 @@ function formatDateYYYYMMDD(date = new Date()) {
   return `${year}${month}${day}`;
 }
 
-function getOpenSslCandidates() {
-  const configured = (process.env.AFIP_OPENSSL_BIN || '').trim();
-  const candidates = [configured || 'openssl'];
-
-  if (process.platform === 'win32') {
-    candidates.push(
-      'openssl.exe',
-      'C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe',
-      'C:\\Program Files (x86)\\OpenSSL-Win32\\bin\\openssl.exe'
-    );
-  } else {
-    candidates.push('/usr/bin/openssl', '/usr/local/bin/openssl');
-  }
-
-  return [...new Set(candidates.filter(Boolean))];
+function getOpenSslBin() {
+  return process.env.AFIP_OPENSSL_BIN || 'openssl';
 }
 
 async function signCms({ certPath, keyPath, traXml }) {
@@ -89,7 +76,7 @@ async function signCms({ certPath, keyPath, traXml }) {
   try {
     await fs.promises.writeFile(traPath, traXml, 'utf8');
 
-    const opensslArgs = [
+    await execFileAsync(getOpenSslBin(), [
       'cms',
       '-sign',
       '-in',
@@ -122,10 +109,17 @@ async function signCms({ certPath, keyPath, traXml }) {
       }
     }
 
-    throw new AppError(
-      `No se encontró OpenSSL en el servidor. Rutas probadas: ${candidates.join(', ')}. Instalá OpenSSL o configurá AFIP_OPENSSL_BIN con la ruta correcta. Error original: ${lastError?.message || 'ENOENT'}`,
-      500
-    );
+    const cmsDer = await fs.promises.readFile(cmsPath);
+    return cmsDer.toString('base64');
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      throw new AppError(
+        `No se encontró OpenSSL en el servidor. Instalá OpenSSL o configurá AFIP_OPENSSL_BIN con la ruta del binario. Error original: ${error.message}`,
+        500
+      );
+    }
+
+    throw new AppError(`No se pudo firmar el TRA de AFIP: ${error.message}`, 500);
   } finally {
     await Promise.allSettled([fs.promises.unlink(traPath), fs.promises.unlink(cmsPath)]);
   }
