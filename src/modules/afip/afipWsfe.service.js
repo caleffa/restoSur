@@ -91,7 +91,23 @@ async function signCms({ certPath, keyPath, traXml }) {
       'DER',
       '-out',
       cmsPath,
-    ]);
+    ];
+
+    const candidates = getOpenSslCandidates();
+    let lastError = null;
+
+    for (const bin of candidates) {
+      try {
+        await execFileAsync(bin, opensslArgs);
+        const cmsDer = await fs.promises.readFile(cmsPath);
+        return cmsDer.toString('base64');
+      } catch (error) {
+        if (error?.code !== 'ENOENT') {
+          throw new AppError(`No se pudo firmar el TRA de AFIP: ${error.message}`, 500);
+        }
+        lastError = error;
+      }
+    }
 
     const cmsDer = await fs.promises.readFile(cmsPath);
     return cmsDer.toString('base64');
