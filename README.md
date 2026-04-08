@@ -67,6 +67,15 @@ npm run dev
 
 Más detalle en `POSTMAN.md`.
 
+## AFIP homologación (CAE)
+- `wsMode=MOCK`: emite CAE local (sin AFIP) para desarrollo.
+- `wsMode=MANUAL`: exige `authorizationCode` manual para CAE.
+- `wsMode=AFIP`: usa WSAA/WSFEv1 (requiere `cuit`, `pointOfSale`, `environment`, `certPath`, `keyPath`).
+- Si al crear factura (`POST /api/invoices`) `authorizationType=CAE` llega sin `authorizationCode`, el backend:
+  - consulta AFIP solo en `wsMode=AFIP`,
+  - en `MOCK` genera CAE local,
+  - en `MANUAL` devuelve error de validación.
+
 ## Frontend POS (React + Vite)
 Se agregó una app frontend en `frontend/` con autenticación JWT, rutas protegidas por rol y gestión táctil de mesas.
 

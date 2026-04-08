@@ -3,16 +3,18 @@ const { query } = require('../../repositories/baseRepository');
 async function createInvoice(data) {
   const result = await query(
     `INSERT INTO invoices
-      (sale_id, branch_id, invoice_type, authorization_type, authorization_code, cae_expiration, caea_id, total, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (sale_id, branch_id, invoice_type, authorization_type, authorization_code, voucher_number, cae_expiration, caea_id, afip_response, total, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.saleId,
       data.branchId,
       data.invoiceType,
       data.authorizationType,
       data.authorizationCode,
+      data.voucherNumber || null,
       data.caeExpiration || null,
       data.caeaId || null,
+      data.afipResponse ? JSON.stringify(data.afipResponse) : null,
       data.total,
       data.createdBy,
     ]
@@ -23,6 +25,18 @@ async function createInvoice(data) {
 async function findBySaleId(saleId) {
   const rows = await query('SELECT * FROM invoices WHERE sale_id = ? LIMIT 1', [saleId]);
   return rows[0] || null;
+}
+
+async function getLastVoucherNumber(branchId, invoiceType) {
+  const rows = await query(
+    `SELECT MAX(voucher_number) AS last_voucher
+     FROM invoices
+     WHERE branch_id = ?
+       AND invoice_type = ?
+       AND authorization_type = 'CAE'`,
+    [branchId, invoiceType]
+  );
+  return Number(rows[0]?.last_voucher || 0);
 }
 
 async function listByBranch(branchId) {
@@ -38,4 +52,4 @@ async function listByBranch(branchId) {
   );
 }
 
-module.exports = { createInvoice, findBySaleId, listByBranch };
+module.exports = { createInvoice, findBySaleId, getLastVoucherNumber, listByBranch };
