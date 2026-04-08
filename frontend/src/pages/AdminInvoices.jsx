@@ -59,7 +59,8 @@ function AdminInvoices() {
         });
       }
       setCaeaList(caea || []);
-      setPaidSales((paid || []).filter((sale) => sale.status === 'PAGADA'));
+      const paidRows = Array.isArray(paid?.rows) ? paid.rows : Array.isArray(paid) ? paid : [];
+      setPaidSales(paidRows.filter((sale) => sale.status === 'PAGADA'));
       setInvoices(invoicesData || []);
     } catch {
       setError('No se pudo cargar el módulo de facturación.');
