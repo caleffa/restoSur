@@ -165,8 +165,8 @@ async function ensureAfipSchema() {
   await ensureColumn('invoices', 'afip_response', 'JSON NULL', 'caea_id');
 
   const wsModeColumnType = await getColumnType('afip_configs', 'ws_mode');
-  if (wsModeColumnType && !wsModeColumnType.includes(\"'AFIP'\")) {
-    await query(\"ALTER TABLE afip_configs MODIFY ws_mode ENUM('MOCK','MANUAL','AFIP') NOT NULL DEFAULT 'MOCK'\");
+  if (wsModeColumnType && !wsModeColumnType.includes("'AFIP'")) {
+    await query("ALTER TABLE afip_configs MODIFY ws_mode ENUM('MOCK','MANUAL','AFIP') NOT NULL DEFAULT 'MOCK'");
   }
 
   if (!(await foreignKeyExists('invoices', 'created_by'))) {
