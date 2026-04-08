@@ -148,6 +148,8 @@ async function ensureAfipSchema() {
   );
 
   await ensureColumn('invoices', 'created_by', 'INT NULL', 'total');
+  await ensureColumn('invoices', 'voucher_number', 'INT NULL', 'authorization_code');
+  await ensureColumn('invoices', 'afip_response', 'JSON NULL', 'caea_id');
 
   if (!(await foreignKeyExists('invoices', 'created_by'))) {
     await query(

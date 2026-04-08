@@ -11,7 +11,8 @@ Base URL: `http://localhost:3000/api`
 3. POST `/kitchen/send/:saleId`
 4. PATCH `/kitchen/:id` { `status`: `PENDIENTE|PREPARANDO|LISTO` }
 5. POST `/sales/:id/pay`
-6. POST `/invoices` { `saleId`, `invoiceType`, `authorizationType`, `authorizationCode|caeaId`, `caeExpiration?` }
+6. POST `/invoices` { `saleId`, `invoiceType`, `authorizationType`, `authorizationCode?|caeaId`, `caeExpiration?` }
+   - Si `authorizationType=CAE` y **no** se envía `authorizationCode`, el backend consulta AFIP (según config) para obtener CAE y número de comprobante.
 
 ## Caja
 - POST `/cash/open`

@@ -131,12 +131,6 @@ function AdminInvoices() {
       return;
     }
 
-    if (invoiceForm.authorizationType === 'CAE' && !invoiceForm.authorizationCode.trim()) {
-      setError('Ingresá el código CAE para emitir la factura.');
-      setMessage('');
-      return;
-    }
-
     if (invoiceForm.authorizationType === 'CAEA' && !invoiceForm.caeaId) {
       setError('Seleccioná un CAEA válido para emitir la factura.');
       setMessage('');
@@ -234,7 +228,7 @@ function AdminInvoices() {
             </select>
             {invoiceForm.authorizationType === 'CAE' ? (
               <>
-                <input placeholder="Código CAE" value={invoiceForm.authorizationCode} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, authorizationCode: e.target.value }))} />
+                <input placeholder="Código CAE (opcional: autogenerado AFIP)" value={invoiceForm.authorizationCode} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, authorizationCode: e.target.value }))} />
                 <input type="date" value={invoiceForm.caeExpiration} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, caeExpiration: e.target.value }))} />
               </>
             ) : (
@@ -256,7 +250,7 @@ function AdminInvoices() {
               <article key={invoice.id} className="admin-table-item">
                 <div>
                   <strong>Factura #{invoice.id} - Venta #{invoice.sale_id}</strong>
-                  <p>{invoice.invoice_type} | {invoice.authorization_type} | Código: {invoice.authorization_code}</p>
+                  <p>{invoice.invoice_type} | {invoice.authorization_type} | Código: {invoice.authorization_code} | Comprobante: {invoice.voucher_number || '-'}</p>
                   <p>Total: ${Number(invoice.total).toFixed(2)} | Mesa: {invoice.table_number || '-'} | Usuario: {invoice.created_by_name || '-'}</p>
                 </div>
               </article>
