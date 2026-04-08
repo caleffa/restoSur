@@ -22,6 +22,11 @@ const ADMIN_MODULES = [
     description: 'Reportes de ventas con filtros por fecha, estado y método de pago.',
     path: '/sales/management',
   },
+  {
+    title: 'Facturación AFIP',
+    description: 'Configuración AFIP, CAEA y emisión/consulta de facturas.',
+    path: '/admin/management/invoices',
+  },
 ];
 
 function AdminManagement() {

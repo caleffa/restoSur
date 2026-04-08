@@ -17,6 +17,7 @@ export const MENU_BY_ROLE = {
     { label: 'Caja', path: '/cash' },
     { label: 'Reportes Caja', path: '/cash/reports' },
     { label: 'Ventas', path: '/sales/management' },
+    { label: 'Facturación', path: '/admin/management/invoices' },
     { label: 'Comandas', path: '/comandas' },
   ],
   [ROLES.CAJERO]: [
@@ -25,6 +26,7 @@ export const MENU_BY_ROLE = {
     { label: 'Caja', path: '/cash' },
     { label: 'Reportes Caja', path: '/cash/reports' },
     { label: 'Ventas', path: '/sales/management' },
+    { label: 'Facturación', path: '/admin/management/invoices' },
     { label: 'Comandas', path: '/comandas' },
   ],
   [ROLES.MOZO]: [

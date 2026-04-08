@@ -35,6 +35,7 @@ async function ensureColumn(tableName, columnName, definition, afterColumn = nul
 }
 
 async function ensureCashSchema() {
+  await ensureAfipSchema();
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -122,6 +123,37 @@ async function ensureCashSchema() {
       `ALTER TABLE cash_movements
        ADD CONSTRAINT fk_cash_movements_branch
        FOREIGN KEY (branch_id) REFERENCES branches(id)`
+    );
+  }
+}
+
+
+
+async function ensureAfipSchema() {
+  await query(
+    `CREATE TABLE IF NOT EXISTS afip_configs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL UNIQUE,
+      cuit VARCHAR(20) NULL,
+      point_of_sale INT NOT NULL,
+      environment ENUM('HOMOLOGACION','PRODUCCION') NOT NULL DEFAULT 'HOMOLOGACION',
+      ws_mode ENUM('MOCK','MANUAL') NOT NULL DEFAULT 'MOCK',
+      cert_path VARCHAR(255) NULL,
+      key_path VARCHAR(255) NULL,
+      service_tax_id VARCHAR(20) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (branch_id) REFERENCES branches(id)
+    )`
+  );
+
+  await ensureColumn('invoices', 'created_by', 'INT NULL', 'total');
+
+  if (!(await foreignKeyExists('invoices', 'created_by'))) {
+    await query(
+      `ALTER TABLE invoices
+       ADD CONSTRAINT fk_invoices_created_by
+       FOREIGN KEY (created_by) REFERENCES users(id)`
     );
   }
 }

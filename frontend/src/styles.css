@@ -603,3 +603,9 @@ body {
   gap: 0.35rem;
   font-size: 0.92rem;
 }
+
+.success-text {
+  color: #15803d;
+  margin: 0;
+}
+

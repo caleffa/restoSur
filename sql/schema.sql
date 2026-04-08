@@ -166,6 +166,22 @@ CREATE TABLE kitchen_orders (
   FOREIGN KEY (branch_id) REFERENCES branches(id)
 );
 
+
+CREATE TABLE afip_configs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL UNIQUE,
+  cuit VARCHAR(20) NULL,
+  point_of_sale INT NOT NULL,
+  environment ENUM('HOMOLOGACION','PRODUCCION') NOT NULL DEFAULT 'HOMOLOGACION',
+  ws_mode ENUM('MOCK','MANUAL') NOT NULL DEFAULT 'MOCK',
+  cert_path VARCHAR(255) NULL,
+  key_path VARCHAR(255) NULL,
+  service_tax_id VARCHAR(20) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (branch_id) REFERENCES branches(id)
+);
+
 CREATE TABLE afip_caea (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL,
@@ -188,8 +204,10 @@ CREATE TABLE invoices (
   cae_expiration DATE NULL,
   caea_id INT NULL,
   total DECIMAL(12,2) NOT NULL,
+  created_by INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sale_id) REFERENCES sales(id),
   FOREIGN KEY (branch_id) REFERENCES branches(id),
-  FOREIGN KEY (caea_id) REFERENCES afip_caea(id)
+  FOREIGN KEY (caea_id) REFERENCES afip_caea(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
 );
