@@ -72,6 +72,23 @@ export async function deleteProduct(productId) {
 }
 
 
+
+// Stock
+export async function getStock(params = {}) {
+  const { data } = await http.get('/stock', { params });
+  return unwrap(data) || [];
+}
+
+export async function getStockMovements(params = {}) {
+  const { data } = await http.get('/stock/movements', { params });
+  return unwrap(data) || [];
+}
+
+export async function createStockMovement(payload) {
+  const { data } = await http.post('/stock/movement', payload);
+  return unwrap(data);
+}
+
 // AFIP + Facturación
 export async function getAfipConfig() {
   const { data } = await http.get('/afip/config');
