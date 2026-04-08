@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import {
   createInvoice,
@@ -30,6 +31,7 @@ const INITIAL_INVOICE_FORM = {
 };
 
 function AdminInvoices() {
+  const [searchParams] = useSearchParams();
   const [configForm, setConfigForm] = useState(INITIAL_AFIP_CONFIG);
   const [invoiceForm, setInvoiceForm] = useState(INITIAL_INVOICE_FORM);
   const [caeaList, setCaeaList] = useState([]);
@@ -74,6 +76,14 @@ function AdminInvoices() {
   const invoicedSaleIds = useMemo(() => new Set(invoices.map((invoice) => Number(invoice.sale_id))), [invoices]);
 
   const createInvoiceOptions = paidSales.filter((sale) => !invoicedSaleIds.has(Number(sale.id)));
+
+  useEffect(() => {
+    const saleIdFromQuery = Number(searchParams.get('saleId'));
+    if (!saleIdFromQuery) return;
+    const existsInOptions = createInvoiceOptions.some((sale) => Number(sale.id) === saleIdFromQuery);
+    if (!existsInOptions) return;
+    setInvoiceForm((prev) => ({ ...prev, saleId: String(saleIdFromQuery) }));
+  }, [searchParams, createInvoiceOptions]);
 
   const onSaveConfig = async (event) => {
     event.preventDefault();

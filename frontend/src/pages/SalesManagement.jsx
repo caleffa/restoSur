@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { getSalesReport } from '../services/salesService';
+import { getInvoices } from '../services/adminService';
 
 const initialFilters = {
   from: '',
@@ -20,16 +22,22 @@ function formatDate(value) {
 }
 
 function SalesManagement() {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState(initialFilters);
   const [report, setReport] = useState({ totals: {}, rows: [] });
+  const [invoicedSaleIds, setInvoicedSaleIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async (nextFilters = filters) => {
     setLoading(true);
     try {
-      const data = await getSalesReport(nextFilters);
+      const [data, invoices] = await Promise.all([
+        getSalesReport(nextFilters),
+        getInvoices(),
+      ]);
       setReport(data);
+      setInvoicedSaleIds(new Set((invoices || []).map((invoice) => Number(invoice.sale_id))));
       setError('');
     } catch {
       setError('No se pudo cargar el reporte de ventas.');
@@ -158,6 +166,25 @@ function SalesManagement() {
             { key: 'paymentMethod', label: 'Pago', accessor: (row) => row.paymentMethod, sortable: true },
             { key: 'status', label: 'Estado', accessor: (row) => row.status, sortable: true },
             { key: 'total', label: 'Total', accessor: (row) => Number(row.total || 0), sortable: true, render: (row) => formatAmount(row.total) },
+            {
+              key: 'actions',
+              label: 'Acciones',
+              accessor: () => '',
+              sortable: false,
+              render: (row) => {
+                const canInvoice = row.status === 'PAGADA' && !invoicedSaleIds.has(Number(row.id));
+                if (!canInvoice) return '-';
+                return (
+                  <button
+                    type="button"
+                    className="touch-btn btn-primary"
+                    onClick={() => navigate(`/admin/management/invoices?saleId=${row.id}`)}
+                  >
+                    Facturar
+                  </button>
+                );
+              },
+            },
           ]}
         />
       </main>
