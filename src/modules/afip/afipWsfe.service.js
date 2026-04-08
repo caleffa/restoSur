@@ -64,6 +64,10 @@ function formatDateYYYYMMDD(date = new Date()) {
   return `${year}${month}${day}`;
 }
 
+function getOpenSslBin() {
+  return process.env.AFIP_OPENSSL_BIN || 'openssl';
+}
+
 async function signCms({ certPath, keyPath, traXml }) {
   const tempBase = path.join(os.tmpdir(), `restosur-afip-${crypto.randomUUID()}`);
   const traPath = `${tempBase}.xml`;
@@ -72,7 +76,7 @@ async function signCms({ certPath, keyPath, traXml }) {
   try {
     await fs.promises.writeFile(traPath, traXml, 'utf8');
 
-    await execFileAsync('openssl', [
+    await execFileAsync(getOpenSslBin(), [
       'cms',
       '-sign',
       '-in',
@@ -92,6 +96,13 @@ async function signCms({ certPath, keyPath, traXml }) {
     const cmsDer = await fs.promises.readFile(cmsPath);
     return cmsDer.toString('base64');
   } catch (error) {
+    if (error?.code === 'ENOENT') {
+      throw new AppError(
+        `No se encontró OpenSSL en el servidor. Instalá OpenSSL o configurá AFIP_OPENSSL_BIN con la ruta del binario. Error original: ${error.message}`,
+        500
+      );
+    }
+
     throw new AppError(`No se pudo firmar el TRA de AFIP: ${error.message}`, 500);
   } finally {
     await Promise.allSettled([fs.promises.unlink(traPath), fs.promises.unlink(cmsPath)]);
