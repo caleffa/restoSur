@@ -196,6 +196,14 @@ async function callSoap(url, action, body, timeoutMs = 10000) {
     }
 
     return text;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new AppError(
+        `Timeout llamando a AFIP (${timeoutMs}ms). Reintentá o incrementá AFIP_WS_TIMEOUT_MS`,
+        504
+      );
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }

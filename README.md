@@ -76,6 +76,7 @@ Más detalle en `POSTMAN.md`.
   - en `MOCK` genera CAE local,
   - en `MANUAL` devuelve error de validación.
 - Para emitir `CAE` automático, configurar en `/afip/config`: `cuit`, `pointOfSale`, `environment=HOMOLOGACION` y rutas `certPath`/`keyPath`.
+- Si AFIP demora en responder, ajustar `AFIP_WS_TIMEOUT_MS` (default `10000`) para evitar timeouts.
 - Si al crear factura (`POST /api/invoices`) `authorizationType=CAE` llega sin `authorizationCode`, el backend solicita CAE a AFIP WSFEv1 y guarda también el número de comprobante (`voucher_number`).
 
 ## Frontend POS (React + Vite)
