@@ -392,11 +392,9 @@ function POS() {
           </style>
         </head>
         <body>
-          <h1>TICKET ECP/POS</h1>
-          <h2>Comprobante Fiscal</h2>
-          <p>Emisor: ${issuerName}</p>
-          <p>CUIT emisor: ${issuerCuit || '-'}</p>
-          <p>Domicilio comercial: ${issuerAddress}</p>
+          <h1>${issuerName}</h1>
+          <h2>${issuerAddress}</h2>
+          <p>CUIT: ${issuerCuit || '-'}</p>
           <p>Fecha: ${issueDate}</p>
           <p>Venta: #${saleData?.id || '-'}</p>
           <p>Mesa: ${saleData?.tableId || saleData?.table_id || '-'}</p>
@@ -417,7 +415,6 @@ function POS() {
           <div class="line"></div>
           <div class="qr-wrap">
             <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
-            <p class="small">QR fiscal AFIP: ${qrVerificationUrl}</p>
           </div>
           <p>Gracias por su compra.</p>
         </body>
