@@ -176,37 +176,78 @@ function buildTraXml(service = 'wsfe') {
 }
 
 async function callSoap(url, action, body, timeoutMs = 10000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
-        SOAPAction: action,
-      },
-      body: buildSoapEnvelope(body),
-      signal: controller.signal,
-    });
+  const maxAttempts = 2;
+  let lastError = null;
 
-    const text = await response.text();
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          SOAPAction: action,
+        },
+        body: buildSoapEnvelope(body),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      throw new AppError(`Error SOAP AFIP (${response.status}): ${text.slice(0, 250)}`, 502);
+      const text = await response.text();
+
+      if (!response.ok) {
+        throw new AppError(`Error SOAP AFIP (${response.status}): ${text.slice(0, 250)}`, 502);
+      }
+
+      return text;
+    } catch (error) {
+      lastError = error;
+      const isTimeout = error?.name === 'AbortError';
+      if (!isTimeout || attempt === maxAttempts) {
+        if (isTimeout) {
+          throw new AppError(
+            `Timeout llamando a AFIP (${timeoutMs}ms). Reintentá o incrementá AFIP_WS_TIMEOUT_MS`,
+            504
+          );
+        }
+        throw error;
+      }
+    } finally {
+      clearTimeout(timer);
     }
-
-    return text;
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      throw new AppError(
-        `Timeout llamando a AFIP (${timeoutMs}ms). Reintentá o incrementá AFIP_WS_TIMEOUT_MS`,
-        504
-      );
-    }
-    throw error;
-  } finally {
-    clearTimeout(timer);
   }
+
+  throw lastError;
+}
+
+function normalizeAmount(value) {
+  return Number(Number(value).toFixed(2));
+}
+
+function buildTaxData(amount, invoiceType) {
+  // Para comprobantes A/B el WSFE requiere discriminar IVA si ImpNeto > 0.
+  if (invoiceType === 'A' || invoiceType === 'B') {
+    const net = normalizeAmount(amount / 1.21);
+    const iva = normalizeAmount(amount - net);
+    return {
+      impNeto: net,
+      impIva: iva,
+      ivaDetailsXml: `<Iva>
+            <AlicIva>
+              <Id>5</Id>
+              <BaseImp>${net.toFixed(2)}</BaseImp>
+              <Importe>${iva.toFixed(2)}</Importe>
+            </AlicIva>
+          </Iva>`,
+    };
+  }
+
+  // En factura C no se discrimina IVA.
+  return {
+    impNeto: amount,
+    impIva: 0,
+    ivaDetailsXml: '',
+  };
 }
 
 async function getWsaaCredentials(config, timeoutMs) {
@@ -305,6 +346,7 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
     const docTipo = 99;
     const docNro = 0;
     const condicionIvaReceptorId = getCondicionIvaReceptor({ invoiceType, docTipo, docNro });
+    const taxData = buildTaxData(amount, invoiceType);
 
     const body = `<FECAESolicitar xmlns="http://ar.gov.afip.dif.FEV1/">
     <Auth>
@@ -329,12 +371,13 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
           <CbteFch>${issueDate}</CbteFch>
           <ImpTotal>${amount.toFixed(2)}</ImpTotal>
           <ImpTotConc>0.00</ImpTotConc>
-          <ImpNeto>${amount.toFixed(2)}</ImpNeto>
+          <ImpNeto>${taxData.impNeto.toFixed(2)}</ImpNeto>
           <ImpOpEx>0.00</ImpOpEx>
-          <ImpIVA>0.00</ImpIVA>
+          <ImpIVA>${taxData.impIva.toFixed(2)}</ImpIVA>
           <ImpTrib>0.00</ImpTrib>
           <MonId>PES</MonId>
           <MonCotiz>1.00</MonCotiz>
+          ${taxData.ivaDetailsXml}
         </FECAEDetRequest>
       </FeDetReq>
     </FeCAEReq>
