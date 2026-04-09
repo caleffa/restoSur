@@ -1,3 +1,5 @@
+import { formatCurrency } from '../utils/formatters';
+
 function PrintTicket({ ticket }) {
   if (!ticket) return null;
 
@@ -20,12 +22,12 @@ function PrintTicket({ ticket }) {
           <p>Apertura: ${ticket.openedAt}</p>
           <p>Cierre: ${ticket.closedAt}</p>
           <div class="line"></div>
-          <p>Ventas: $${ticket.sales.toFixed(2)}</p>
-          <p>Ingresos: $${ticket.incomes.toFixed(2)}</p>
-          <p>Egresos: $${ticket.expenses.toFixed(2)}</p>
-          <p>Saldo esperado: $${ticket.expected.toFixed(2)}</p>
-          <p>Saldo real: $${ticket.real.toFixed(2)}</p>
-          <p>Diferencia: $${ticket.difference.toFixed(2)}</p>
+          <p>Ventas: ${formatCurrency(ticket.sales)}</p>
+          <p>Ingresos: ${formatCurrency(ticket.incomes)}</p>
+          <p>Egresos: ${formatCurrency(ticket.expenses)}</p>
+          <p>Saldo esperado: ${formatCurrency(ticket.expected)}</p>
+          <p>Saldo real: ${formatCurrency(ticket.real)}</p>
+          <p>Diferencia: ${formatCurrency(ticket.difference)}</p>
         </body>
       </html>`;
 

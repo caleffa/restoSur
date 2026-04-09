@@ -24,6 +24,7 @@ import {
   updateTableStatus,
   updateSaleItem,
 } from '../services/posService';
+import { formatCurrency } from '../utils/formatters';
 
 const KITCHEN_CATEGORIES = new Set([4, 5, 6, 7, 8]);
 const AFIP_QR_VERIFY_URL = 'https://www.afip.gob.ar/fe/qr/';
@@ -366,8 +367,8 @@ function POS() {
         <tr>
           <td>${item.productName}</td>
           <td style="text-align:center;">${Number(item.quantity)}</td>
-          <td style="text-align:right;">$${Number(item.unitPrice).toFixed(2)}</td>
-          <td style="text-align:right;">$${(Number(item.quantity) * Number(item.unitPrice)).toFixed(2)}</td>
+          <td style="text-align:right;">${formatCurrency(item.unitPrice)}</td>
+          <td style="text-align:right;">${formatCurrency(Number(item.quantity) * Number(item.unitPrice))}</td>
         </tr>
       `)
       .join('');
@@ -411,8 +412,8 @@ function POS() {
             <tbody>${itemsHtml}</tbody>
           </table>
           <div class="line"></div>
-          ${taxBreakdown.map((line) => `<p>${line.label} | Neto: $${line.net.toFixed(2)} | Impuesto: $${line.iva.toFixed(2)}</p>`).join('')}
-          <p class="right"><strong>TOTAL: $${ticketTotal.toFixed(2)}</strong></p>
+          ${taxBreakdown.map((line) => `<p>${line.label} | Neto: ${formatCurrency(line.net)} | Impuesto: ${formatCurrency(line.iva)}</p>`).join('')}
+          <p class="right"><strong>TOTAL: ${formatCurrency(ticketTotal)}</strong></p>
           <div class="line"></div>
           <div class="qr-wrap">
             <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
@@ -502,7 +503,7 @@ function POS() {
                 <span className={`badge ${tableStatus === 'CUENTA_PEDIDA' ? 'text-bg-warning' : 'text-bg-danger'}`}>
                   {tableStatus}
                 </span>
-                <span className="fw-semibold">Total acumulado: ${totals.total.toFixed(2)}</span>
+                <span className="fw-semibold">Total acumulado: {formatCurrency(totals.total)}</span>
                 {import.meta.env.VITE_KITCHEN_WS_URL && (
                   <small className={wsConnected ? 'text-success' : 'text-muted'}>
                     Cocina WS: {wsConnected ? 'conectado' : 'sin conexión'}
@@ -542,8 +543,8 @@ function POS() {
 
         <section className="card shadow-sm">
           <div className="card-body d-flex justify-content-end gap-4 fs-5 fw-semibold flex-wrap">
-            <span>Subtotal: ${totals.subtotal.toFixed(2)}</span>
-            <span>Total: ${totals.total.toFixed(2)}</span>
+            <span>Subtotal: {formatCurrency(totals.subtotal)}</span>
+            <span>Total: {formatCurrency(totals.total)}</span>
           </div>
         </section>
       </main>

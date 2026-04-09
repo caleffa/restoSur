@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Modal from './Modal';
+import { formatCurrency } from '../utils/formatters';
 
 function CashCloseModal({ data, onClose, onConfirm, loading = false }) {
   const [realBalance, setRealBalance] = useState('');
@@ -40,14 +41,14 @@ function CashCloseModal({ data, onClose, onConfirm, loading = false }) {
     >
       <div className="cash-close-grid">
         {error && <p className="error-text">{error}</p>}
-        <p><strong>Total ventas:</strong> ${Number(data?.totals?.sales || 0).toFixed(2)}</p>
-        <p><strong>Ingresos manuales:</strong> ${Number(data?.totals?.incomes || 0).toFixed(2)}</p>
-        <p><strong>Egresos:</strong> ${Number(data?.totals?.expenses || 0).toFixed(2)}</p>
-        <p><strong>Saldo esperado:</strong> ${expected.toFixed(2)}</p>
+        <p><strong>Total ventas:</strong> {formatCurrency(data?.totals?.sales || 0)}</p>
+        <p><strong>Ingresos manuales:</strong> {formatCurrency(data?.totals?.incomes || 0)}</p>
+        <p><strong>Egresos:</strong> {formatCurrency(data?.totals?.expenses || 0)}</p>
+        <p><strong>Saldo esperado:</strong> {formatCurrency(expected)}</p>
         <label>Saldo real contado
           <input type="number" min="0" step="0.01" value={realBalance} onChange={(e) => setRealBalance(e.target.value)} />
         </label>
-        <p><strong>Diferencia:</strong> <span className={difference < 0 ? 'text-danger' : 'text-success'}>${difference.toFixed(2)}</span></p>
+        <p><strong>Diferencia:</strong> <span className={difference < 0 ? 'text-danger' : 'text-success'}>{formatCurrency(difference)}</span></p>
         <label>Observación de cierre
           <textarea rows="2" value={observation} onChange={(e) => setObservation(e.target.value)} />
         </label>

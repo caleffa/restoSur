@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatCurrency } from '../../utils/formatters';
 
 const statusClassMap = {
   PENDIENTE: 'text-bg-warning',
@@ -27,7 +28,7 @@ function OrderTable({ items, onChangeQuantity, onDelete, disabled = false }) {
         {disabled && <p className="text-warning mb-3">La mesa está con cuenta pedida. Edición bloqueada.</p>}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Consumos</h5>
-          <span className="fw-semibold">Total: ${total.toFixed(2)}</span>
+          <span className="fw-semibold">Total: {formatCurrency(total)}</span>
         </div>
 
         <div className="table-responsive">
@@ -56,7 +57,7 @@ function OrderTable({ items, onChangeQuantity, onDelete, disabled = false }) {
                 return (
                   <tr key={item.id}>
                     <td className="fw-semibold">{item.productName}</td>
-                    <td>${Number(item.unitPrice).toFixed(2)}</td>
+                    <td>{formatCurrency(item.unitPrice)}</td>
                     <td style={{ maxWidth: 140 }}>
                       {isEditing ? (
                         <input
@@ -71,7 +72,7 @@ function OrderTable({ items, onChangeQuantity, onDelete, disabled = false }) {
                         <span>{item.quantity}</span>
                       )}
                     </td>
-                    <td>${subtotal.toFixed(2)}</td>
+                    <td>{formatCurrency(subtotal)}</td>
                     <td>
                       <span className={`badge ${statusClassMap[item.kitchenStatus] || 'text-bg-secondary'}`}>
                         {item.kitchenStatus}

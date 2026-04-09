@@ -10,6 +10,7 @@ import {
   requestCaea,
   saveAfipConfig,
 } from '../services/adminService';
+import { formatCurrency } from '../utils/formatters';
 
 const INITIAL_AFIP_CONFIG = {
   cuit: '',
@@ -228,7 +229,7 @@ function AdminInvoices() {
             <select value={invoiceForm.saleId} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, saleId: e.target.value }))}>
               <option value="">Venta pagada</option>
               {createInvoiceOptions.map((sale) => (
-                <option key={sale.id} value={sale.id}>Venta #{sale.id} - Mesa {sale.tableNumber || sale.table_number} - ${Number(sale.total).toFixed(2)}</option>
+                <option key={sale.id} value={sale.id}>Venta #{sale.id} - Mesa {sale.tableNumber || sale.table_number} - {formatCurrency(sale.total)}</option>
               ))}
             </select>
             <select value={invoiceForm.invoiceType} onChange={(e) => setInvoiceForm((prev) => ({ ...prev, invoiceType: e.target.value }))}>
@@ -265,7 +266,7 @@ function AdminInvoices() {
                 <div>
                   <strong>Factura #{invoice.id} - Venta #{invoice.sale_id}</strong>
                   <p>{invoice.invoice_type} | {invoice.authorization_type} | Código: {invoice.authorization_code} | Comprobante: {invoice.voucher_number || '-'}</p>
-                  <p>Total: ${Number(invoice.total).toFixed(2)} | Mesa: {invoice.table_number || '-'} | Usuario: {invoice.created_by_name || '-'}</p>
+                  <p>Total: {formatCurrency(invoice.total)} | Mesa: {invoice.table_number || '-'} | Usuario: {invoice.created_by_name || '-'}</p>
                 </div>
               </article>
             ))}

@@ -9,6 +9,7 @@ import {
   getProducts,
   updateProduct,
 } from '../services/adminService';
+import { formatCurrency } from '../utils/formatters';
 
 const initialProduct = { name: '', price: '', categoryId: '', hasStock: true, active: true };
 
@@ -142,7 +143,7 @@ function AdminProducts() {
           columns={[
             { key: 'name', label: 'Nombre', accessor: (row) => row.name, sortable: true },
             { key: 'category', label: 'Categoría', accessor: (row) => categoryMap[Number(row.category_id ?? row.categoryId)] || '-', sortable: true },
-            { key: 'price', label: 'Precio', accessor: (row) => Number(row.price).toFixed(2), sortable: true },
+            { key: 'price', label: 'Precio', accessor: (row) => formatCurrency(row.price), sortable: true },
             { key: 'stock', label: 'Stock', accessor: (row) => ((row.has_stock ?? row.hasStock) ? 'Sí' : 'No') },
             { key: 'status', label: 'Estado', accessor: (row) => ((row.active === 1 || row.active === true) ? 'Activo' : 'Inactivo') },
             {

@@ -3,6 +3,7 @@ const CURRENCY = new Intl.NumberFormat('es-AR', {
   currency: 'ARS',
   maximumFractionDigits: 0,
 });
+const INTEGER = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
 
 function TopProducts({ products = [], loading }) {
   return (
@@ -22,7 +23,7 @@ function TopProducts({ products = [], loading }) {
             <li key={product.id} className="list-row-split">
               <div>
                 <span className="fw-semibold d-block">{product.name}</span>
-                <small className="text-muted">{product.quantity} unidades</small>
+                <small className="text-muted">{INTEGER.format(product.quantity || 0)} unidades</small>
               </div>
               <span>{CURRENCY.format(product.total)}</span>
             </li>

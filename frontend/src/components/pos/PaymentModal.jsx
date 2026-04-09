@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Modal from '../Modal';
+import { formatCurrency } from '../../utils/formatters';
 
 const METHODS = [
   { value: 'EFECTIVO', label: 'Efectivo' },
@@ -23,7 +24,7 @@ function PaymentModal({
   const [authorizationType, setAuthorizationType] = useState('CAE');
   const [caeaId, setCaeaId] = useState('');
 
-  const formattedTotal = useMemo(() => Number(total || 0).toFixed(2), [total]);
+  const formattedTotal = useMemo(() => formatCurrency(total || 0), [total]);
 
   return (
     <Modal
@@ -54,7 +55,7 @@ function PaymentModal({
         {!hasItems && <p className="text-danger mb-0">No se puede cobrar una venta sin productos.</p>}
 
         <p className="mb-0">
-          Total a cobrar: <strong>${formattedTotal}</strong>
+          Total a cobrar: <strong>{formattedTotal}</strong>
         </p>
 
         <div>
