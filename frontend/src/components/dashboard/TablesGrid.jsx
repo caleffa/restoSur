@@ -38,6 +38,7 @@ function TablesGrid({ tables = [], loading, busyTableId, onTableClick }) {
               disabled={busyTableId === table.id}
             >
               <span className="fw-semibold">{table.name}</span>
+              <span className="small">Capacidad: {table.capacity} personas</span>
               <span className="small">{table.status}</span>
               <span className="small mt-2">{busyTableId === table.id ? 'Procesando...' : getActionLabel(table.status)}</span>
             </button>

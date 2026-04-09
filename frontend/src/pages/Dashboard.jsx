@@ -56,6 +56,7 @@ function Dashboard() {
         (Array.isArray(tablesData) ? tablesData : []).map((table) => ({
           ...table,
           name: table.name || table.table_number || `Mesa ${table.id}`,
+          capacity: Number(table.capacity) > 0 ? Number(table.capacity) : 1,
         }))
       );
       setOpenSales(salesData);

@@ -14,9 +14,10 @@ function TableCard({ table, onClick, disabled = false }) {
       disabled={disabled}
       className={cardClass}
       onClick={() => onClick(table)}
-      aria-label={`Mesa ${table.name} estado ${table.status}`}
+      aria-label={`Mesa ${table.name} para ${table.capacity} personas, estado ${table.status}`}
     >
       <strong>{table.name}</strong>
+      <span>Capacidad: {table.capacity} personas</span>
       <span>{table.status}</span>
     </button>
   );
