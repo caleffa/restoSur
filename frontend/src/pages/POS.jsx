@@ -15,9 +15,12 @@ import {
   deleteSaleItem,
   getProducts,
   getSaleByTable,
+  getAfipConfig,
+  getAfipCaea,
   listKitchenOrders,
   paySale,
   persistLocalSale,
+  createInvoice,
   updateTableStatus,
   updateSaleItem,
 } from '../services/posService';
@@ -82,8 +85,11 @@ function POS() {
   const [error, setError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [wsConnected, setWsConnected] = useState(false);
+  const [afipConfig, setAfipConfig] = useState(null);
+  const [caeaList, setCaeaList] = useState([]);
 
   const canEditWhenBillRequested = user?.role === 'ADMIN';
+  const canEmitFiscalTicket = user?.role === 'ADMIN' || user?.role === 'CAJERO';
   const tableStatus = sale?.tableStatus || 'OCUPADA';
   const isBillRequested = tableStatus === 'CUENTA_PEDIDA';
   const canEdit = !isBillRequested || canEditWhenBillRequested;
@@ -111,6 +117,21 @@ function POS() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!canEmitFiscalTicket) return;
+
+    Promise.allSettled([getAfipConfig(), getAfipCaea()])
+      .then(([configResult, caeaResult]) => {
+        if (configResult.status === 'fulfilled') {
+          setAfipConfig(configResult.value || null);
+        }
+        if (caeaResult.status === 'fulfilled') {
+          setCaeaList(Array.isArray(caeaResult.value) ? caeaResult.value : []);
+        }
+      })
+      .catch(() => {});
+  }, [canEmitFiscalTicket]);
 
   useEffect(() => {
     if (!toastMessage) return undefined;
@@ -268,10 +289,81 @@ function POS() {
     }
   };
 
-  const handleCloseSale = async (paymentMethod) => {
+  const printFiscalTicket = useCallback(({ saleData, invoiceData, paymentMethod }) => {
+    const issueDate = new Date().toLocaleString('es-AR');
+    const authorizationLabel = invoiceData?.authorizationType === 'CAEA' ? 'CAEA' : 'CAE';
+    const authorizationCode = invoiceData?.authorizationCode || '-';
+    const voucherNumber = invoiceData?.voucherNumber ? String(invoiceData.voucherNumber).padStart(8, '0') : '-';
+    const pointOfSale = afipConfig?.point_of_sale || afipConfig?.pointOfSale || '-';
+    const caeExpiration = invoiceData?.caeExpiration ? String(invoiceData.caeExpiration).slice(0, 10) : '-';
+
+    const itemsHtml = (saleData?.items || [])
+      .map((item) => `
+        <tr>
+          <td>${item.productName}</td>
+          <td style="text-align:center;">${Number(item.quantity)}</td>
+          <td style="text-align:right;">$${Number(item.unitPrice).toFixed(2)}</td>
+          <td style="text-align:right;">$${(Number(item.quantity) * Number(item.unitPrice)).toFixed(2)}</td>
+        </tr>
+      `)
+      .join('');
+
+    const html = `
+      <html>
+        <head>
+          <title>Ticket Fiscal</title>
+          <style>
+            body{font-family: monospace; width:80mm; margin:0 auto; padding:6px;}
+            h1,h2{margin:0; text-align:center;}
+            h1{font-size:14px;} h2{font-size:12px; margin-bottom:6px;}
+            p{margin:3px 0; font-size:11px;}
+            table{width:100%; border-collapse:collapse; font-size:10px;}
+            th,td{padding:2px 0;}
+            th{text-align:left; border-bottom:1px dashed #333;}
+            .line{border-top:1px dashed #333; margin:6px 0;}
+            .right{text-align:right;}
+          </style>
+        </head>
+        <body>
+          <h1>TICKET ECP/POS</h1>
+          <h2>Comprobante Fiscal</h2>
+          <p>Fecha: ${issueDate}</p>
+          <p>Venta: #${saleData?.id || '-'}</p>
+          <p>Mesa: ${saleData?.tableId || saleData?.table_id || '-'}</p>
+          <p>Comprobante: ${invoiceData?.invoiceType || '-'} | PV ${pointOfSale} - N° ${voucherNumber}</p>
+          <p>${authorizationLabel}: ${authorizationCode}</p>
+          <p>Vto ${authorizationLabel}: ${caeExpiration}</p>
+          <p>Pago: ${paymentMethod}</p>
+          <div class="line"></div>
+          <table>
+            <thead>
+              <tr><th>Item</th><th>Cant.</th><th>P.Unit</th><th class="right">Subtotal</th></tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div class="line"></div>
+          <p class="right"><strong>TOTAL: $${Number(saleData?.total || 0).toFixed(2)}</strong></p>
+          <p>Gracias por su compra.</p>
+        </body>
+      </html>`;
+
+    const printWindow = window.open('', '_blank', 'width=430,height=720');
+    if (!printWindow) return;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }, [afipConfig]);
+
+  const handleCloseSale = useCallback(async ({ paymentMethod, emitFiscalTicket, invoiceType, authorizationType, caeaId }) => {
     if (!sale || saving) return;
     if (!sale?.items?.length) {
       setError('No se puede cobrar una venta sin productos.');
+      return;
+    }
+
+    if (emitFiscalTicket && authorizationType === 'CAEA' && !caeaId) {
+      setError('Para emitir ticket con CAEA debés seleccionar un CAEA válido.');
       return;
     }
 
@@ -279,16 +371,38 @@ function POS() {
       setSaving(true);
       await paySale(sale.id, { paymentMethod });
       await closeSale(sale.id);
+
+      let ticketMessage = 'Pago realizado correctamente';
+      if (emitFiscalTicket) {
+        const invoice = await createInvoice({
+          saleId: Number(sale.id),
+          invoiceType,
+          authorizationType,
+          caeaId: authorizationType === 'CAEA' ? Number(caeaId) : undefined,
+        });
+
+        printFiscalTicket({
+          saleData: {
+            ...sale,
+            total: totals.total,
+          },
+          invoiceData: invoice,
+          paymentMethod,
+        });
+        ticketMessage = `Pago realizado y ticket ${invoice.authorizationType} emitido`;
+      }
+
       clearLocalPOS(tableId);
       setShowPaymentModal(false);
-      setToastMessage('Pago realizado correctamente');
+      setToastMessage(ticketMessage);
       navigate('/dashboard');
-    } catch {
-      setError('No se pudo cerrar la cuenta.');
+    } catch (err) {
+      const apiMessage = err?.response?.data?.message || err?.message;
+      setError(apiMessage || 'No se pudo cerrar la cuenta.');
     } finally {
       setSaving(false);
     }
-  };
+  }, [sale, saving, tableId, navigate, totals.total, printFiscalTicket]);
 
   if (loading) {
     return (
@@ -364,6 +478,8 @@ function POS() {
           total={totals.total}
           hasItems={(sale?.items || []).length > 0}
           loading={saving}
+          caeaOptions={caeaList}
+          canEmitFiscalTicket={canEmitFiscalTicket}
           onClose={() => !saving && setShowPaymentModal(false)}
           onConfirm={handleCloseSale}
         />
