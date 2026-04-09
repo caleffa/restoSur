@@ -114,6 +114,21 @@ export async function paySale(saleId, payload = {}) {
   return unwrap(data);
 }
 
+export async function createInvoice(payload) {
+  const { data } = await http.post('/invoices', payload);
+  return unwrap(data);
+}
+
+export async function getAfipConfig() {
+  const { data } = await http.get('/afip/config');
+  return unwrap(data);
+}
+
+export async function getAfipCaea() {
+  const { data } = await http.get('/afip/caea');
+  return unwrap(data) || [];
+}
+
 export async function closeSale(saleId) {
   const { data } = await http.post(`/sales/${saleId}/close`);
   return unwrap(data);
