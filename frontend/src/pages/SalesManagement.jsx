@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { getSalesReport } from '../services/salesService';
 import { getInvoices } from '../services/adminService';
+import { formatCurrency, formatNumber } from '../utils/formatters';
 
 const initialFilters = {
   from: '',
@@ -13,7 +14,7 @@ const initialFilters = {
 };
 
 function formatAmount(value) {
-  return `$${Number(value || 0).toFixed(2)}`;
+  return formatCurrency(value || 0);
 }
 
 function formatDate(value) {
@@ -134,11 +135,11 @@ function SalesManagement() {
         {error && <p className="error-text">{error}</p>}
 
         <section className="cash-info-grid">
-          <article className="dashboard-card"><p className="kpi-label">Tickets</p><p className="kpi-value">{report.totals?.tickets || 0}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Tickets</p><p className="kpi-value">{formatNumber(report.totals?.tickets || 0, 0)}</p></article>
           <article className="dashboard-card"><p className="kpi-label">Total vendido</p><p className="kpi-value">{formatAmount(report.totals?.totalAmount)}</p></article>
           <article className="dashboard-card"><p className="kpi-label">Ventas pagadas</p><p className="kpi-value">{formatAmount(report.totals?.totalPaid)}</p></article>
           <article className="dashboard-card"><p className="kpi-label">Promedio ticket</p><p className="kpi-value">{formatAmount(report.totals?.averageTicket)}</p></article>
-          <article className="dashboard-card"><p className="kpi-label">Ítems vendidos</p><p className="kpi-value">{Number(report.totals?.totalItems || 0).toFixed(2)}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Ítems vendidos</p><p className="kpi-value">{formatNumber(report.totals?.totalItems || 0, 2)}</p></article>
         </section>
 
         <SimpleDataTable

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatCurrency } from '../../utils/formatters';
 
 function ProductSelector({ products, onAdd, disabled = false }) {
   const [search, setSearch] = useState('');
@@ -73,7 +74,7 @@ function ProductSelector({ products, onAdd, disabled = false }) {
               <option value="">Seleccionar producto...</option>
               {filteredProducts.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.name} · ${Number(product.price).toFixed(2)}
+                  {product.name} · {formatCurrency(product.price)}
                 </option>
               ))}
             </select>

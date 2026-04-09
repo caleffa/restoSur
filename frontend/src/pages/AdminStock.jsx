@@ -7,6 +7,7 @@ import {
   getStock,
   getStockMovements,
 } from '../services/adminService';
+import { formatNumber } from '../utils/formatters';
 
 const INITIAL_FORM = {
   productId: '',
@@ -146,7 +147,7 @@ function AdminStock() {
             {
               key: 'quantity',
               label: 'Cantidad',
-              accessor: (row) => Number(row.quantity || 0).toFixed(3),
+              accessor: (row) => formatNumber(row.quantity || 0, 3),
               sortable: true,
             },
             {
@@ -165,7 +166,7 @@ function AdminStock() {
             { key: 'created', label: 'Fecha', accessor: (row) => new Date(row.created_at).toLocaleString(), sortable: true },
             { key: 'product', label: 'Producto', accessor: (row) => row.product_name, sortable: true },
             { key: 'type', label: 'Tipo', accessor: (row) => row.type, sortable: true },
-            { key: 'qty', label: 'Cantidad', accessor: (row) => Number(row.quantity).toFixed(3), sortable: true },
+            { key: 'qty', label: 'Cantidad', accessor: (row) => formatNumber(row.quantity, 3), sortable: true },
             { key: 'user', label: 'Usuario', accessor: (row) => row.user_name || '-', sortable: true },
             { key: 'reason', label: 'Motivo', accessor: (row) => row.reason || '-' },
             {
@@ -173,7 +174,7 @@ function AdminStock() {
               label: 'Stock actual',
               accessor: (row) => {
                 const qty = stockByProductId[Number(row.product_id)];
-                return qty === undefined ? '-' : qty.toFixed(3);
+                return qty === undefined ? '-' : formatNumber(qty, 3);
               },
             },
           ]}

@@ -3,6 +3,7 @@ const CURRENCY = new Intl.NumberFormat('es-AR', {
   currency: 'ARS',
   maximumFractionDigits: 0,
 });
+const INTEGER = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
 
 function StatsCards({ summary, loading }) {
   const stats = [
@@ -15,7 +16,7 @@ function StatsCards({ summary, loading }) {
     {
       key: 'tickets',
       title: 'Tickets',
-      value: summary?.tickets || 0,
+      value: INTEGER.format(summary?.tickets || 0),
       icon: '🧾',
     },
     {
@@ -27,7 +28,7 @@ function StatsCards({ summary, loading }) {
     {
       key: 'occupiedTables',
       title: 'Mesas ocupadas',
-      value: summary?.occupiedTables || 0,
+      value: INTEGER.format(summary?.occupiedTables || 0),
       icon: '🍽️',
     },
   ];

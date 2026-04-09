@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { getCashRegisters, getCashReports } from '../services/cashService';
+import { formatCurrency } from '../utils/formatters';
 
 function CashReport() {
   const [filters, setFilters] = useState({ from: '', to: '', userId: '', registerId: '' });
@@ -48,17 +49,17 @@ function CashReport() {
         </section>
 
         <section className="cash-info-grid">
-          <article className="dashboard-card"><p className="kpi-label">Total ventas</p><p className="kpi-value">${Number(report.totals?.sales || 0).toFixed(2)}</p></article>
-          <article className="dashboard-card"><p className="kpi-label">Ingresos manuales</p><p className="kpi-value">${Number(report.totals?.incomes || 0).toFixed(2)}</p></article>
-          <article className="dashboard-card"><p className="kpi-label">Egresos</p><p className="kpi-value">${Number(report.totals?.expenses || 0).toFixed(2)}</p></article>
-          <article className="dashboard-card"><p className="kpi-label">Diferencias</p><p className="kpi-value">${Number(report.totals?.differences || 0).toFixed(2)}</p></article>
-          <article className="dashboard-card"><p className="kpi-label">Balance final</p><p className="kpi-value">${Number(report.totals?.balance || 0).toFixed(2)}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Total ventas</p><p className="kpi-value">{formatCurrency(report.totals?.sales || 0)}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Ingresos manuales</p><p className="kpi-value">{formatCurrency(report.totals?.incomes || 0)}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Egresos</p><p className="kpi-value">{formatCurrency(report.totals?.expenses || 0)}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Diferencias</p><p className="kpi-value">{formatCurrency(report.totals?.differences || 0)}</p></article>
+          <article className="dashboard-card"><p className="kpi-label">Balance final</p><p className="kpi-value">{formatCurrency(report.totals?.balance || 0)}</p></article>
         </section>
 
         <section className="admin-card">
           <h4>Agrupación por día (acumulado)</h4>
           <ul className="dashboard-list">
-            {groupedByDay.map((item) => <li key={item.day} className="list-row-split"><span>{item.day}</span><strong>${item.total.toFixed(2)}</strong></li>)}
+            {groupedByDay.map((item) => <li key={item.day} className="list-row-split"><span>{item.day}</span><strong>{formatCurrency(item.total)}</strong></li>)}
           </ul>
         </section>
 
@@ -74,7 +75,7 @@ function CashReport() {
                     <td>{m.register_name || '-'}</td>
                     <td>{m.user_name || '-'}</td>
                     <td>{m.type}</td>
-                    <td>${Number(m.amount).toFixed(2)}</td>
+                    <td>{formatCurrency(m.amount)}</td>
                     <td>{m.reference || '-'}</td>
                   </tr>
                 ))) : <tr><td colSpan="6" className="text-center py-4">Sin movimientos</td></tr>}

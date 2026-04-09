@@ -12,6 +12,7 @@ import {
   openCash,
   closeCash,
 } from '../services/cashService';
+import { formatCurrency } from '../utils/formatters';
 
 function Cash() {
   const [registers, setRegisters] = useState([]);
@@ -126,8 +127,8 @@ function Cash() {
             <p className="mb-1"><strong>Caja:</strong> {shift?.register_name || '-'}</p>
             <p className="mb-1"><strong>Usuario:</strong> {shift?.user_name || '-'}</p>
             <p className="mb-1"><strong>Turno activo:</strong> {shift?.id || '-'}</p>
-            <p className="mb-1"><strong>Saldo inicial:</strong> ${Number(current?.totals?.openingBalance || 0).toFixed(2)}</p>
-            <p className="mb-0"><strong>Saldo actual:</strong> ${Number(current?.totals?.expectedBalance || 0).toFixed(2)}</p>
+            <p className="mb-1"><strong>Saldo inicial:</strong> {formatCurrency(current?.totals?.openingBalance || 0)}</p>
+            <p className="mb-0"><strong>Saldo actual:</strong> {formatCurrency(current?.totals?.expectedBalance || 0)}</p>
           </div></article>
 
           <article className="card shadow-sm"><div className="card-body">
@@ -150,7 +151,7 @@ function Cash() {
                   <tr key={m.id}>
                     <td>{new Date(m.created_at).toLocaleString()}</td>
                     <td>{m.type}</td>
-                    <td>${Number(m.amount).toFixed(2)}</td>
+                    <td>{formatCurrency(m.amount)}</td>
                     <td>{m.payment_method || '-'}</td>
                     <td>{m.reason || '-'}</td>
                     <td>{m.user_name || '-'}</td>
