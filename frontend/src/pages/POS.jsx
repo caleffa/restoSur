@@ -26,6 +26,52 @@ import {
 } from '../services/posService';
 
 const KITCHEN_CATEGORIES = new Set([4, 5, 6, 7, 8]);
+const AFIP_QR_VERIFY_URL = 'https://www.afip.gob.ar/fe/qr/';
+
+const INVOICE_TYPE_TO_AFIP_CODE = {
+  A: 1,
+  B: 6,
+  C: 11,
+};
+
+function sanitizeCuit(rawValue) {
+  return String(rawValue || '').replace(/\D/g, '');
+}
+
+function resolveTaxBreakdown(invoiceType, total) {
+  if (invoiceType === 'C') {
+    return [{ label: 'IVA 0.00%', net: total, iva: 0 }];
+  }
+
+  const ivaRate = 0.21;
+  const net = total / (1 + ivaRate);
+  const ivaAmount = total - net;
+  return [{ label: 'IVA 21.00%', net, iva: ivaAmount }];
+}
+
+function buildAfipQrData({ issueDate, cuit, pointOfSale, invoiceType, voucherNumber, total, authorizationType, authorizationCode }) {
+  const payload = {
+    ver: 1,
+    fecha: issueDate,
+    cuit: Number(cuit) || 0,
+    ptoVta: Number(pointOfSale) || 0,
+    tipoCmp: INVOICE_TYPE_TO_AFIP_CODE[invoiceType] || 0,
+    nroCmp: Number(voucherNumber) || 0,
+    importe: Number(total.toFixed(2)),
+    moneda: 'PES',
+    ctz: 1,
+    tipoDocRec: 99,
+    nroDocRec: 0,
+    tipoCodAut: authorizationType === 'CAEA' ? 'A' : 'E',
+    codAut: Number(String(authorizationCode || '').replace(/\D/g, '')) || 0,
+  };
+
+  const payloadBase64 = window.btoa(JSON.stringify(payload));
+  const qrVerificationUrl = `${AFIP_QR_VERIFY_URL}?p=${payloadBase64}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(qrVerificationUrl)}`;
+
+  return { qrVerificationUrl, qrImageUrl };
+}
 
 function playKitchenSound() {
   try {
@@ -290,12 +336,30 @@ function POS() {
   };
 
   const printFiscalTicket = useCallback(({ saleData, invoiceData, paymentMethod }) => {
-    const issueDate = new Date().toLocaleString('es-AR');
+    const issueDateDate = new Date();
+    const issueDate = issueDateDate.toLocaleString('es-AR');
+    const issueDateAfip = issueDateDate.toISOString().slice(0, 10);
     const authorizationLabel = invoiceData?.authorizationType === 'CAEA' ? 'CAEA' : 'CAE';
     const authorizationCode = invoiceData?.authorizationCode || '-';
     const voucherNumber = invoiceData?.voucherNumber ? String(invoiceData.voucherNumber).padStart(8, '0') : '-';
+    const voucherNumberNumeric = invoiceData?.voucherNumber ? Number(invoiceData.voucherNumber) : 0;
     const pointOfSale = afipConfig?.point_of_sale || afipConfig?.pointOfSale || '-';
     const caeExpiration = invoiceData?.caeExpiration ? String(invoiceData.caeExpiration).slice(0, 10) : '-';
+    const issuerCuit = sanitizeCuit(afipConfig?.cuit);
+    const issuerName = afipConfig?.issuer_name || afipConfig?.issuerName || 'NO INFORMADO';
+    const issuerAddress = afipConfig?.issuer_address || afipConfig?.issuerAddress || 'NO INFORMADO';
+    const ticketTotal = Number(saleData?.total || 0);
+    const taxBreakdown = resolveTaxBreakdown(invoiceData?.invoiceType, ticketTotal);
+    const { qrVerificationUrl, qrImageUrl } = buildAfipQrData({
+      issueDate: issueDateAfip,
+      cuit: issuerCuit,
+      pointOfSale,
+      invoiceType: invoiceData?.invoiceType,
+      voucherNumber: voucherNumberNumeric,
+      total: ticketTotal,
+      authorizationType: invoiceData?.authorizationType,
+      authorizationCode,
+    });
 
     const itemsHtml = (saleData?.items || [])
       .map((item) => `
@@ -322,11 +386,16 @@ function POS() {
             th{text-align:left; border-bottom:1px dashed #333;}
             .line{border-top:1px dashed #333; margin:6px 0;}
             .right{text-align:right;}
+            .qr-wrap{text-align:center; margin-top:6px;}
+            .small{font-size:9px; word-break:break-word;}
           </style>
         </head>
         <body>
           <h1>TICKET ECP/POS</h1>
           <h2>Comprobante Fiscal</h2>
+          <p>Emisor: ${issuerName}</p>
+          <p>CUIT emisor: ${issuerCuit || '-'}</p>
+          <p>Domicilio comercial: ${issuerAddress}</p>
           <p>Fecha: ${issueDate}</p>
           <p>Venta: #${saleData?.id || '-'}</p>
           <p>Mesa: ${saleData?.tableId || saleData?.table_id || '-'}</p>
@@ -342,7 +411,13 @@ function POS() {
             <tbody>${itemsHtml}</tbody>
           </table>
           <div class="line"></div>
-          <p class="right"><strong>TOTAL: $${Number(saleData?.total || 0).toFixed(2)}</strong></p>
+          ${taxBreakdown.map((line) => `<p>${line.label} | Neto: $${line.net.toFixed(2)} | Impuesto: $${line.iva.toFixed(2)}</p>`).join('')}
+          <p class="right"><strong>TOTAL: $${ticketTotal.toFixed(2)}</strong></p>
+          <div class="line"></div>
+          <div class="qr-wrap">
+            <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
+            <p class="small">QR fiscal AFIP: ${qrVerificationUrl}</p>
+          </div>
           <p>Gracias por su compra.</p>
         </body>
       </html>`;

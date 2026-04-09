@@ -9,6 +9,8 @@ function normalizeConfigPayload(data = {}, branchId) {
   return {
     branchId,
     cuit: data.cuit || null,
+    issuerName: data.issuerName || null,
+    issuerAddress: data.issuerAddress || null,
     pointOfSale: Number(data.pointOfSale),
     environment: data.environment,
     wsMode: data.wsMode || 'MOCK',
