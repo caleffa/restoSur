@@ -28,7 +28,13 @@ function Tables() {
         ? response
         : response?.data || [];
 
-      setTables(tablesData);
+      setTables(
+        tablesData.map((table) => ({
+          ...table,
+          name: table.name || table.table_number || `Mesa ${table.id}`,
+          capacity: Number(table.capacity) > 0 ? Number(table.capacity) : 1,
+        }))
+      );
       setError('');
     } catch (err) {
       setTables([]);

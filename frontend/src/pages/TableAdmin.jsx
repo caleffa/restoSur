@@ -8,6 +8,7 @@ const TABLE_STATUS_OPTIONS = ['LIBRE', 'OCUPADA', 'CUENTA_PEDIDA', 'CERRADA'];
 
 const initialForm = {
   tableNumber: '',
+  capacity: '',
   status: 'LIBRE',
 };
 
@@ -45,8 +46,13 @@ function TableAdmin() {
     if (loading) return;
 
     const tableNumber = Number(form.tableNumber);
+    const capacity = Number(form.capacity);
     if (!tableNumber || tableNumber <= 0) {
       setError('Ingresá un número de mesa válido.');
+      return;
+    }
+    if (!capacity || capacity <= 0) {
+      setError('Ingresá una capacidad válida.');
       return;
     }
 
@@ -56,6 +62,7 @@ function TableAdmin() {
 
       const payload = {
         tableNumber,
+        capacity,
         status: form.status,
       };
 
@@ -84,6 +91,7 @@ function TableAdmin() {
     setEditingId(table.id);
     setForm({
       tableNumber: String(table.table_number),
+      capacity: String(table.capacity || ''),
       status: table.status,
     });
     setIsFormModalOpen(true);
@@ -133,6 +141,7 @@ function TableAdmin() {
           ]}
           columns={[
             { key: 'tableNumber', label: 'Mesa', accessor: (row) => row.table_number, sortable: true },
+            { key: 'capacity', label: 'Capacidad', accessor: (row) => row.capacity, sortable: true },
             { key: 'status', label: 'Estado', accessor: (row) => row.status, sortable: true },
             {
               key: 'actions',
@@ -168,6 +177,15 @@ function TableAdmin() {
                 placeholder="Número de mesa"
                 value={form.tableNumber}
                 onChange={(event) => setForm((prev) => ({ ...prev, tableNumber: event.target.value }))}
+                required
+              />
+              <input
+                id="tableCapacity"
+                type="number"
+                min="1"
+                placeholder="Capacidad"
+                value={form.capacity}
+                onChange={(event) => setForm((prev) => ({ ...prev, capacity: event.target.value }))}
                 required
               />
 

@@ -49,6 +49,7 @@ async function getColumnType(tableName, columnName) {
 
 async function ensureCashSchema() {
   await ensureAfipSchema();
+  await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
       id INT AUTO_INCREMENT PRIMARY KEY,
