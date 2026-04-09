@@ -17,4 +17,4 @@ router.post('/:id/request-bill', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), cont
 router.post('/:id/pay', roleMiddleware('ADMIN', 'CAJERO'), controller.paySale);
 router.post('/:id/close', roleMiddleware('ADMIN', 'CAJERO'), controller.closeSale);
 
-module.exports = router;
+module.exports = router; 

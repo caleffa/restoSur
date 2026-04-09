@@ -11,14 +11,24 @@ function toAmount(value) {
 }
 
 function summarizeMovements(movements = []) {
-  return movements.reduce(
+  //console.log(`[summarizeMovements] Procesando ${movements.length} movimientos`);
+  
+  const result = movements.reduce(
     (acc, movement) => {
       const amount = Number(movement.amount || 0);
       const affectsBalance = Number(movement.affects_balance) === 1;
-      switch (movement.type) {
+      const type = movement.type;
+      
+      // Debug para cada movimiento
+      //console.log(`  - ${type}: $${amount} | affects_balance: ${affectsBalance} | payment: ${movement.paymentMethod}`);
+      
+      switch (type) {
         case 'VENTA':
           acc.sales += amount;
-          if (affectsBalance) acc.cashSales += amount;
+          if (affectsBalance) {
+            acc.cashSales += amount;
+            //console.log(`    → Agregado a cashSales: $${acc.cashSales}`);
+          }
           break;
         case 'INGRESO':
           acc.incomes += amount;
@@ -33,6 +43,9 @@ function summarizeMovements(movements = []) {
     },
     { sales: 0, cashSales: 0, incomes: 0, expenses: 0 }
   );
+  
+  //console.log(`[summarizeMovements] Resultado:`, result);
+  return result;
 }
 
 async function createRegister(data, user) {
@@ -157,8 +170,12 @@ async function registerSale(data, user) {
     if (!shift) throw new AppError('No hay caja abierta', 400);
 
     const amount = toAmount(data.amount);
-    const paymentMethod = String(data.paymentMethod || 'EFECTIVO').toUpperCase();
+    // Normalizar el método de pago a mayúsculas
+    const paymentMethod = String(data.paymentMethod || 'EFECTIVO').toUpperCase().trim();
     const affectsBalance = paymentMethod === 'EFECTIVO';
+    
+    // Debug: Log para verificar
+    //console.log(`[registerSale] Método: ${paymentMethod}, Afecta balance: ${affectsBalance}, Monto: ${amount}`);
 
     await repo.insertMovement(
       {
@@ -171,7 +188,7 @@ async function registerSale(data, user) {
         paymentMethod,
         saleId: data.saleId || null,
         reference: data.saleId ? `sale-${data.saleId}` : data.reference,
-        affectsBalance,
+        affectsBalance, // ✅ Esto debe ser true SOLO para efectivo
         reason: 'Venta POS',
         observation: data.observation,
       },
@@ -201,9 +218,9 @@ async function getCurrent(branchId) {
 
   const movements = await repo.getShiftMovements(shift.id);
   const summary = summarizeMovements(movements);
+  //console.table(movements);
   const expectedBalance = Number(shift.opening_balance) + summary.cashSales + summary.incomes - summary.expenses;
-
-  return {
+    return {
     status: 'ABIERTA',
     shift,
     movements,

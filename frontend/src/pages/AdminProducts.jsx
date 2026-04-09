@@ -111,10 +111,12 @@ function AdminProducts() {
     <div className="app-layout">
       <Navbar />
       <main className="content admin-management-screen">
+        <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>Administración de productos</h2>
         <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
           Nuevo producto
         </button>
+        </div>
 
         {error && <p className="error-text">{error}</p>}
 

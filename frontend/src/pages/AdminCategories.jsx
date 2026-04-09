@@ -82,10 +82,12 @@ function AdminCategories() {
     <div className="app-layout">
       <Navbar />
       <main className="content admin-management-screen">
-        <h2>Administración de categorías</h2>
-        <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
-          Nueva categoría
-        </button>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2>Administración de categorías</h2>
+          <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+            Nueva categoría
+          </button>
+        </div>
 
         {error && <p className="error-text">{error}</p>}
 

@@ -121,10 +121,12 @@ function TableAdmin() {
     <div className="app-layout">
       <Navbar />
       <main className="content admin-management-screen">
-        <h2>Administración de mesas</h2>
-        <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
-          Nueva mesa
-        </button>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2>Administración de mesas</h2>
+          <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+            Nueva mesa
+          </button>
+        </div>
 
         {error && <p className="error-text">{error}</p>}
 
