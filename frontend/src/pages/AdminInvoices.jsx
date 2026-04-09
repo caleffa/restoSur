@@ -13,6 +13,8 @@ import {
 
 const INITIAL_AFIP_CONFIG = {
   cuit: '',
+  issuerName: '',
+  issuerAddress: '',
   pointOfSale: '',
   environment: 'HOMOLOGACION',
   wsMode: 'MOCK',
@@ -59,6 +61,8 @@ function AdminInvoices() {
       if (config) {
         setConfigForm({
           cuit: config.cuit || '',
+          issuerName: config.issuer_name || '',
+          issuerAddress: config.issuer_address || '',
           pointOfSale: config.point_of_sale || '',
           environment: config.environment || 'HOMOLOGACION',
           wsMode: config.ws_mode || 'MOCK',
@@ -181,6 +185,8 @@ function AdminInvoices() {
           <h3>Configuración AFIP</h3>
           <form className="modal-form" onSubmit={onSaveConfig}>
             <input placeholder="CUIT" value={configForm.cuit} onChange={(e) => setConfigForm((prev) => ({ ...prev, cuit: e.target.value }))} />
+            <input placeholder="Razón social emisor" value={configForm.issuerName} onChange={(e) => setConfigForm((prev) => ({ ...prev, issuerName: e.target.value }))} />
+            <input placeholder="Domicilio comercial emisor" value={configForm.issuerAddress} onChange={(e) => setConfigForm((prev) => ({ ...prev, issuerAddress: e.target.value }))} />
             <input type="number" min="1" placeholder="Punto de venta" value={configForm.pointOfSale} onChange={(e) => setConfigForm((prev) => ({ ...prev, pointOfSale: e.target.value }))} required />
             <select value={configForm.environment} onChange={(e) => setConfigForm((prev) => ({ ...prev, environment: e.target.value }))}>
               <option value="HOMOLOGACION">Homologación</option>

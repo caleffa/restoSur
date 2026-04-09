@@ -148,6 +148,8 @@ async function ensureAfipSchema() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       branch_id INT NOT NULL UNIQUE,
       cuit VARCHAR(20) NULL,
+      issuer_name VARCHAR(120) NULL,
+      issuer_address VARCHAR(255) NULL,
       point_of_sale INT NOT NULL,
       environment ENUM('HOMOLOGACION','PRODUCCION') NOT NULL DEFAULT 'HOMOLOGACION',
       ws_mode ENUM('MOCK','MANUAL','AFIP') NOT NULL DEFAULT 'MOCK',
@@ -163,6 +165,8 @@ async function ensureAfipSchema() {
   await ensureColumn('invoices', 'created_by', 'INT NULL', 'total');
   await ensureColumn('invoices', 'voucher_number', 'INT NULL', 'authorization_code');
   await ensureColumn('invoices', 'afip_response', 'JSON NULL', 'caea_id');
+  await ensureColumn('afip_configs', 'issuer_name', 'VARCHAR(120) NULL', 'cuit');
+  await ensureColumn('afip_configs', 'issuer_address', 'VARCHAR(255) NULL', 'issuer_name');
 
   const wsModeColumnType = await getColumnType('afip_configs', 'ws_mode');
   if (wsModeColumnType && !wsModeColumnType.includes("'AFIP'")) {
