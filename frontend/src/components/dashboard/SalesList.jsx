@@ -21,7 +21,7 @@ function SalesList({ sales = [], loading, onSaleClick }) {
           {sales.map((sale) => (
             <li key={sale.id}>
               <button type="button" className="list-row-btn" onClick={() => onSaleClick(sale)}>
-                <span className="fw-semibold">{sale.tableName}</span>
+                <span className="fw-semibold">Mesa: {sale.tableName}</span>
                 <span>{CURRENCY.format(sale.total)}</span>
               </button>
             </li>

@@ -29,7 +29,7 @@ async function listOpenSalesByBranch(branchId) {
       s.id,
       s.table_id AS tableId,
       tr.table_number AS tableName,
-      s.total,
+      (SELECT SUM(unit_price*quantity) AS total FROM sale_items WHERE sale_id = s.id) AS total,
       s.status,
       s.opened_at AS openedAt
     FROM sales s
