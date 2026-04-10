@@ -3,6 +3,11 @@ import Navbar from '../components/Navbar';
 
 const ADMIN_MODULES = [
   {
+    title: 'Áreas',
+    description: 'Alta, edición y baja de áreas para agrupar mesas.',
+    path: '/admin/management/areas',
+  },
+  {
     title: 'Usuarios',
     description: 'Alta, edición y baja de usuarios del sistema.',
     path: '/admin/management/users',

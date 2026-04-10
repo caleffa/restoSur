@@ -15,8 +15,8 @@ function unwrap(response) {
 }
 
 // 📌 TABLES
-export async function getTables() {
-  const { data } = await http.get('/tables');
+export async function getTables(params = {}) {
+  const { data } = await http.get('/tables', { params });
   return unwrap(data) || [];
 }
 

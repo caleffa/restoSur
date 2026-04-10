@@ -29,6 +29,28 @@ export async function deleteUser(userId) {
   return unwrap(data);
 }
 
+
+// Áreas de mesas
+export async function getAreas(params = {}) {
+  const { data } = await http.get('/areas', { params });
+  return unwrap(data) || [];
+}
+
+export async function createArea(payload) {
+  const { data } = await http.post('/areas', payload);
+  return unwrap(data);
+}
+
+export async function updateArea(areaId, payload) {
+  const { data } = await http.put(`/areas/${areaId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteArea(areaId) {
+  const { data } = await http.delete(`/areas/${areaId}`);
+  return unwrap(data);
+}
+
 // Categorías
 export async function getCategories() {
   const { data } = await http.get('/categories');
