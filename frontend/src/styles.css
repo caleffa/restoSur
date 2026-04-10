@@ -23,7 +23,7 @@ body {
 
 .navbar-actions {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.2rem;
   flex-wrap: wrap;
 }
 
@@ -59,10 +59,10 @@ body {
 }
 
 .touch-btn {
-  min-height: 52px;
-  padding: 0.55rem 0.75rem;
+  min-height: 22px;
+  padding: 0.35rem 0.55rem;
   border: none;
-  border-radius: 10px;
+  border-radius: 5px;
   background: #e5e7eb;
   color: #111827;
   font-size: 1rem;
@@ -631,6 +631,7 @@ body {
 }
 
 .navbar-top-row {
+  flex: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -695,7 +696,8 @@ body {
   }
 
   .navbar-actions {
-    display: none;
+    flex: 8; 
+    display: flex;
     width: 100%;
     flex-direction: column;
     gap: 0.45rem;
@@ -736,3 +738,8 @@ body {
     display: flex !important;
   }
 }
+
+
+
+
+
