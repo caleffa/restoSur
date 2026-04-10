@@ -143,6 +143,12 @@ function AdminStock() {
           rows={stockRows}
           columns={[
             { key: 'article', label: 'Artículo', accessor: (row) => row.article_name, sortable: true },
+            {
+              key: 'products',
+              label: 'Producto/s',
+              accessor: (row) => row.related_products || '-',
+              sortable: true,
+            },
             { key: 'sku', label: 'SKU', accessor: (row) => row.article_sku, sortable: true },
             {
               key: 'quantity',
@@ -165,6 +171,12 @@ function AdminStock() {
           columns={[
             { key: 'created', label: 'Fecha', accessor: (row) => new Date(row.created_at).toLocaleString(), sortable: true },
             { key: 'article', label: 'Artículo', accessor: (row) => row.article_name, sortable: true },
+            {
+              key: 'products',
+              label: 'Producto/s',
+              accessor: (row) => row.related_products || '-',
+              sortable: true,
+            },
             { key: 'type', label: 'Tipo', accessor: (row) => row.type, sortable: true },
             { key: 'qty', label: 'Cantidad', accessor: (row) => formatNumber(row.quantity, 3), sortable: true },
             { key: 'user', label: 'Usuario', accessor: (row) => row.user_name || '-', sortable: true },
