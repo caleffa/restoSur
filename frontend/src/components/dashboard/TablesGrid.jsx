@@ -12,12 +12,34 @@ function getActionLabel(status) {
   return 'Abrir POS';
 }
 
-function TablesGrid({ tables = [], loading, busyTableId, onTableClick }) {
+function TablesGrid({
+  tables = [],
+  loading,
+  busyTableId,
+  onTableClick,
+  areaOptions = [],
+  selectedArea = 'ALL',
+  onAreaChange,
+}) {
   return (
     <article className="dashboard-card shadow-sm">
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <h3 className="section-title mb-0">Estado de mesas</h3>
         <small className="text-muted">Actualización automática cada 5 segundos</small>
+      </div>
+      <div className="tables-filters-row">
+        <label htmlFor="dashboardTablesAreaFilter">Área</label>
+        <select
+          id="dashboardTablesAreaFilter"
+          value={selectedArea}
+          onChange={(event) => onAreaChange?.(event.target.value)}
+        >
+          {areaOptions.map((area) => (
+            <option key={area.id} value={area.id}>
+              {area.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
