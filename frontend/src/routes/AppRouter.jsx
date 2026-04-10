@@ -17,6 +17,7 @@ import CashReport from '../pages/CashReport';
 import Comandas from '../pages/Comandas';
 import SalesManagement from '../pages/SalesManagement';
 import AdminInvoices from '../pages/AdminInvoices';
+import AdminRecipes from '../pages/AdminRecipes';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -86,6 +87,16 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminCategories />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/admin/management/recipes"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminRecipes />
           </ProtectedRoute>
         )}
       />

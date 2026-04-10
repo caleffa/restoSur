@@ -106,6 +106,7 @@ CREATE TABLE measurement_units (
   name VARCHAR(120) NOT NULL,
   code VARCHAR(20) NOT NULL UNIQUE,
   description VARCHAR(255) NULL,
+  allows_fraction TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -123,6 +124,29 @@ CREATE TABLE articles (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (article_type_id) REFERENCES article_types(id),
   FOREIGN KEY (measurement_unit_id) REFERENCES measurement_units(id)
+);
+
+
+CREATE TABLE recipes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  product_id INT NOT NULL,
+  notes VARCHAR(255) NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_recipe_product (product_id),
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE recipe_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  recipe_id INT NOT NULL,
+  article_id INT NOT NULL,
+  quantity DECIMAL(12,3) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_recipe_item (recipe_id, article_id),
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
+  FOREIGN KEY (article_id) REFERENCES articles(id)
 );
 
 CREATE TABLE stock (

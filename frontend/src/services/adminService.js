@@ -95,6 +95,38 @@ export async function deleteProduct(productId) {
 
 
 
+
+export async function getArticles() {
+  const { data } = await http.get('/articles');
+  return unwrap(data) || [];
+}
+
+// Recetas
+export async function getRecipes() {
+  const { data } = await http.get('/recipes');
+  return unwrap(data) || [];
+}
+
+export async function getRecipeById(recipeId) {
+  const { data } = await http.get(`/recipes/${recipeId}`);
+  return unwrap(data);
+}
+
+export async function createRecipe(payload) {
+  const { data } = await http.post('/recipes', payload);
+  return unwrap(data);
+}
+
+export async function updateRecipe(recipeId, payload) {
+  const { data } = await http.put(`/recipes/${recipeId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteRecipe(recipeId) {
+  const { data } = await http.delete(`/recipes/${recipeId}`);
+  return unwrap(data);
+}
+
 // Stock
 export async function getStock(params = {}) {
   const { data } = await http.get('/stock', { params });

@@ -16,6 +16,7 @@ const comandasRoutes = require('../modules/comandas/comandas.routes');
 const articleTypesRoutes = require('../modules/articleTypes/articleTypes.routes');
 const measurementUnitsRoutes = require('../modules/measurementUnits/measurementUnits.routes');
 const articlesRoutes = require('../modules/articles/articles.routes');
+const recipesRoutes = require('../modules/recipes/recipes.routes');
 
 const router = express.Router();
 
@@ -38,5 +39,6 @@ router.use('/', comandasRoutes);
 router.use('/', articleTypesRoutes);
 router.use('/', measurementUnitsRoutes);
 router.use('/', articlesRoutes);
+router.use('/', recipesRoutes);
 
 module.exports = router;
