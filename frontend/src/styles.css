@@ -736,3 +736,52 @@ body {
     display: flex !important;
   }
 }
+
+@media (min-width: 1200px) {
+  .app-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .app-navbar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 1.2rem 1rem;
+  }
+
+  .navbar-top-row {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .navbar-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+  }
+
+  .navbar-actions .touch-btn {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .navbar-actions .btn-danger {
+    margin-top: auto;
+  }
+
+  .content {
+    padding: 1.2rem 1.4rem;
+    min-width: 0;
+  }
+}
