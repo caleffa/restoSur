@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
-import SimpleDataTable from '../components/SimpleDataTable';
 import { createCategory, deleteCategory, getCategories, updateCategory } from '../services/adminService';
 
-const initialCategory = { name: '' };
+const initialCategory = { name: '', image: '' };
 
 function AdminCategories() {
   const [categories, setCategories] = useState([]);
@@ -37,9 +36,9 @@ function AdminCategories() {
       setLoading(true);
       setError('');
       if (editingCategoryId) {
-        await updateCategory(editingCategoryId, { name: categoryForm.name });
+        await updateCategory(editingCategoryId, { name: categoryForm.name, image: categoryForm.image });
       } else {
-        await createCategory({ name: categoryForm.name });
+        await createCategory({ name: categoryForm.name, image: categoryForm.image });
       }
       setCategoryForm(initialCategory);
       setEditingCategoryId(null);
@@ -60,7 +59,7 @@ function AdminCategories() {
 
   const openEditModal = (row) => {
     setEditingCategoryId(row.id);
-    setCategoryForm({ name: row.name });
+    setCategoryForm({ name: row.name, image: row.image || '' });
     setIsFormModalOpen(true);
   };
 
@@ -91,25 +90,27 @@ function AdminCategories() {
 
         {error && <p className="error-text">{error}</p>}
 
-        <SimpleDataTable
-          title="Categorías"
-          rows={categories}
-          columns={[
-            { key: 'id', label: 'ID', accessor: (row) => row.id, sortable: true },
-            { key: 'name', label: 'Nombre', accessor: (row) => row.name, sortable: true },
-            {
-              key: 'actions',
-              label: 'Acciones',
-              accessor: () => '',
-              render: (row) => (
+        <section className="category-cards-grid">
+          {categories.map((category) => (
+            <article className="category-card" key={category.id}>
+              <div className="category-card-image-wrap">
+                {category.image ? (
+                  <img src={category.image} alt={category.name} className="category-card-image" />
+                ) : (
+                  <div className="category-card-image-placeholder">Sin imagen</div>
+                )}
+              </div>
+              <div className="category-card-content">
+                <p className="category-card-id">#{category.id}</p>
+                <h3>{category.name}</h3>
                 <div className="admin-actions-row">
-                  <button type="button" className="touch-btn" onClick={() => openEditModal(row)}>Editar</button>
-                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteCategory(row)}>Eliminar</button>
+                  <button type="button" className="touch-btn" onClick={() => openEditModal(category)}>Editar</button>
+                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteCategory(category)}>Eliminar</button>
                 </div>
-              ),
-            },
-          ]}
-        />
+              </div>
+            </article>
+          ))}
+        </section>
 
         {isFormModalOpen && (
           <Modal
@@ -123,7 +124,18 @@ function AdminCategories() {
             size="sm"
           >
             <form className="admin-table-form modal-form" onSubmit={onCreateOrUpdateCategory}>
-              <input placeholder="Nombre de categoría" value={categoryForm.name} onChange={(e) => setCategoryForm({ name: e.target.value })} required />
+              <input
+                placeholder="Nombre de categoría"
+                value={categoryForm.name}
+                onChange={(e) => setCategoryForm((prev) => ({ ...prev, name: e.target.value }))}
+                required
+              />
+              <input
+                placeholder="URL o ruta de imagen"
+                value={categoryForm.image}
+                onChange={(e) => setCategoryForm((prev) => ({ ...prev, image: e.target.value }))}
+                maxLength={200}
+              />
               <div className="admin-actions-row">
                 <button className="touch-btn btn-primary" type="submit" disabled={loading}>{editingCategoryId ? 'Actualizar' : 'Crear'}</button>
                 <button type="button" className="touch-btn" onClick={() => {

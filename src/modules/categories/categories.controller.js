@@ -6,12 +6,12 @@ const listCategories = asyncHandler(async (_req, res) => {
 });
 
 const createCategory = asyncHandler(async (req, res) => {
-  const data = await service.createCategory(req.body.name);
+  const data = await service.createCategory(req.body.name, req.body.image);
   res.status(201).json({ ok: true, data });
 });
 
 const updateCategory = asyncHandler(async (req, res) => {
-  await service.updateCategory(req.params.id, req.body.name);
+  await service.updateCategory(req.params.id, req.body.name, req.body.image);
   res.json({ ok: true });
 });
 

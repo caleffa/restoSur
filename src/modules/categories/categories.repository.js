@@ -9,13 +9,13 @@ async function list() {
   return query('SELECT * FROM categories ORDER BY id DESC');
 }
 
-async function create(name) {
-  const result = await query('INSERT INTO categories (name) VALUES (?)', [name]);
-  return { id: result.insertId, name };
+async function create(name, image) {
+  const result = await query('INSERT INTO categories (name, image) VALUES (?, ?)', [name, image]);
+  return { id: result.insertId, name, image };
 }
 
-async function update(id, name) {
-  await query('UPDATE categories SET name = ? WHERE id = ?', [name, id]);
+async function update(id, name, image) {
+  await query('UPDATE categories SET name = ?, image = ? WHERE id = ?', [name, image, id]);
 }
 
 async function remove(id) {
