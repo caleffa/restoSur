@@ -146,3 +146,66 @@ export async function getSalesReport(filters = {}) {
   const { data } = await http.get('/sales/reports', { params: filters });
   return unwrap(data) || { totals: {}, rows: [] };
 }
+
+// Tipos de artículos
+export async function getArticleTypes() {
+  const { data } = await http.get('/article-types');
+  return unwrap(data) || [];
+}
+
+export async function createArticleType(payload) {
+  const { data } = await http.post('/article-types', payload);
+  return unwrap(data);
+}
+
+export async function updateArticleType(articleTypeId, payload) {
+  const { data } = await http.put(`/article-types/${articleTypeId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteArticleType(articleTypeId) {
+  const { data } = await http.delete(`/article-types/${articleTypeId}`);
+  return unwrap(data);
+}
+
+// Unidades de medida
+export async function getMeasurementUnits() {
+  const { data } = await http.get('/measurement-units');
+  return unwrap(data) || [];
+}
+
+export async function createMeasurementUnit(payload) {
+  const { data } = await http.post('/measurement-units', payload);
+  return unwrap(data);
+}
+
+export async function updateMeasurementUnit(measurementUnitId, payload) {
+  const { data } = await http.put(`/measurement-units/${measurementUnitId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteMeasurementUnit(measurementUnitId) {
+  const { data } = await http.delete(`/measurement-units/${measurementUnitId}`);
+  return unwrap(data);
+}
+
+// Artículos
+export async function getArticles() {
+  const { data } = await http.get('/articles');
+  return unwrap(data) || [];
+}
+
+export async function createArticle(payload) {
+  const { data } = await http.post('/articles', payload);
+  return unwrap(data);
+}
+
+export async function updateArticle(articleId, payload) {
+  const { data } = await http.put(`/articles/${articleId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteArticle(articleId) {
+  const { data } = await http.delete(`/articles/${articleId}`);
+  return unwrap(data);
+}

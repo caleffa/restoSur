@@ -23,6 +23,23 @@ const ADMIN_MODULES = [
     path: '/admin/management/products',
   },
 
+
+  {
+    title: 'Tipos de artículos',
+    description: 'Alta, edición y baja de tipos para clasificar artículos de stock.',
+    path: '/admin/management/article-types',
+  },
+  {
+    title: 'Unidades de medida',
+    description: 'Gestión de unidades y códigos para artículos de inventario.',
+    path: '/admin/management/measurement-units',
+  },
+  {
+    title: 'Artículos',
+    description: 'Administración de artículos con tipo, unidad, costo y estado.',
+    path: '/admin/management/articles',
+  },
+
   {
     title: 'Stock',
     description: 'Control de existencias y carga de movimientos de inventario.',
