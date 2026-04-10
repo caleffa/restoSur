@@ -629,3 +629,110 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   align-items: end;
 }
+
+.navbar-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.8rem;
+}
+
+.navbar-brand {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.navbar-toggle {
+  display: none;
+  min-height: 42px;
+  min-width: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+@media (max-width: 991px) {
+  .content {
+    padding: 0.75rem;
+  }
+
+  .tables-screen {
+    height: auto;
+    min-height: calc(100dvh - 84px);
+    overflow: visible;
+  }
+
+  .admin-table-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cash-status-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .kitchen-status-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-navbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .navbar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .navbar-actions {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .navbar-actions.is-open {
+    display: flex;
+  }
+
+  .navbar-actions .touch-btn {
+    width: 100%;
+  }
+
+  .tables-header,
+  .tables-filters-row,
+  .admin-table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tables-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card,
+  .modal-sm {
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-actions {
+    display: flex !important;
+  }
+}
