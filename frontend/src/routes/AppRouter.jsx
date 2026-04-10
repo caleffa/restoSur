@@ -11,6 +11,9 @@ import AdminUsers from '../pages/AdminUsers';
 import AdminCategories from '../pages/AdminCategories';
 import AdminProducts from '../pages/AdminProducts';
 import AdminStock from '../pages/AdminStock';
+import AdminArticleTypes from '../pages/AdminArticleTypes';
+import AdminMeasurementUnits from '../pages/AdminMeasurementUnits';
+import AdminArticles from '../pages/AdminArticles';
 import CashRegisters from '../pages/CashRegisters';
 import Cash from '../pages/Cash';
 import CashReport from '../pages/CashReport';
@@ -95,6 +98,34 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminProducts />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/admin/management/article-types"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminArticleTypes />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/measurement-units"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminMeasurementUnits />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/articles"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminArticles />
           </ProtectedRoute>
         )}
       />
