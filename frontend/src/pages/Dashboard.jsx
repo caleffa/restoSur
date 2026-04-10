@@ -8,6 +8,7 @@ import TopProducts from '../components/dashboard/TopProducts';
 import KitchenOrdersGrid from '../components/dashboard/KitchenOrdersGrid';
 import KitchenOrderModal from '../components/dashboard/KitchenOrderModal';
 import { createSale, getTables } from '../services/tableService';
+import { getAreas } from '../services/adminService';
 import {
   getDashboardSummary,
   getOpenSales,
@@ -21,6 +22,8 @@ import { getKitchenOrders, getSaleDetail, updateKitchenOrderStatus } from '../se
 function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [tables, setTables] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [selectedArea, setSelectedArea] = useState('ALL');
   const [openSales, setOpenSales] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [salesByHour, setSalesByHour] = useState([]);
@@ -44,7 +47,7 @@ function Dashboard() {
 
       const [summaryData, tablesData, salesData, productsData, hourlyData, kitchenData] = await Promise.all([
         getDashboardSummary(),
-        getTables(),
+        getTables(selectedArea === 'ALL' ? {} : { areaId: Number(selectedArea) }),
         getOpenSales(),
         getTopProducts(),
         getSalesByHour(),
@@ -69,7 +72,20 @@ function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [isKitchenRole]);
+  }, [isKitchenRole, selectedArea]);
+
+  const loadAreas = useCallback(async () => {
+    try {
+      const data = await getAreas();
+      setAreas(data);
+    } catch {
+      setAreas([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAreas();
+  }, [loadAreas]);
 
   useEffect(() => {
     loadDashboard();
@@ -159,6 +175,11 @@ function Dashboard() {
     return Math.max(...salesByHour.map((item) => item.total), 1);
   }, [salesByHour]);
 
+  const areaOptions = useMemo(
+    () => [{ id: 'ALL', name: 'Todas las áreas' }, ...areas],
+    [areas]
+  );
+
   return (
     <div className="app-layout">
       <Navbar />
@@ -189,6 +210,9 @@ function Dashboard() {
               loading={loading}
               busyTableId={busyTableId}
               onTableClick={handleTableClick}
+              areaOptions={areaOptions}
+              selectedArea={selectedArea}
+              onAreaChange={setSelectedArea}
             />
           )}
 
