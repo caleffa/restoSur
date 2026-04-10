@@ -117,15 +117,27 @@ CREATE TABLE stock_movements (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE dining_areas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_dining_area_branch_name (branch_id, name),
+  FOREIGN KEY (branch_id) REFERENCES branches(id)
+);
+
 CREATE TABLE tables_restaurant (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL,
+  area_id INT NULL,
   table_number VARCHAR(20) NOT NULL,
   capacity INT NOT NULL DEFAULT 4,
   status ENUM('LIBRE','OCUPADA','CUENTA_PEDIDA','CERRADA') DEFAULT 'LIBRE',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (area_id) REFERENCES dining_areas(id) ON DELETE SET NULL,
   UNIQUE KEY uq_branch_table (branch_id, table_number)
 );
 

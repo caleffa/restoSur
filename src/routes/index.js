@@ -10,6 +10,7 @@ const kitchenRoutes = require('../modules/kitchen/kitchen.routes');
 const afipRoutes = require('../modules/afip/afip.routes');
 const invoicesRoutes = require('../modules/invoices/invoices.routes');
 const tablesRoutes = require('../modules/tables/tables.routes');
+const areasRoutes = require('../modules/areas/areas.routes');
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
 const comandasRoutes = require('../modules/comandas/comandas.routes');
 
@@ -28,6 +29,7 @@ router.use('/', kitchenRoutes);
 router.use('/', afipRoutes);
 router.use('/', invoicesRoutes);
 router.use('/', tablesRoutes);
+router.use('/', areasRoutes);
 router.use('/', dashboardRoutes);
 router.use('/', comandasRoutes);
 

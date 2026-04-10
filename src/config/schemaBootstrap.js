@@ -49,6 +49,7 @@ async function getColumnType(tableName, columnName) {
 
 async function ensureCashSchema() {
   await ensureAfipSchema();
+  await ensureAreasSchema();
   await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
@@ -142,6 +143,32 @@ async function ensureCashSchema() {
 }
 
 
+
+
+async function ensureAreasSchema() {
+  await query(
+    `CREATE TABLE IF NOT EXISTS dining_areas (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL,
+      name VARCHAR(120) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_dining_area_branch_name (branch_id, name),
+      FOREIGN KEY (branch_id) REFERENCES branches(id)
+    )`
+  );
+
+  await ensureColumn('tables_restaurant', 'area_id', 'INT NULL', 'branch_id');
+
+  if (!(await foreignKeyExists('tables_restaurant', 'area_id'))) {
+    await query(
+      `ALTER TABLE tables_restaurant
+       ADD CONSTRAINT fk_tables_restaurant_area
+       FOREIGN KEY (area_id) REFERENCES dining_areas(id)
+       ON DELETE SET NULL`
+    );
+  }
+}
 
 async function ensureAfipSchema() {
   await query(

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
+import { getAreas } from '../services/adminService';
 import { createTable, deleteTable, getTables, updateTable } from '../services/tableService';
 
 const TABLE_STATUS_OPTIONS = ['LIBRE', 'OCUPADA', 'CUENTA_PEDIDA', 'CERRADA'];
@@ -10,10 +11,12 @@ const initialForm = {
   tableNumber: '',
   capacity: '',
   status: 'LIBRE',
+  areaId: '',
 };
 
 function TableAdmin() {
   const [tables, setTables] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -31,9 +34,24 @@ function TableAdmin() {
     }
   }, []);
 
+  const loadAreas = useCallback(async () => {
+    try {
+      const data = await getAreas();
+      setAreas(data);
+    } catch {
+      setError('No se pudieron cargar las áreas.');
+    }
+  }, []);
+
   useEffect(() => {
     loadTables();
-  }, [loadTables]);
+    loadAreas();
+  }, [loadTables, loadAreas]);
+
+  const areaOptions = useMemo(
+    () => areas.map((area) => ({ value: String(area.id), label: area.name })),
+    [areas]
+  );
 
   const resetForm = () => {
     setForm(initialForm);
@@ -64,6 +82,7 @@ function TableAdmin() {
         tableNumber,
         capacity,
         status: form.status,
+        areaId: form.areaId ? Number(form.areaId) : null,
       };
 
       if (editingId) {
@@ -93,6 +112,7 @@ function TableAdmin() {
       tableNumber: String(table.table_number),
       capacity: String(table.capacity || ''),
       status: table.status,
+      areaId: table.area_id ? String(table.area_id) : '',
     });
     setIsFormModalOpen(true);
   };
@@ -140,9 +160,16 @@ function TableAdmin() {
               accessor: (row) => row.status,
               options: TABLE_STATUS_OPTIONS.map((status) => ({ value: status, label: status })),
             },
+            {
+              key: 'area',
+              label: 'Área',
+              accessor: (row) => String(row.area_id || ''),
+              options: areaOptions,
+            },
           ]}
           columns={[
             { key: 'tableNumber', label: 'Mesa', accessor: (row) => row.table_number, sortable: true },
+            { key: 'area', label: 'Área', accessor: (row) => row.area_name || 'Sin área', sortable: true },
             { key: 'capacity', label: 'Capacidad', accessor: (row) => row.capacity, sortable: true },
             { key: 'status', label: 'Estado', accessor: (row) => row.status, sortable: true },
             {
@@ -181,6 +208,18 @@ function TableAdmin() {
                 onChange={(event) => setForm((prev) => ({ ...prev, tableNumber: event.target.value }))}
                 required
               />
+              <select
+                id="tableArea"
+                value={form.areaId}
+                onChange={(event) => setForm((prev) => ({ ...prev, areaId: event.target.value }))}
+              >
+                <option value="">Sin área</option>
+                {areas.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.name}
+                  </option>
+                ))}
+              </select>
               <input
                 id="tableCapacity"
                 type="number"

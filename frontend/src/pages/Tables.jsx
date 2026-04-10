@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import TableCard from '../components/TableCard';
+import { getAreas } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
 import { createSale, getTables } from '../services/tableService';
 import { canAccessPOS, canCreateSale } from '../utils/roles';
 
 function Tables() {
   const [tables, setTables] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [selectedArea, setSelectedArea] = useState('ALL');
   const [error, setError] = useState('');
   const [busyTableId, setBusyTableId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,15 +18,10 @@ function Tables() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const loadTables = useCallback(async () => {
+  const loadTables = useCallback(async (areaId = null) => {
     try {
       setLoading(true);
-
-      const response = await getTables();
-
-      // 🔥 soporta ambos formatos:
-      // 1) { ok, data }
-      // 2) directamente []
+      const response = await getTables(areaId ? { areaId } : {});
       const tablesData = Array.isArray(response)
         ? response
         : response?.data || [];
@@ -47,12 +45,25 @@ function Tables() {
     }
   }, []);
 
+  const loadAreas = useCallback(async () => {
+    try {
+      const data = await getAreas();
+      setAreas(data);
+    } catch {
+      setAreas([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAreas();
+  }, [loadAreas]);
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchData = async () => {
       if (!isMounted) return;
-      await loadTables();
+      await loadTables(selectedArea === 'ALL' ? null : Number(selectedArea));
     };
 
     fetchData();
@@ -63,19 +74,18 @@ function Tables() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [loadTables]);
+  }, [loadTables, selectedArea]);
 
   const handleTableClick = async (table) => {
     if (busyTableId) return;
 
     setError('');
 
-    // 🟢 Crear venta
     if (table.status === 'LIBRE' && canCreateSale(user?.role)) {
       try {
         setBusyTableId(table.id);
         await createSale(table.id);
-        await loadTables();
+        await loadTables(selectedArea === 'ALL' ? null : Number(selectedArea));
       } catch (err) {
         setError(
           err?.response?.data?.message ||
@@ -87,7 +97,6 @@ function Tables() {
       return;
     }
 
-    // 🔵 Ir al POS
     if (
       (table.status === 'OCUPADA' || table.status === 'CUENTA_PEDIDA') &&
       canAccessPOS(user?.role)
@@ -95,6 +104,11 @@ function Tables() {
       navigate(`/pos/${table.id}`);
     }
   };
+
+  const areaOptions = useMemo(
+    () => [{ id: 'ALL', name: 'Todas las áreas' }, ...areas],
+    [areas]
+  );
 
   return (
     <div className="app-layout">
@@ -104,6 +118,21 @@ function Tables() {
         <div className="tables-header">
           <h2>Mesas</h2>
           <small>Actualización automática cada 5 segundos</small>
+        </div>
+
+        <div className="tables-filters-row">
+          <label htmlFor="tablesAreaFilter">Área</label>
+          <select
+            id="tablesAreaFilter"
+            value={selectedArea}
+            onChange={(event) => setSelectedArea(event.target.value)}
+          >
+            {areaOptions.map((area) => (
+              <option key={area.id} value={area.id}>
+                {area.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {error && <p className="error-text">{error}</p>}

@@ -18,6 +18,7 @@ function TableCard({ table, onClick, disabled = false }) {
     >
       <strong>{table.name}</strong>
       <span>Capacidad: {table.capacity} personas</span>
+      <span>Área: {table.area_name || 'Sin área'}</span>
       <span>{table.status}</span>
     </button>
   );
