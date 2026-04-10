@@ -22,6 +22,11 @@ const ADMIN_MODULES = [
     description: 'Gestión del catálogo de productos y su estado.',
     path: '/admin/management/products',
   },
+  {
+    title: 'Recetas',
+    description: 'Definición de insumos por producto con cantidades y fracciones según unidad.',
+    path: '/admin/management/recipes',
+  },
 
 
   {

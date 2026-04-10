@@ -9,7 +9,8 @@ function normalizePayload(data) {
   if (!code) throw new AppError('El código de la unidad de medida es obligatorio', 400);
 
   const description = data.description ? String(data.description).trim() : null;
-  return { name, code, description };
+  const allowsFraction = data.allowsFraction === undefined ? true : Boolean(data.allowsFraction);
+  return { name, code, description, allowsFraction };
 }
 
 async function listMeasurementUnits() {

@@ -15,19 +15,21 @@ async function list() {
 }
 
 async function create(data) {
-  const result = await query('INSERT INTO measurement_units (name, code, description) VALUES (?, ?, ?)', [
+  const result = await query('INSERT INTO measurement_units (name, code, description, allows_fraction) VALUES (?, ?, ?, ?)', [
     data.name,
     data.code,
     data.description,
+    data.allowsFraction ? 1 : 0,
   ]);
   return { id: result.insertId, ...data };
 }
 
 async function update(id, data) {
-  await query('UPDATE measurement_units SET name = ?, code = ?, description = ? WHERE id = ?', [
+  await query('UPDATE measurement_units SET name = ?, code = ?, description = ?, allows_fraction = ? WHERE id = ?', [
     data.name,
     data.code,
     data.description,
+    data.allowsFraction ? 1 : 0,
     id,
   ]);
 }
