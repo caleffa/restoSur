@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Modal from '../components/Modal';
 import Navbar from '../components/Navbar';
 import SimpleDataTable from '../components/SimpleDataTable';
+import { getSaleDetail } from '../services/kitchenService';
 import { getSalesReport } from '../services/salesService';
-import { getInvoices } from '../services/adminService';
+import { createInvoice, getAfipConfig, getInvoices } from '../services/adminService';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
 const initialFilters = {
@@ -22,23 +23,71 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+const AFIP_QR_VERIFY_URL = 'https://www.afip.gob.ar/fe/qr/';
+const INVOICE_TYPE_TO_AFIP_CODE = { A: 1, B: 6, C: 11 };
+
+function sanitizeCuit(rawValue) {
+  return String(rawValue || '').replace(/\D/g, '');
+}
+
+function resolveTaxBreakdown(invoiceType, total) {
+  if (invoiceType === 'C') {
+    return [{ label: 'IVA 0.00%', net: total, iva: 0 }];
+  }
+
+  const ivaRate = 0.21;
+  const net = total / (1 + ivaRate);
+  const ivaAmount = total - net;
+  return [{ label: 'IVA 21.00%', net, iva: ivaAmount }];
+}
+
+function buildAfipQrData({ issueDate, cuit, pointOfSale, invoiceType, voucherNumber, total, authorizationType, authorizationCode }) {
+  const payload = {
+    ver: 1,
+    fecha: issueDate,
+    cuit: Number(cuit) || 0,
+    ptoVta: Number(pointOfSale) || 0,
+    tipoCmp: INVOICE_TYPE_TO_AFIP_CODE[invoiceType] || 0,
+    nroCmp: Number(voucherNumber) || 0,
+    importe: Number(total.toFixed(2)),
+    moneda: 'PES',
+    ctz: 1,
+    tipoDocRec: 99,
+    nroDocRec: 0,
+    tipoCodAut: authorizationType === 'CAEA' ? 'A' : 'E',
+    codAut: Number(String(authorizationCode || '').replace(/\D/g, '')) || 0,
+  };
+
+  const payloadBase64 = window.btoa(JSON.stringify(payload));
+  const qrVerificationUrl = `${AFIP_QR_VERIFY_URL}?p=${payloadBase64}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(qrVerificationUrl)}`;
+
+  return { qrVerificationUrl, qrImageUrl };
+}
+
 function SalesManagement() {
-  const navigate = useNavigate();
   const [filters, setFilters] = useState(initialFilters);
   const [report, setReport] = useState({ totals: {}, rows: [] });
+  const [afipConfig, setAfipConfig] = useState(null);
+  const [invoiceModalSale, setInvoiceModalSale] = useState(null);
+  const [selectedInvoiceType, setSelectedInvoiceType] = useState('B');
   const [invoicedSaleIds, setInvoicedSaleIds] = useState(new Set());
+  const [invoicesBySaleId, setInvoicesBySaleId] = useState(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async (nextFilters = filters) => {
     setLoading(true);
     try {
-      const [data, invoices] = await Promise.all([
+      const [data, invoices, afipConfigData] = await Promise.all([
         getSalesReport(nextFilters),
         getInvoices(),
+        getAfipConfig(),
       ]);
       setReport(data);
       setInvoicedSaleIds(new Set((invoices || []).map((invoice) => Number(invoice.sale_id))));
+      setInvoicesBySaleId(new Map((invoices || []).map((invoice) => [Number(invoice.sale_id), invoice])));
+      setAfipConfig(afipConfigData || null);
       setError('');
     } catch {
       setError('No se pudo cargar el reporte de ventas.');
@@ -55,6 +104,154 @@ function SalesManagement() {
     const methods = new Set((report.rows || []).map((row) => row.paymentMethod).filter((item) => item && item !== '-'));
     return Array.from(methods).sort().map((value) => ({ value, label: value }));
   }, [report.rows]);
+
+  const printFiscalTicket = useCallback(({ saleData, invoiceData, paymentMethod }) => {
+    const issueDateDate = new Date(invoiceData?.created_at || new Date());
+    const issueDate = issueDateDate.toLocaleString('es-AR');
+    const issueDateAfip = issueDateDate.toISOString().slice(0, 10);
+    const authorizationLabel = invoiceData?.authorization_type === 'CAEA' || invoiceData?.authorizationType === 'CAEA' ? 'CAEA' : 'CAE';
+    const authorizationCode = invoiceData?.authorization_code || invoiceData?.authorizationCode || '-';
+    const voucherRaw = invoiceData?.voucher_number || invoiceData?.voucherNumber;
+    const voucherNumber = voucherRaw ? String(voucherRaw).padStart(8, '0') : '-';
+    const voucherNumberNumeric = voucherRaw ? Number(voucherRaw) : 0;
+    const pointOfSale = afipConfig?.point_of_sale || afipConfig?.pointOfSale || '-';
+    const caeExpiration = invoiceData?.cae_expiration || invoiceData?.caeExpiration ? String(invoiceData?.cae_expiration || invoiceData?.caeExpiration).slice(0, 10) : '-';
+    const issuerCuit = sanitizeCuit(afipConfig?.cuit);
+    const issuerName = afipConfig?.issuer_name || afipConfig?.issuerName || 'NO INFORMADO';
+    const issuerAddress = afipConfig?.issuer_address || afipConfig?.issuerAddress || 'NO INFORMADO';
+    const ticketTotal = Number(saleData?.total || invoiceData?.total || 0);
+    const invoiceType = invoiceData?.invoice_type || invoiceData?.invoiceType || 'B';
+    const taxBreakdown = resolveTaxBreakdown(invoiceType, ticketTotal);
+    const { qrImageUrl } = buildAfipQrData({
+      issueDate: issueDateAfip,
+      cuit: issuerCuit,
+      pointOfSale,
+      invoiceType,
+      voucherNumber: voucherNumberNumeric,
+      total: ticketTotal,
+      authorizationType: invoiceData?.authorization_type || invoiceData?.authorizationType,
+      authorizationCode,
+    });
+
+    const itemsHtml = (saleData?.items || [])
+      .map((item) => `
+        <tr>
+          <td>${item.productName}</td>
+          <td style="text-align:center;">${Number(item.quantity)}</td>
+          <td style="text-align:right;">${formatCurrency(item.unitPrice)}</td>
+          <td style="text-align:right;">${formatCurrency(Number(item.quantity) * Number(item.unitPrice))}</td>
+        </tr>
+      `)
+      .join('');
+
+    const html = `
+      <html>
+        <head>
+          <title>Ticket Fiscal</title>
+          <style>
+            body{font-family: monospace; width:80mm; margin:0 auto; padding:6px;}
+            h1,h2{margin:0; text-align:center;}
+            h1{font-size:14px;} h2{font-size:12px; margin-bottom:6px;}
+            p{margin:3px 0; font-size:11px;}
+            table{width:100%; border-collapse:collapse; font-size:10px;}
+            th,td{padding:2px 0;}
+            th{text-align:left; border-bottom:1px dashed #333;}
+            .line{border-top:1px dashed #333; margin:6px 0;}
+            .right{text-align:right;}
+            .qr-wrap{text-align:center; margin-top:6px;}
+          </style>
+        </head>
+        <body>
+          <h1>${issuerName}</h1>
+          <h2>${issuerAddress}</h2>
+          <p>CUIT: ${issuerCuit || '-'}</p>
+          <p>Fecha: ${issueDate}</p>
+          <p>Venta: #${saleData?.id || invoiceData?.sale_id || '-'}</p>
+          <p>Mesa: ${saleData?.tableId || saleData?.table_id || invoiceData?.table_id || '-'}</p>
+          <p>Comprobante: ${invoiceType} | PV ${pointOfSale} - N° ${voucherNumber}</p>
+          <p>${authorizationLabel}: ${authorizationCode}</p>
+          <p>Vto ${authorizationLabel}: ${caeExpiration}</p>
+          <p>Pago: ${paymentMethod || '-'}</p>
+          <div class="line"></div>
+          <table>
+            <thead>
+              <tr><th>Item</th><th>Cant.</th><th>P.Unit</th><th class="right">Subtotal</th></tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div class="line"></div>
+          ${taxBreakdown.map((line) => `<p>${line.label} | Neto: ${formatCurrency(line.net)} | Impuesto: ${formatCurrency(line.iva)}</p>`).join('')}
+          <p class="right"><strong>TOTAL: ${formatCurrency(ticketTotal)}</strong></p>
+          <div class="line"></div>
+          <div class="qr-wrap">
+            <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
+          </div>
+          <p>Gracias por su compra.</p>
+        </body>
+      </html>`;
+
+    const printWindow = window.open('', '_blank', 'width=430,height=720');
+    if (!printWindow) return;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }, [afipConfig]);
+
+  const loadSaleAndPrint = useCallback(async (saleId, invoiceData, paymentMethod) => {
+    const saleDetail = await getSaleDetail(saleId);
+    const normalizedSale = {
+      ...saleDetail,
+      tableId: saleDetail?.tableId || saleDetail?.table_id,
+      total: saleDetail?.total ?? invoiceData?.total,
+      items: (saleDetail?.items || []).map((item) => ({
+        ...item,
+        productName: item.productName || item.product_name || item.name,
+        unitPrice: Number(item.unitPrice ?? item.unit_price ?? 0),
+        quantity: Number(item.quantity ?? 0),
+      })),
+    };
+    printFiscalTicket({
+      saleData: normalizedSale,
+      invoiceData,
+      paymentMethod,
+    });
+  }, [printFiscalTicket]);
+
+  const handleCreateInvoice = useCallback(async () => {
+    if (!invoiceModalSale || loading) return;
+    try {
+      setLoading(true);
+      setError('');
+      const invoice = await createInvoice({
+        saleId: Number(invoiceModalSale.id),
+        invoiceType: selectedInvoiceType,
+        authorizationType: 'CAE',
+      });
+
+      await loadSaleAndPrint(invoiceModalSale.id, invoice, invoiceModalSale.paymentMethod);
+      setInvoiceModalSale(null);
+      await load(filters);
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'No se pudo facturar la venta.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, invoiceModalSale, load, loadSaleAndPrint, loading, selectedInvoiceType]);
+
+  const handleReprint = useCallback(async (row) => {
+    const invoice = invoicesBySaleId.get(Number(row.id));
+    if (!invoice || loading) return;
+    try {
+      setLoading(true);
+      setError('');
+      await loadSaleAndPrint(row.id, invoice, row.paymentMethod);
+    } catch {
+      setError('No se pudo reimprimir el comprobante.');
+    } finally {
+      setLoading(false);
+    }
+  }, [invoicesBySaleId, loadSaleAndPrint, loading]);
 
   return (
     <div className="app-layout">
@@ -174,20 +371,65 @@ function SalesManagement() {
               sortable: false,
               render: (row) => {
                 const canInvoice = row.status === 'PAGADA' && !invoicedSaleIds.has(Number(row.id));
-                if (!canInvoice) return '-';
+                const canReprint = row.status === 'PAGADA' && invoicedSaleIds.has(Number(row.id));
+                if (!canInvoice && !canReprint) return '-';
                 return (
-                  <button
-                    type="button"
-                    className="touch-btn btn-primary"
-                    onClick={() => navigate(`/admin/management/invoices?saleId=${row.id}`)}
-                  >
-                    Facturar
-                  </button>
+                  <div className="d-flex gap-2">
+                    {canInvoice && (
+                      <button
+                        type="button"
+                        className="touch-btn btn-primary"
+                        onClick={() => {
+                          setSelectedInvoiceType('B');
+                          setInvoiceModalSale(row);
+                        }}
+                      >
+                        Facturar
+                      </button>
+                    )}
+                    {canReprint && (
+                      <button
+                        type="button"
+                        className="touch-btn"
+                        onClick={() => handleReprint(row)}
+                        disabled={loading}
+                      >
+                        Reimprimir
+                      </button>
+                    )}
+                  </div>
                 );
               },
             },
           ]}
         />
+        {invoiceModalSale && (
+          <Modal
+            title={`Facturar venta #${invoiceModalSale.id}`}
+            onClose={() => setInvoiceModalSale(null)}
+            actions={(
+              <>
+                <button type="button" className="btn btn-outline-secondary" onClick={() => setInvoiceModalSale(null)} disabled={loading}>Cancelar</button>
+                <button type="button" className="btn btn-primary" onClick={handleCreateInvoice} disabled={loading}>
+                  {loading ? 'Facturando...' : 'Facturar e imprimir'}
+                </button>
+              </>
+            )}
+            size="sm"
+          >
+            <div className="d-grid gap-3">
+              <p className="mb-0">Seleccioná el tipo de comprobante para emitir e imprimir el ticket.</p>
+              <div>
+                <label className="form-label mb-1">Tipo de comprobante</label>
+                <select className="form-select" value={selectedInvoiceType} onChange={(event) => setSelectedInvoiceType(event.target.value)}>
+                  <option value="A">Factura A</option>
+                  <option value="B">Factura B</option>
+                  <option value="C">Factura C</option>
+                </select>
+              </div>
+            </div>
+          </Modal>
+        )}
       </main>
     </div>
   );
