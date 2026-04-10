@@ -92,15 +92,6 @@ export async function deleteProduct(productId) {
   const { data } = await http.delete(`/products/${productId}`);
   return unwrap(data);
 }
-
-
-
-
-export async function getArticles() {
-  const { data } = await http.get('/articles');
-  return unwrap(data) || [];
-}
-
 // Recetas
 export async function getRecipes() {
   const { data } = await http.get('/recipes');
