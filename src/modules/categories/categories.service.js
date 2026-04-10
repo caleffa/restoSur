@@ -7,23 +7,30 @@ function normalizeName(name) {
   return normalized;
 }
 
+function normalizeImage(image) {
+  const normalized = String(image || '').trim();
+  if (!normalized) return null;
+  if (normalized.length > 200) throw new AppError('La imagen no puede superar los 200 caracteres', 400);
+  return normalized;
+}
+
 async function listCategories() {
   return repo.list();
 }
 
-async function createCategory(name) {
+async function createCategory(name, image) {
   const normalizedName = normalizeName(name);
-  return repo.create(normalizedName);
+  return repo.create(normalizedName, normalizeImage(image));
 }
 
-async function updateCategory(id, name) {
+async function updateCategory(id, name, image) {
   const categoryId = Number(id);
   if (!categoryId) throw new AppError('ID de categoría inválido', 400);
 
   const category = await repo.findById(categoryId);
   if (!category) throw new AppError('Categoría no encontrada', 404);
 
-  await repo.update(categoryId, normalizeName(name));
+  await repo.update(categoryId, normalizeName(name), normalizeImage(image));
 }
 
 async function removeCategory(id) {

@@ -11,7 +11,8 @@ async function list() {
 
 async function create(name, image) {
   const result = await query('INSERT INTO categories (name, image) VALUES (?, ?)', [name, image]);
-  return { id: result.insertId, name };
+  return { id: result.insertId, name, image };
+
 }
 
 async function update(id, name, image) {
