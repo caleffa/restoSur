@@ -19,7 +19,7 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 app.use(morgan('dev'));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api', routes);
 app.use(errorHandler);
