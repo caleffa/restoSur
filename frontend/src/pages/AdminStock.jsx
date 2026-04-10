@@ -3,14 +3,14 @@ import Navbar from '../components/Navbar';
 import SimpleDataTable from '../components/SimpleDataTable';
 import {
   createStockMovement,
-  getProducts,
+  getArticles,
   getStock,
   getStockMovements,
 } from '../services/adminService';
 import { formatNumber } from '../utils/formatters';
 
 const INITIAL_FORM = {
-  productId: '',
+  articleId: '',
   type: 'INGRESO',
   quantity: '',
   reason: '',
@@ -19,7 +19,7 @@ const INITIAL_FORM = {
 function AdminStock() {
   const [stockRows, setStockRows] = useState([]);
   const [movementRows, setMovementRows] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [articles, setArticles] = useState([]);
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,13 +27,13 @@ function AdminStock() {
 
   const loadData = useCallback(async () => {
     try {
-      const [productsData, stockData, movementsData] = await Promise.all([
-        getProducts(),
-        getStock({ onlyManaged: true }),
+      const [articlesData, stockData, movementsData] = await Promise.all([
+        getArticles(),
+        getStock(),
         getStockMovements({ limit: 100 }),
       ]);
 
-      setProducts(productsData.filter((product) => (product.has_stock ?? product.hasStock)));
+      setArticles(articlesData.filter((article) => (article.active ?? true)));
       setStockRows(stockData);
       setMovementRows(movementsData);
       setError('');
@@ -46,13 +46,13 @@ function AdminStock() {
     loadData();
   }, [loadData]);
 
-  const productOptions = useMemo(
-    () => products.map((product) => ({ value: String(product.id), label: product.name })),
-    [products],
+  const articleOptions = useMemo(
+    () => articles.map((article) => ({ value: String(article.id), label: `${article.name} (${article.sku})` })),
+    [articles],
   );
 
-  const stockByProductId = useMemo(
-    () => Object.fromEntries(stockRows.map((row) => [Number(row.product_id), Number(row.quantity)])),
+  const stockByArticleId = useMemo(
+    () => Object.fromEntries(stockRows.map((row) => [Number(row.article_id), Number(row.quantity)])),
     [stockRows],
   );
 
@@ -66,7 +66,7 @@ function AdminStock() {
       setSuccess('');
 
       await createStockMovement({
-        productId: Number(form.productId),
+        articleId: Number(form.articleId),
         type: form.type,
         quantity: Number(form.quantity),
         reason: form.reason,
@@ -93,12 +93,12 @@ function AdminStock() {
           <h3>Nuevo movimiento</h3>
           <form className="admin-table-form stock-form" onSubmit={onSubmit}>
             <select
-              value={form.productId}
-              onChange={(event) => setForm((prev) => ({ ...prev, productId: event.target.value }))}
+              value={form.articleId}
+              onChange={(event) => setForm((prev) => ({ ...prev, articleId: event.target.value }))}
               required
             >
-              <option value="">Seleccionar producto</option>
-              {productOptions.map((option) => (
+              <option value="">Seleccionar artículo</option>
+              {articleOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
@@ -142,8 +142,8 @@ function AdminStock() {
           title="Stock actual"
           rows={stockRows}
           columns={[
-            { key: 'product', label: 'Producto', accessor: (row) => row.product_name, sortable: true },
-            { key: 'category', label: 'Categoría', accessor: (row) => row.category_name || '-', sortable: true },
+            { key: 'article', label: 'Artículo', accessor: (row) => row.article_name, sortable: true },
+            { key: 'sku', label: 'SKU', accessor: (row) => row.article_sku, sortable: true },
             {
               key: 'quantity',
               label: 'Cantidad',
@@ -164,7 +164,7 @@ function AdminStock() {
           rows={movementRows}
           columns={[
             { key: 'created', label: 'Fecha', accessor: (row) => new Date(row.created_at).toLocaleString(), sortable: true },
-            { key: 'product', label: 'Producto', accessor: (row) => row.product_name, sortable: true },
+            { key: 'article', label: 'Artículo', accessor: (row) => row.article_name, sortable: true },
             { key: 'type', label: 'Tipo', accessor: (row) => row.type, sortable: true },
             { key: 'qty', label: 'Cantidad', accessor: (row) => formatNumber(row.quantity, 3), sortable: true },
             { key: 'user', label: 'Usuario', accessor: (row) => row.user_name || '-', sortable: true },
@@ -173,7 +173,7 @@ function AdminStock() {
               key: 'stock_post',
               label: 'Stock actual',
               accessor: (row) => {
-                const qty = stockByProductId[Number(row.product_id)];
+                const qty = stockByArticleId[Number(row.article_id)];
                 return qty === undefined ? '-' : formatNumber(qty, 3);
               },
             },

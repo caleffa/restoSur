@@ -48,6 +48,21 @@ async function findByProductId(productId) {
   return rows[0] || null;
 }
 
+async function findActiveItemsByProductIds(productIds, conn) {
+  if (!productIds.length) return [];
+  const placeholders = productIds.map(() => '?').join(',');
+
+  return query(
+    `SELECT r.product_id, ri.article_id, ri.quantity
+     FROM recipes r
+     JOIN recipe_items ri ON ri.recipe_id = r.id
+     WHERE r.active = 1
+       AND r.product_id IN (${placeholders})`,
+    productIds,
+    conn
+  );
+}
+
 async function findArticlesByIds(articleIds) {
   if (!articleIds.length) return [];
 
@@ -130,6 +145,7 @@ module.exports = {
   list,
   findById,
   findByProductId,
+  findActiveItemsByProductIds,
   findArticlesByIds,
   create,
   update,

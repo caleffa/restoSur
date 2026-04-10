@@ -10,13 +10,13 @@ function normalizeBranchId(branchId) {
 
 function normalizeMovementPayload(data, user) {
   const branchId = normalizeBranchId(data.branchId || user.branchId);
-  const productId = Number(data.productId);
+  const articleId = Number(data.articleId);
   const quantity = Number(data.quantity);
   const type = String(data.type || '').toUpperCase();
   const reason = data.reason ? String(data.reason).trim() : null;
 
-  if (!Number.isInteger(productId) || productId <= 0) {
-    throw new AppError('Producto inválido', 400);
+  if (!Number.isInteger(articleId) || articleId <= 0) {
+    throw new AppError('Artículo inválido', 400);
   }
   if (!Number.isFinite(quantity) || quantity <= 0) {
     throw new AppError('Cantidad inválida', 400);
@@ -27,7 +27,7 @@ function normalizeMovementPayload(data, user) {
 
   return {
     branchId,
-    productId,
+    articleId,
     quantity,
     type,
     reason,
@@ -35,9 +35,9 @@ function normalizeMovementPayload(data, user) {
   };
 }
 
-async function list(branchId, onlyManaged = false) {
+async function list(branchId) {
   const normalizedBranchId = normalizeBranchId(branchId);
-  return repo.listStock(normalizedBranchId, onlyManaged);
+  return repo.listStock(normalizedBranchId);
 }
 
 async function listMovements(branchId, limit = 100) {
@@ -58,7 +58,7 @@ async function movement(data, user) {
   try {
     await conn.beginTransaction();
 
-    const current = await repo.findStock(payload.branchId, payload.productId, conn);
+    const current = await repo.findStock(payload.branchId, payload.articleId, conn);
     const currentQty = Number(current?.quantity || 0);
     let delta = payload.quantity;
 
@@ -73,14 +73,14 @@ async function movement(data, user) {
       delta = payload.quantity - currentQty;
     }
 
-    await repo.upsertStock(payload.branchId, payload.productId, delta, conn);
+    await repo.upsertStock(payload.branchId, payload.articleId, delta, conn);
     await repo.insertMovement(payload, conn);
 
-    const updated = await repo.findStock(payload.branchId, payload.productId, conn);
+    const updated = await repo.findStock(payload.branchId, payload.articleId, conn);
 
     await conn.commit();
     return {
-      productId: payload.productId,
+      articleId: payload.articleId,
       branchId: payload.branchId,
       previousQuantity: currentQty,
       quantity: Number(updated?.quantity || 0),

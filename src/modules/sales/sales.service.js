@@ -3,6 +3,7 @@ const AppError = require('../../utils/appError');
 const salesRepo = require('./sales.repository');
 const productRepo = require('../products/products.repository');
 const stockRepo = require('../stock/stock.repository');
+const recipesRepo = require('../recipes/recipes.repository');
 const cashRepo = require('../cash/cash.repository');
 
 function validateSaleId(saleId) {
@@ -40,9 +41,13 @@ async function addItem(saleId, { productId, quantity, notes }) {
     if (!product || !product.active) throw new AppError('Producto inválido', 400);
 
     if (product.has_stock) {
-      const current = await stockRepo.findStock(sale.branch_id, productId, conn);
-      if (!current || Number(current.quantity) < Number(quantity)) {
-        throw new AppError('Stock insuficiente', 400);
+      const recipeItems = await recipesRepo.findActiveItemsByProductIds([Number(productId)], conn);
+      for (const recipeItem of recipeItems) {
+        const requiredQty = Number(quantity) * Number(recipeItem.quantity);
+        const current = await stockRepo.findStock(sale.branch_id, Number(recipeItem.article_id), conn);
+        if (Number(current?.quantity || 0) < requiredQty) {
+          throw new AppError('Stock insuficiente para la receta del producto', 400);
+        }
       }
     }
 
@@ -160,21 +165,53 @@ async function paySale(saleId, user, paymentData = {}) {
 
     const total = items.reduce((acc, it) => acc + Number(it.quantity) * Number(it.unit_price), 0);
 
+    const recipeItems = await recipesRepo.findActiveItemsByProductIds(
+      [...new Set(items.map((item) => Number(item.product_id)))],
+      conn
+    );
+
+    const recipeByProduct = new Map();
+    for (const recipeItem of recipeItems) {
+      const productId = Number(recipeItem.product_id);
+      const productRecipe = recipeByProduct.get(productId) || [];
+      productRecipe.push(recipeItem);
+      recipeByProduct.set(productId, productRecipe);
+    }
+
+    const requiredByArticle = new Map();
     for (const item of items) {
-      if (item.has_stock) {
-        await stockRepo.decreaseStock(sale.branch_id, item.product_id, item.quantity, conn);
-        await stockRepo.insertMovement(
-          {
-            branchId: sale.branch_id,
-            productId: item.product_id,
-            userId: user.id,
-            type: 'EGRESO',
-            quantity: item.quantity,
-            reason: `Descuento por venta ${saleId}`,
-          },
-          conn
-        );
+      const itemProductId = Number(item.product_id);
+      const productRecipes = recipeByProduct.get(itemProductId) || [];
+
+      for (const recipeItem of productRecipes) {
+        const articleId = Number(recipeItem.article_id);
+        const requiredQty = Number(item.quantity) * Number(recipeItem.quantity);
+        const accumulated = requiredByArticle.get(articleId) || 0;
+        requiredByArticle.set(articleId, Number((accumulated + requiredQty).toFixed(3)));
       }
+    }
+
+    for (const [articleId, requiredQty] of requiredByArticle.entries()) {
+      const current = await stockRepo.findStock(sale.branch_id, articleId, conn);
+      const currentQty = Number(current?.quantity || 0);
+      if (currentQty < requiredQty) {
+        throw new AppError(`Stock insuficiente para artículo ID ${articleId}`, 400);
+      }
+    }
+
+    for (const [articleId, requiredQty] of requiredByArticle.entries()) {
+      await stockRepo.decreaseStock(sale.branch_id, articleId, requiredQty, conn);
+      await stockRepo.insertMovement(
+        {
+          branchId: sale.branch_id,
+          articleId,
+          userId: user.id,
+          type: 'EGRESO',
+          quantity: requiredQty,
+          reason: `Descuento por venta ${saleId}`,
+        },
+        conn
+      );
     }
 
     const paymentMethod = String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase();
