@@ -50,6 +50,7 @@ async function getColumnType(tableName, columnName) {
 async function ensureCashSchema() {
   await ensureAfipSchema();
   await ensureAreasSchema();
+  await ensureArticlesSchema();
   await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
@@ -144,6 +145,45 @@ async function ensureCashSchema() {
 
 
 
+async function ensureArticlesSchema() {
+  await query(
+    `CREATE TABLE IF NOT EXISTS article_types (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL UNIQUE,
+      description VARCHAR(255) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS measurement_units (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      code VARCHAR(20) NOT NULL UNIQUE,
+      description VARCHAR(255) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS articles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(150) NOT NULL,
+      sku VARCHAR(80) NOT NULL UNIQUE,
+      barcode VARCHAR(120) NULL UNIQUE,
+      article_type_id INT NOT NULL,
+      measurement_unit_id INT NOT NULL,
+      cost DECIMAL(12,2) NOT NULL DEFAULT 0,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (article_type_id) REFERENCES article_types(id),
+      FOREIGN KEY (measurement_unit_id) REFERENCES measurement_units(id)
+    )`
+  );
+}
 
 async function ensureAreasSchema() {
   await query(
