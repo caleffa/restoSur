@@ -3,8 +3,7 @@ const service = require('./stock.service');
 
 const list = asyncHandler(async (req, res) => {
   const branchId = Number(req.query.branchId || req.user.branchId);
-  const onlyManaged = String(req.query.onlyManaged || 'false') === 'true';
-  res.json({ ok: true, data: await service.list(branchId, onlyManaged) });
+  res.json({ ok: true, data: await service.list(branchId) });
 });
 
 const listMovements = asyncHandler(async (req, res) => {

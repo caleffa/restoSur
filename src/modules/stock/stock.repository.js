@@ -1,60 +1,53 @@
 const { query } = require('../../repositories/baseRepository');
 
-async function findStock(branchId, productId, conn) {
-  const rows = await query('SELECT * FROM stock WHERE branch_id = ? AND product_id = ? LIMIT 1', [branchId, productId], conn);
+async function findStock(branchId, articleId, conn) {
+  const rows = await query('SELECT * FROM stock WHERE branch_id = ? AND article_id = ? LIMIT 1', [branchId, articleId], conn);
   return rows[0] || null;
 }
 
-async function upsertStock(branchId, productId, delta, conn) {
+async function upsertStock(branchId, articleId, delta, conn) {
   await query(
-    `INSERT INTO stock (branch_id, product_id, quantity) VALUES (?, ?, ?)
+    `INSERT INTO stock (branch_id, article_id, quantity) VALUES (?, ?, ?)
      ON DUPLICATE KEY UPDATE quantity = GREATEST(0, quantity + VALUES(quantity))`,
-    [branchId, productId, delta],
+    [branchId, articleId, delta],
     conn
   );
 }
 
-async function decreaseStock(branchId, productId, qty, conn) {
+async function decreaseStock(branchId, articleId, qty, conn) {
   await query(
-    'UPDATE stock SET quantity = GREATEST(0, quantity - ?) WHERE branch_id = ? AND product_id = ?',
-    [qty, branchId, productId],
+    'UPDATE stock SET quantity = GREATEST(0, quantity - ?) WHERE branch_id = ? AND article_id = ?',
+    [qty, branchId, articleId],
     conn
   );
 }
 
 async function insertMovement(data, conn) {
   await query(
-    'INSERT INTO stock_movements (branch_id, product_id, user_id, type, quantity, reason) VALUES (?, ?, ?, ?, ?, ?)',
-    [data.branchId, data.productId, data.userId, data.type, data.quantity, data.reason || null],
+    'INSERT INTO stock_movements (branch_id, article_id, user_id, type, quantity, reason) VALUES (?, ?, ?, ?, ?, ?)',
+    [data.branchId, data.articleId, data.userId, data.type, data.quantity, data.reason || null],
     conn
   );
 }
 
-async function listStock(branchId, onlyManaged = false) {
-  const params = [branchId];
-  let managedFilter = '';
-
-  if (onlyManaged) {
-    managedFilter = ' AND p.has_stock = 1';
-  }
-
+async function listStock(branchId) {
   return query(
     `SELECT
-      s.id,
-      s.branch_id,
-      s.product_id,
-      s.quantity,
+      COALESCE(s.id, 0) AS id,
+      ? AS branch_id,
+      a.id AS article_id,
+      COALESCE(s.quantity, 0) AS quantity,
       s.updated_at,
-      p.name AS product_name,
-      p.has_stock,
-      p.active,
-      c.name AS category_name
-     FROM stock s
-     JOIN products p ON p.id = s.product_id
-     LEFT JOIN categories c ON c.id = p.category_id
-    WHERE s.branch_id = ?${managedFilter}
-    ORDER BY p.name ASC`,
-    params
+      a.name AS article_name,
+      a.sku AS article_sku,
+      a.active,
+      mu.code AS measurement_unit_code
+     FROM articles a
+     LEFT JOIN stock s ON s.article_id = a.id AND s.branch_id = ?
+     LEFT JOIN measurement_units mu ON mu.id = a.measurement_unit_id
+    WHERE a.active = 1
+    ORDER BY a.name ASC`,
+    [branchId, branchId]
   );
 }
 
@@ -63,16 +56,16 @@ async function listMovements(branchId, limit = 100) {
     `SELECT
       sm.id,
       sm.branch_id,
-      sm.product_id,
+      sm.article_id,
       sm.user_id,
       sm.type,
       sm.quantity,
       sm.reason,
       sm.created_at,
-      p.name AS product_name,
+      a.name AS article_name,
       u.name AS user_name
      FROM stock_movements sm
-     JOIN products p ON p.id = sm.product_id
+     JOIN articles a ON a.id = sm.article_id
      LEFT JOIN users u ON u.id = sm.user_id
     WHERE sm.branch_id = ?
     ORDER BY sm.created_at DESC, sm.id DESC

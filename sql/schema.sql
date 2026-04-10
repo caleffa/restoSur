@@ -152,25 +152,25 @@ CREATE TABLE recipe_items (
 CREATE TABLE stock (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL,
-  product_id INT NOT NULL,
+  article_id INT NOT NULL,
   quantity DECIMAL(12,3) NOT NULL DEFAULT 0,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_stock_branch_product (branch_id, product_id),
+  UNIQUE KEY uq_stock_branch_article (branch_id, article_id),
   FOREIGN KEY (branch_id) REFERENCES branches(id),
-  FOREIGN KEY (product_id) REFERENCES products(id)
+  FOREIGN KEY (article_id) REFERENCES articles(id)
 );
 
 CREATE TABLE stock_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL,
-  product_id INT NOT NULL,
+  article_id INT NOT NULL,
   user_id INT NOT NULL,
   type ENUM('INGRESO','EGRESO','AJUSTE') NOT NULL,
   quantity DECIMAL(12,3) NOT NULL,
   reason VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (branch_id) REFERENCES branches(id),
-  FOREIGN KEY (product_id) REFERENCES products(id),
+  FOREIGN KEY (article_id) REFERENCES articles(id),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
