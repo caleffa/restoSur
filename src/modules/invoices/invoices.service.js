@@ -5,7 +5,7 @@ const { requestCaeForInvoice } = require('../afip/afipWsfe.service');
 const repo = require('./invoices.repository');
 
 function getTimeoutMs() {
-  const raw = Number(process.env.AFIP_WS_TIMEOUT_MS || 10000);
+  const raw = Number(process.env.AFIP_WS_TIMEOUT_MS || 30000);
   return Number.isFinite(raw) && raw > 0 ? raw : 10000;
 }
 

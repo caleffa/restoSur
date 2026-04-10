@@ -146,15 +146,15 @@ function AdminCategories() {
                 {category.image ? (
                   <img src={resolveImageUrl(category.image)} alt={category.name} className="category-card-image" />
                 ) : (
-                  <div className="category-card-image-placeholder">Sin imagen</div>
+                  <div className="category-card-image-placeholder">Sin imagen
+                  </div>
                 )}
               </div>
               <div className="category-card-content">
-                <p className="category-card-id">#{category.id}</p>
                 <h3>{category.name}</h3>
                 <div className="admin-actions-row">
-                  <button type="button" className="touch-btn" onClick={() => openEditModal(category)}>Editar</button>
-                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteCategory(category)}>Eliminar</button>
+                  <button type="button" className="touch-btn" onClick={() => openEditModal(category)}>Editar​</button>
+                  <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteCategory(category)}>X</button>
                 </div>
               </div>
             </article>
