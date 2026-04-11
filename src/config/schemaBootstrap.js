@@ -51,6 +51,7 @@ async function ensureCashSchema() {
   await ensureAfipSchema();
   await ensureAreasSchema();
   await ensureArticlesSchema();
+  await ensureStockSchema();
   await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
@@ -141,6 +142,37 @@ async function ensureCashSchema() {
        FOREIGN KEY (branch_id) REFERENCES branches(id)`
     );
   }
+}
+
+async function ensureStockSchema() {
+  await query(
+    `CREATE TABLE IF NOT EXISTS stock (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL,
+      article_id INT NOT NULL,
+      quantity DECIMAL(12,3) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_stock_branch_article (branch_id, article_id),
+      FOREIGN KEY (branch_id) REFERENCES branches(id),
+      FOREIGN KEY (article_id) REFERENCES articles(id)
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS stock_movements (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL,
+      article_id INT NOT NULL,
+      user_id INT NOT NULL,
+      type ENUM('INGRESO','EGRESO','AJUSTE') NOT NULL,
+      quantity DECIMAL(12,3) NOT NULL,
+      reason VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (branch_id) REFERENCES branches(id),
+      FOREIGN KEY (article_id) REFERENCES articles(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`
+  );
 }
 
 
