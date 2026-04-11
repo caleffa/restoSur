@@ -260,6 +260,9 @@ async function ensureAreasSchema() {
   );
 
   await ensureColumn('tables_restaurant', 'area_id', 'INT NULL', 'branch_id');
+  await ensureColumn('tables_restaurant', 'pos_x', 'INT NULL', 'capacity');
+  await ensureColumn('tables_restaurant', 'pos_y', 'INT NULL', 'pos_x');
+  await ensureColumn('dining_areas', 'map_layout', 'JSON NULL', 'name');
 
   if (!(await foreignKeyExists('tables_restaurant', 'area_id'))) {
     await query(

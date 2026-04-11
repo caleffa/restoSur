@@ -6,6 +6,7 @@ import POS from '../pages/POS';
 import Tables from '../pages/Tables';
 import TableAdmin from '../pages/TableAdmin';
 import AdminAreas from '../pages/AdminAreas';
+import AdminAreaMapEditor from '../pages/AdminAreaMapEditor';
 import AdminManagement from '../pages/AdminManagement';
 import AdminUsers from '../pages/AdminUsers';
 import AdminCategories from '../pages/AdminCategories';
@@ -81,6 +82,15 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminAreas />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/areas-map"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminAreaMapEditor />
           </ProtectedRoute>
         )}
       />

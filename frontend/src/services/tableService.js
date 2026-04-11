@@ -35,6 +35,16 @@ export async function deleteTable(tableId) {
   return unwrap(data);
 }
 
+export async function getAreaMap(areaId) {
+  const { data } = await http.get('/tables/map', { params: { areaId } });
+  return unwrap(data);
+}
+
+export async function saveAreaMap(payload) {
+  const { data } = await http.put('/tables/map', payload);
+  return unwrap(data);
+}
+
 // 📌 SALES
 export async function createSale(tableId) {
   const branchId = 1;

@@ -8,6 +8,11 @@ const ADMIN_MODULES = [
     path: '/admin/management/areas',
   },
   {
+    title: 'Mapa de salón',
+    description: 'Diseño visual de mesas por área con drag & drop.',
+    path: '/admin/management/areas-map',
+  },
+  {
     title: 'Usuarios',
     description: 'Alta, edición y baja de usuarios del sistema.',
     path: '/admin/management/users',

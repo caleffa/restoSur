@@ -11,6 +11,7 @@ export const MENU_BY_ROLE = {
     { label: 'Mesas', path: '/tables' },
     { label: 'Admin Mesas', path: '/admin/tables' },
     { label: 'Áreas', path: '/admin/management/areas' },
+    { label: 'Mapa Salón', path: '/admin/management/areas-map' },
     { label: 'Admin Usuarios', path: '/admin/management/users' },
     { label: 'Admin Categorías', path: '/admin/management/categories' },
     { label: 'Admin Productos', path: '/admin/management/products' },

@@ -125,6 +125,16 @@ body {
   padding-bottom: 0.5rem;
 }
 
+.tables-map-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 620px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  overflow: auto;
+}
+
 .table-card {
   min-height: 120px;
   border: none;
@@ -677,6 +687,48 @@ body {
   margin: 0;
 }
 
+.muted-text {
+  color: #64748b;
+  margin: 0;
+}
+
+.area-map-editor-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.area-map-sidebar {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: #fff;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.area-map-table-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.area-map-table-chip {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.area-map-canvas-wrapper {
+  overflow: auto;
+}
+
+.area-map-canvas {
+  position: relative;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
 
 .stock-form {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -775,6 +827,10 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 
+  .area-map-editor-layout {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-kpis {
     grid-template-columns: 1fr;
   }
@@ -791,7 +847,6 @@ body {
     display: flex !important;
   }
 }
-
 
 
 
