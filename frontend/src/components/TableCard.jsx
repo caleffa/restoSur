@@ -5,7 +5,7 @@ const STATUS_STYLES = {
   CERRADA: 'table-card table-closed',
 };
 
-function TableCard({ table, onClick, disabled = false }) {
+function TableCard({ table, onClick, disabled = false, style = undefined }) {
   const cardClass = STATUS_STYLES[table.status] || 'table-card';
 
   return (
@@ -13,6 +13,7 @@ function TableCard({ table, onClick, disabled = false }) {
       type="button"
       disabled={disabled}
       className={cardClass}
+      style={style}
       onClick={() => onClick(table)}
       aria-label={`Mesa ${table.name} para ${table.capacity} personas, estado ${table.status}`}
     >

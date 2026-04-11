@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import TableCard from '../components/TableCard';
 import { getAreas } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
-import { createSale, getTables } from '../services/tableService';
+import { createSale, getAreaMap, getTables } from '../services/tableService';
 import { canAccessPOS, canCreateSale } from '../utils/roles';
 
 function Tables() {
@@ -45,6 +45,30 @@ function Tables() {
     }
   }, []);
 
+  const loadMappedTables = useCallback(async (areaId) => {
+    try {
+      setLoading(true);
+      const data = await getAreaMap(areaId);
+      const placed = data?.placedTables || [];
+      const unplaced = data?.unplacedTables || [];
+      const ordered = [...placed, ...unplaced].map((table) => ({
+        ...table,
+        name: table.name || table.table_number || `Mesa ${table.id}`,
+        capacity: Number(table.capacity) > 0 ? Number(table.capacity) : 1,
+      }));
+
+      setTables(ordered);
+      setError('');
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+        'No se pudo cargar el mapa del área.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const loadAreas = useCallback(async () => {
     try {
       const data = await getAreas();
@@ -63,7 +87,11 @@ function Tables() {
 
     const fetchData = async () => {
       if (!isMounted) return;
-      await loadTables(selectedArea === 'ALL' ? null : Number(selectedArea));
+      if (selectedArea === 'ALL') {
+        await loadTables(null);
+      } else {
+        await loadMappedTables(Number(selectedArea));
+      }
     };
 
     fetchData();
@@ -74,7 +102,7 @@ function Tables() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [loadTables, selectedArea]);
+  }, [loadMappedTables, loadTables, selectedArea]);
 
   const handleTableClick = async (table) => {
     if (busyTableId) return;
@@ -85,7 +113,11 @@ function Tables() {
       try {
         setBusyTableId(table.id);
         await createSale(table.id);
-        await loadTables(selectedArea === 'ALL' ? null : Number(selectedArea));
+        if (selectedArea === 'ALL') {
+          await loadTables(null);
+        } else {
+          await loadMappedTables(Number(selectedArea));
+        }
       } catch (err) {
         setError(
           err?.response?.data?.message ||
@@ -140,7 +172,7 @@ function Tables() {
         {loading ? (
           <p>Cargando mesas...</p>
         ) : (
-          <section className="tables-grid">
+          <section className={selectedArea !== 'ALL' ? 'tables-map-canvas' : 'tables-grid'}>
             {tables.length === 0 ? (
               <p>No hay mesas disponibles</p>
             ) : (
@@ -150,6 +182,9 @@ function Tables() {
                   table={table}
                   onClick={handleTableClick}
                   disabled={busyTableId === table.id}
+                  style={selectedArea !== 'ALL' && Number.isFinite(Number(table.pos_x)) && Number.isFinite(Number(table.pos_y))
+                    ? { position: 'absolute', left: Number(table.pos_x), top: Number(table.pos_y), width: 130 }
+                    : undefined}
                 />
               ))
             )}

@@ -27,4 +27,43 @@ module.exports = {
     ]),
   updateStatus: (id, status) => query('UPDATE tables_restaurant SET status=? WHERE id=?', [status, id]),
   remove: (id) => query('DELETE FROM tables_restaurant WHERE id=?', [id]),
+  getAreaById: async (branchId, areaId) => {
+    const rows = await query(
+      `SELECT id, name, map_layout
+       FROM dining_areas
+       WHERE branch_id = ? AND id = ?
+       LIMIT 1`,
+      [branchId, areaId]
+    );
+    return rows[0] || null;
+  },
+  listByArea: (branchId, areaId) => query(
+    `SELECT id, table_number, status, capacity, area_id, pos_x, pos_y
+     FROM tables_restaurant
+     WHERE branch_id = ? AND area_id = ?
+     ORDER BY table_number`,
+    [branchId, areaId]
+  ),
+  saveMapLayout: async (branchId, areaId, placements, mapLayout = null) => {
+    await query(
+      `UPDATE tables_restaurant
+       SET pos_x = NULL, pos_y = NULL
+       WHERE branch_id = ? AND area_id = ?`,
+      [branchId, areaId]
+    );
+
+    for (const item of placements) {
+      await query(
+        `UPDATE tables_restaurant
+         SET pos_x = ?, pos_y = ?
+         WHERE id = ? AND branch_id = ? AND area_id = ?`,
+        [item.x, item.y, item.tableId, branchId, areaId]
+      );
+    }
+
+    await query(
+      'UPDATE dining_areas SET map_layout = ? WHERE id = ? AND branch_id = ?',
+      [mapLayout ? JSON.stringify(mapLayout) : null, areaId, branchId]
+    );
+  },
 };
