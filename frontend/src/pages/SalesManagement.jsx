@@ -119,6 +119,7 @@ function SalesManagement() {
     const issuerCuit = sanitizeCuit(afipConfig?.cuit);
     const issuerName = afipConfig?.issuer_name || afipConfig?.issuerName || 'NO INFORMADO';
     const issuerAddress = afipConfig?.issuer_address || afipConfig?.issuerAddress || 'NO INFORMADO';
+    const ticketLogoPath = afipConfig?.ticket_logo_path || afipConfig?.ticketLogoPath || '';
     const ticketTotal = Number(saleData?.total || invoiceData?.total || 0);
     const invoiceType = invoiceData?.invoice_type || invoiceData?.invoiceType || 'B';
     const taxBreakdown = resolveTaxBreakdown(invoiceType, ticketTotal);
@@ -149,19 +150,22 @@ function SalesManagement() {
         <head>
           <title>Ticket Fiscal</title>
           <style>
-            body{font-family: monospace; width:80mm; margin:0 auto; padding:6px;}
+            body{font-family: monospace; width:57mm; margin:0 auto; padding:4px;}
             h1,h2{margin:0; text-align:center;}
-            h1{font-size:14px;} h2{font-size:12px; margin-bottom:6px;}
-            p{margin:3px 0; font-size:11px;}
-            table{width:100%; border-collapse:collapse; font-size:10px;}
+            h1{font-size:12px;} h2{font-size:10px; margin-bottom:6px;}
+            p{margin:2px 0; font-size:9px;}
+            table{width:100%; border-collapse:collapse; font-size:8px;}
             th,td{padding:2px 0;}
             th{text-align:left; border-bottom:1px dashed #333;}
             .line{border-top:1px dashed #333; margin:6px 0;}
             .right{text-align:right;}
             .qr-wrap{text-align:center; margin-top:6px;}
+            .logo-wrap{text-align:center; margin-bottom:6px;}
+            .logo-wrap img{max-width:46mm; max-height:20mm; object-fit:contain;}
           </style>
         </head>
         <body>
+          ${ticketLogoPath ? `<div class="logo-wrap"><img src="${ticketLogoPath}" alt="Logo comercio" /></div>` : ''}
           <h1>${issuerName}</h1>
           <h2>${issuerAddress}</h2>
           <p>CUIT: ${issuerCuit || '-'}</p>

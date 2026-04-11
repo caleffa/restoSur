@@ -22,6 +22,7 @@ const INITIAL_AFIP_CONFIG = {
   certPath: '',
   keyPath: '',
   serviceTaxId: '',
+  ticketLogoPath: '',
 };
 
 const INITIAL_INVOICE_FORM = {
@@ -50,6 +51,9 @@ function AdminInvoices() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [ticketLogoData, setTicketLogoData] = useState('');
+  const [ticketLogoName, setTicketLogoName] = useState('');
+  const [removeTicketLogo, setRemoveTicketLogo] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -70,7 +74,11 @@ function AdminInvoices() {
           certPath: config.cert_path || '',
           keyPath: config.key_path || '',
           serviceTaxId: config.service_tax_id || '',
+          ticketLogoPath: config.ticket_logo_path || '',
         });
+        setTicketLogoData('');
+        setTicketLogoName('');
+        setRemoveTicketLogo(false);
       }
       setCaeaList(caea || []);
       const paidRows = Array.isArray(paid?.rows) ? paid.rows : Array.isArray(paid) ? paid : [];
@@ -107,6 +115,9 @@ function AdminInvoices() {
       await saveAfipConfig({
         ...configForm,
         pointOfSale: Number(configForm.pointOfSale),
+        ticketLogoData: ticketLogoData || undefined,
+        ticketLogoName: ticketLogoName || undefined,
+        removeTicketLogo,
       });
       setMessage('Configuración AFIP guardada.');
       await loadData();
@@ -115,6 +126,35 @@ function AdminInvoices() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const onLogoFileChange = (event) => {
+    const [file] = event.target.files || [];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Formato de logo no compatible. Use JPG, PNG, WEBP o GIF.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('El logo debe pesar menos de 2 MB.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      setTicketLogoData(result);
+      setTicketLogoName(file.name);
+      setRemoveTicketLogo(false);
+      setError('');
+    };
+    reader.onerror = () => setError('No se pudo leer la imagen seleccionada.');
+    reader.readAsDataURL(file);
   };
 
   const onRequestCaea = async () => {
@@ -201,6 +241,31 @@ function AdminInvoices() {
             <input placeholder="Ruta certificado (opcional)" value={configForm.certPath} onChange={(e) => setConfigForm((prev) => ({ ...prev, certPath: e.target.value }))} />
             <input placeholder="Ruta llave privada (opcional)" value={configForm.keyPath} onChange={(e) => setConfigForm((prev) => ({ ...prev, keyPath: e.target.value }))} />
             <input placeholder="CUIT servicio (opcional)" value={configForm.serviceTaxId} onChange={(e) => setConfigForm((prev) => ({ ...prev, serviceTaxId: e.target.value }))} />
+            <label htmlFor="ticketLogoUpload">Logo para ticket (57mm, opcional)</label>
+            <input id="ticketLogoUpload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={onLogoFileChange} />
+            {(ticketLogoData || configForm.ticketLogoPath) && (
+              <div>
+                <img
+                  src={ticketLogoData || configForm.ticketLogoPath}
+                  alt="Logo del ticket"
+                  style={{ maxWidth: '220px', maxHeight: '80px', objectFit: 'contain', border: '1px solid #ddd', padding: '4px', borderRadius: '6px' }}
+                />
+                <div className="admin-actions-row">
+                  <button
+                    type="button"
+                    className="touch-btn btn-danger"
+                    onClick={() => {
+                      setTicketLogoData('');
+                      setTicketLogoName('');
+                      setRemoveTicketLogo(true);
+                      setConfigForm((prev) => ({ ...prev, ticketLogoPath: '' }));
+                    }}
+                  >
+                    Quitar logo
+                  </button>
+                </div>
+              </div>
+            )}
             <button className="touch-btn btn-primary" type="submit" disabled={loading}>Guardar configuración</button>
           </form>
         </section>

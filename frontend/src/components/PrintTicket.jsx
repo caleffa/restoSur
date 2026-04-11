@@ -9,9 +9,9 @@ function PrintTicket({ ticket }) {
         <head>
           <title>Cierre de Caja</title>
           <style>
-            body{font-family: monospace; width:80mm; margin:0 auto; padding:6px;}
-            h1{font-size:16px; text-align:center; margin:0 0 8px;}
-            p{margin:4px 0; font-size:12px;}
+            body{font-family: monospace; width:57mm; margin:0 auto; padding:4px;}
+            h1{font-size:12px; text-align:center; margin:0 0 8px;}
+            p{margin:2px 0; font-size:9px;}
             .line{border-top:1px dashed #333; margin:6px 0;}
           </style>
         </head>
