@@ -288,6 +288,7 @@ async function ensureAfipSchema() {
       cert_path VARCHAR(255) NULL,
       key_path VARCHAR(255) NULL,
       service_tax_id VARCHAR(20) NULL,
+      ticket_logo_path VARCHAR(255) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (branch_id) REFERENCES branches(id)
@@ -299,6 +300,7 @@ async function ensureAfipSchema() {
   await ensureColumn('invoices', 'afip_response', 'JSON NULL', 'caea_id');
   await ensureColumn('afip_configs', 'issuer_name', 'VARCHAR(120) NULL', 'cuit');
   await ensureColumn('afip_configs', 'issuer_address', 'VARCHAR(255) NULL', 'issuer_name');
+  await ensureColumn('afip_configs', 'ticket_logo_path', 'VARCHAR(255) NULL', 'service_tax_id');
 
   const wsModeColumnType = await getColumnType('afip_configs', 'ws_mode');
   if (wsModeColumnType && !wsModeColumnType.includes("'AFIP'")) {
