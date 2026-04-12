@@ -29,8 +29,7 @@ async function listSaleProducts() {
             a.sale_price AS price, a.manages_stock AS has_stock, a.active, a.for_sale, a.is_product
      FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
-     WHERE a.is_product = 1
-       AND a.for_sale = 1
+     WHERE a.for_sale = 1
        AND a.active = 1
      ORDER BY a.name ASC`
   );

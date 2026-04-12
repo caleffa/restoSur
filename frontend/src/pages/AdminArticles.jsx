@@ -24,7 +24,7 @@ const initialForm = {
   salePrice: '',
   managesStock: true,
   isProduct: false,
-  isSupply: true,
+  isSupply: false,
   forSale: false,
   active: true,
 };
@@ -73,20 +73,7 @@ function AdminArticles() {
   );
 
   const handleTypeToggle = (field, checked) => {
-    setForm((prev) => {
-      if (field === 'isProduct') {
-        if (checked) {
-          return { ...prev, isProduct: true, isSupply: false };
-        }
-        return { ...prev, isProduct: false, isSupply: true, forSale: false };
-      }
-
-      if (checked) {
-        return { ...prev, isSupply: true, isProduct: false, forSale: false };
-      }
-
-      return { ...prev, isSupply: false, isProduct: true };
-    });
+    setForm((prev) => ({ ...prev, [field]: checked }));
   };
 
   const onCreateOrUpdate = async (event) => {
@@ -149,7 +136,7 @@ function AdminArticles() {
       managesStock: row.manages_stock === 1 || row.manages_stock === true,
       isProduct: row.is_product === 1 || row.is_product === true,
       isSupply: row.is_supply === 1 || row.is_supply === true,
-      forSale: (row.for_sale === 1 || row.for_sale === true) && (row.is_product === 1 || row.is_product === true),
+      forSale: row.for_sale === 1 || row.for_sale === true,
       active: row.active === 1 || row.active === true,
     });
     setIsFormModalOpen(true);
@@ -298,7 +285,7 @@ function AdminArticles() {
               <label><input type="checkbox" checked={form.managesStock} onChange={(event) => setForm((prev) => ({ ...prev, managesStock: event.target.checked }))} /> Maneja stock</label>
               <label><input type="checkbox" checked={form.isProduct} onChange={(event) => handleTypeToggle('isProduct', event.target.checked)} /> Es producto</label>
               <label><input type="checkbox" checked={form.isSupply} onChange={(event) => handleTypeToggle('isSupply', event.target.checked)} /> Es insumo</label>
-              <label><input type="checkbox" checked={form.forSale} disabled={!form.isProduct} onChange={(event) => setForm((prev) => ({ ...prev, forSale: event.target.checked && prev.isProduct }))} /> A la venta</label>
+              <label><input type="checkbox" checked={form.forSale} onChange={(event) => setForm((prev) => ({ ...prev, forSale: event.target.checked }))} /> A la venta</label>
               <label>
                 <input
                   type="checkbox"
