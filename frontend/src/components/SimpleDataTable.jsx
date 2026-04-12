@@ -35,8 +35,9 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
     if (!column) return nextRows;
 
     nextRows.sort((a, b) => {
-      const av = column.accessor(a);
-      const bv = column.accessor(b);
+      const sortAccessor = column.sortAccessor || column.accessor;
+      const av = sortAccessor(a);
+      const bv = sortAccessor(b);
       if (av === bv) return 0;
       if (sortDirection === 'asc') return av > bv ? 1 : -1;
       return av < bv ? 1 : -1;
