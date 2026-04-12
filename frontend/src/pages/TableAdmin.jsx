@@ -4,11 +4,13 @@ import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { getAreas } from '../services/adminService';
 import { createTable, deleteTable, getTables, updateTable } from '../services/tableService';
+import { getTableTypeLabel, normalizeTableType, TABLE_TYPE_OPTIONS } from '../utils/tableVisuals';
 
 const TABLE_STATUS_OPTIONS = ['LIBRE', 'OCUPADA', 'CUENTA_PEDIDA', 'CERRADA'];
 
 const initialForm = {
   tableNumber: '',
+  tableType: 'CUADRADA',
   capacity: '',
   status: 'LIBRE',
   areaId: '',
@@ -80,6 +82,7 @@ function TableAdmin() {
 
       const payload = {
         tableNumber,
+        tableType: normalizeTableType(form.tableType),
         capacity,
         status: form.status,
         areaId: form.areaId ? Number(form.areaId) : null,
@@ -110,6 +113,7 @@ function TableAdmin() {
     setEditingId(table.id);
     setForm({
       tableNumber: String(table.table_number),
+      tableType: normalizeTableType(table.table_type),
       capacity: String(table.capacity || ''),
       status: table.status,
       areaId: table.area_id ? String(table.area_id) : '',
@@ -166,10 +170,22 @@ function TableAdmin() {
               accessor: (row) => String(row.area_id || ''),
               options: areaOptions,
             },
+            {
+              key: 'tableType',
+              label: 'Tipo',
+              accessor: (row) => normalizeTableType(row.table_type),
+              options: TABLE_TYPE_OPTIONS,
+            },
           ]}
           columns={[
             { key: 'tableNumber', label: 'Mesa', accessor: (row) => row.table_number, sortable: true },
             { key: 'area', label: 'Área', accessor: (row) => row.area_name || 'Sin área', sortable: true },
+            {
+              key: 'tableType',
+              label: 'Tipo',
+              accessor: (row) => getTableTypeLabel(row.table_type),
+              sortable: true,
+            },
             { key: 'capacity', label: 'Capacidad', accessor: (row) => row.capacity, sortable: true },
             { key: 'status', label: 'Estado', accessor: (row) => row.status, sortable: true },
             {
@@ -208,6 +224,18 @@ function TableAdmin() {
                 onChange={(event) => setForm((prev) => ({ ...prev, tableNumber: event.target.value }))}
                 required
               />
+              <select
+                id="tableType"
+                value={form.tableType}
+                onChange={(event) => setForm((prev) => ({ ...prev, tableType: event.target.value }))}
+                required
+              >
+                {TABLE_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
               <select
                 id="tableArea"
                 value={form.areaId}

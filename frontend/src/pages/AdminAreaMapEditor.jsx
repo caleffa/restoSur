@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { getAreas } from '../services/adminService';
 import { getAreaMap, saveAreaMap } from '../services/tableService';
+import { getTableTypeLabel, getTableVisualConfig, normalizeTableType } from '../utils/tableVisuals';
 
 const MAP_WIDTH = 780;
 const MAP_HEIGHT = 560;
-const TABLE_WIDTH = 110;
-const TABLE_HEIGHT = 76;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -43,8 +42,18 @@ function AdminAreaMapEditor() {
     try {
       setLoading(true);
       const data = await getAreaMap(areaId);
-      setPlacedTables(data?.placedTables || []);
-      setUnplacedTables(data?.unplacedTables || []);
+      setPlacedTables(
+        (data?.placedTables || []).map((table) => ({
+          ...table,
+          table_type: normalizeTableType(table.table_type),
+        }))
+      );
+      setUnplacedTables(
+        (data?.unplacedTables || []).map((table) => ({
+          ...table,
+          table_type: normalizeTableType(table.table_type),
+        }))
+      );
       setError('');
     } catch {
       setPlacedTables([]);
@@ -77,11 +86,15 @@ function AdminAreaMapEditor() {
 
     const { tableId, source } = JSON.parse(raw);
     const rect = mapRef.current.getBoundingClientRect();
-    const x = clamp(event.clientX - rect.left - TABLE_WIDTH / 2, 0, MAP_WIDTH - TABLE_WIDTH);
-    const y = clamp(event.clientY - rect.top - TABLE_HEIGHT / 2, 0, MAP_HEIGHT - TABLE_HEIGHT);
+    const sourceTable = source === 'panel'
+      ? unplacedTables.find((item) => item.id === tableId)
+      : placedTables.find((item) => item.id === tableId);
+    const visual = getTableVisualConfig(sourceTable);
+    const x = clamp(event.clientX - rect.left - visual.width / 2, 0, MAP_WIDTH - visual.width);
+    const y = clamp(event.clientY - rect.top - visual.height / 2, 0, MAP_HEIGHT - visual.height);
 
     if (source === 'panel') {
-      const table = unplacedTables.find((item) => item.id === tableId);
+      const table = sourceTable;
       if (!table) return;
 
       setUnplacedTables((prev) => prev.filter((item) => item.id !== tableId));
@@ -184,7 +197,7 @@ function AdminAreaMapEditor() {
                   draggable
                   onDragStart={(event) => handleDragStart(event, table.id, 'panel')}
                 >
-                  Mesa {table.table_number}
+                  Mesa {table.table_number} · {getTableTypeLabel(table.table_type)}
                 </button>
               ))}
             </div>
@@ -203,7 +216,8 @@ function AdminAreaMapEditor() {
               >
 
               {placedTables.map((table) => {
-                // Determinar colores según estado
+                const visual = getTableVisualConfig(table);
+
                 const getStatusColors = (status) => {
                   switch (String(status || 'LIBRE').toLowerCase()) {
                     case 'libre':
@@ -227,13 +241,13 @@ function AdminAreaMapEditor() {
                       position: 'absolute',
                       left: Number(table.pos_x),
                       top: Number(table.pos_y),
-                      width: TABLE_WIDTH,
-                      minHeight: TABLE_HEIGHT,
+                      width: visual.width,
+                      minHeight: visual.height,
                       cursor: 'grab',
                       backgroundColor: colors.bg,
                       borderLeft: `4px solid ${colors.border}`,
                       color: colors.text,
-                      borderRadius: '8px',
+                      borderRadius: visual.borderRadius,
                       boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                       padding: '8px',
                       display: 'flex',
@@ -251,6 +265,9 @@ function AdminAreaMapEditor() {
                     <p style={{ margin: '2px 0', fontSize: '11px', fontWeight: 500 }}>
                       {table.status || 'LIBRE'}
                     </p>
+                    <small style={{ fontSize: '10px', opacity: 0.8 }}>
+                      {getTableTypeLabel(table.table_type)}
+                    </small>
                     <small style={{ fontSize: '10px', opacity: 0.8 }}>
                       {table.capacity || '-'} personas
                     </small>

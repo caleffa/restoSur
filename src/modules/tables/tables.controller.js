@@ -20,6 +20,21 @@ function normalizeAreaId(value) {
   return parsed;
 }
 
+function normalizeTableType(value) {
+  const allowedTypes = ['REDONDA', 'CUADRADA', 'RECTANGULAR_HORIZONTAL', 'RECTANGULAR_VERTICAL'];
+  if (value === undefined || value === null || value === '') {
+    return 'CUADRADA';
+  }
+
+  const normalized = String(value).toUpperCase();
+
+  if (!allowedTypes.includes(normalized)) {
+    throw new AppError('Tipo de mesa inválido.', 400);
+  }
+
+  return normalized;
+}
+
 function parseMapLayout(value) {
   if (!value) return null;
   if (typeof value === 'object') return value;
@@ -40,6 +55,7 @@ const create = asyncHandler(async (req, res) => {
     ...req.body,
     branchId: Number(req.body.branchId || req.user.branchId),
     areaId: normalizeAreaId(req.body.areaId),
+    tableType: normalizeTableType(req.body.tableType),
     capacity: normalizeCapacity(req.body.capacity),
   };
   res.status(201).json({ ok: true, data: await repo.create(payload) });
@@ -48,6 +64,7 @@ const update = asyncHandler(async (req, res) => {
   await repo.update(Number(req.params.id), {
     ...req.body,
     areaId: normalizeAreaId(req.body.areaId),
+    tableType: normalizeTableType(req.body.tableType),
     capacity: normalizeCapacity(req.body.capacity),
   });
   res.json({ ok: true });

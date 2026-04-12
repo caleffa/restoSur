@@ -1,3 +1,5 @@
+import { getTableTypeLabel, getTableVisualConfig } from '../utils/tableVisuals';
+
 const STATUS_STYLES = {
   LIBRE: 'table-card table-free',
   OCUPADA: 'table-card table-busy',
@@ -7,17 +9,24 @@ const STATUS_STYLES = {
 
 function TableCard({ table, onClick, disabled = false, style = undefined }) {
   const cardClass = STATUS_STYLES[table.status] || 'table-card';
+  const tableVisual = getTableVisualConfig(table);
 
   return (
     <button
       type="button"
       disabled={disabled}
       className={cardClass}
-      style={style}
+      style={{
+        width: tableVisual.width,
+        minHeight: tableVisual.height,
+        borderRadius: tableVisual.borderRadius,
+        ...style,
+      }}
       onClick={() => onClick(table)}
       aria-label={`Mesa ${table.name} para ${table.capacity} personas, estado ${table.status}`}
     >
       <strong>{table.name}</strong>
+      <span>Tipo: {getTableTypeLabel(table.table_type)}</span>
       <span>Capacidad: {table.capacity} personas</span>
       <span>Área: {table.area_name || 'Sin área'}</span>
       <span>{table.status}</span>
