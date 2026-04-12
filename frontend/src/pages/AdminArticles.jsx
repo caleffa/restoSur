@@ -157,6 +157,8 @@ function AdminArticles() {
     }
   };
 
+  const normalizeFlag = (value) => (value === 1 || value === true ? 'true' : 'false');
+
   return (
     <div className="app-layout">
       <Navbar />
@@ -191,15 +193,51 @@ function AdminArticles() {
               accessor: (row) => String(row.article_type_id ?? row.articleTypeId ?? ''),
               options: articleTypes.map((item) => ({ value: String(item.id), label: item.name })),
             },
+            {
+              key: 'forSale',
+              label: 'Para venta',
+              accessor: (row) => normalizeFlag(row.for_sale ?? row.forSale),
+              options: [
+                { value: 'true', label: 'Sí' },
+                { value: 'false', label: 'No' },
+              ],
+            },
+            {
+              key: 'isProduct',
+              label: 'Es producto',
+              accessor: (row) => normalizeFlag(row.is_product ?? row.isProduct),
+              options: [
+                { value: 'true', label: 'Sí' },
+                { value: 'false', label: 'No' },
+              ],
+            },
+            {
+              key: 'isSupply',
+              label: 'Es insumo',
+              accessor: (row) => normalizeFlag(row.is_supply ?? row.isSupply),
+              options: [
+                { value: 'true', label: 'Sí' },
+                { value: 'false', label: 'No' },
+              ],
+            },
+            {
+              key: 'managesStock',
+              label: 'Controla stock',
+              accessor: (row) => normalizeFlag(row.manages_stock ?? row.managesStock),
+              options: [
+                { value: 'true', label: 'Sí' },
+                { value: 'false', label: 'No' },
+              ],
+            },
           ]}
           columns={[
-            { key: 'name', label: 'Nombre', accessor: (row) => row.name, sortable: true },
+            { key: 'name', label: 'Nombre', accessor: (row) => row.name, sortAccessor: (row) => (row.name || '').toLowerCase(), sortable: true },
             { key: 'sku', label: 'SKU', accessor: (row) => row.sku, sortable: true },
             { key: 'barcode', label: 'Código de barras', accessor: (row) => row.barcode || '-' },
-            { key: 'articleType', label: 'Tipo', accessor: (row) => articleTypeMap[Number(row.article_type_id ?? row.articleTypeId)] || '-', sortable: true },
+            { key: 'articleType', label: 'Tipo', accessor: (row) => articleTypeMap[Number(row.article_type_id ?? row.articleTypeId)] || '-', sortAccessor: (row) => (articleTypeMap[Number(row.article_type_id ?? row.articleTypeId)] || '').toLowerCase(), sortable: true },
             { key: 'unit', label: 'Unidad', accessor: (row) => measurementUnitMap[Number(row.measurement_unit_id ?? row.measurementUnitId)] || '-' },
-            { key: 'cost', label: 'Costo', accessor: (row) => formatCurrency(row.cost), sortable: true },
-            { key: 'salePrice', label: 'Precio venta', accessor: (row) => formatCurrency(row.sale_price ?? row.salePrice ?? 0), sortable: true },
+            { key: 'cost', label: 'Costo', accessor: (row) => formatCurrency(row.cost), sortAccessor: (row) => Number(row.cost) || 0, sortable: true },
+            { key: 'salePrice', label: 'Precio venta', accessor: (row) => formatCurrency(row.sale_price ?? row.salePrice ?? 0), sortAccessor: (row) => Number(row.sale_price ?? row.salePrice) || 0, sortable: true },
             { key: 'flags', label: 'Flags', accessor: (row) => `Venta:${row.for_sale ? 'Sí' : 'No'} · Prod:${row.is_product ? 'Sí' : 'No'} · Insumo:${row.is_supply ? 'Sí' : 'No'}` },
             { key: 'status', label: 'Estado', accessor: (row) => ((row.active === 1 || row.active === true) ? 'Activo' : 'Inactivo') },
             {
