@@ -65,7 +65,7 @@ const remove = asyncHandler(async (req, res) => {
 
 const getAreaMap = asyncHandler(async (req, res) => {
   const branchId = Number(req.query.branchId || req.user.branchId);
-  const areaId = normalizeAreaId(req.query.areaId);
+  const areaId = normalizeAreaId(req.query.areaId || 1); 
 
   if (!areaId) {
     throw new AppError('Debe indicar un área válida.', 400);
@@ -77,8 +77,18 @@ const getAreaMap = asyncHandler(async (req, res) => {
   }
 
   const tables = await repo.listByArea(branchId, areaId);
-  const placedTables = tables.filter((table) => Number.isFinite(Number(table.pos_x)) && Number.isFinite(Number(table.pos_y)));
-  const unplacedTables = tables.filter((table) => !(Number.isFinite(Number(table.pos_x)) && Number.isFinite(Number(table.pos_y))));
+
+  // Validar coordenada (rechaza null, undefined, '', y strings vacíos)
+  const isValidCoord = (val) => val != null && val !== '' && Number.isFinite(Number(val));
+
+  const placedTables = tables.filter((t) => isValidCoord(t.pos_x) && isValidCoord(t.pos_y));
+  const unplacedTables = tables.filter((t) => !(isValidCoord(t.pos_x) && isValidCoord(t.pos_y)));
+
+  // Debug: mostrar qué mesas van a cada array
+  /*console.log('Total mesas:', tables.length);
+  console.log('Colocadas:', placedTables.length);
+  console.log('No colocadas:', unplacedTables.length);
+  console.table(unplacedTables.map(t => ({ id: t.id, pos_x: t.pos_x, pos_y: t.pos_y })));*/
 
   res.json({
     ok: true,

@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import { getAreas } from '../services/adminService';
 import { getAreaMap, saveAreaMap } from '../services/tableService';
 
-const MAP_WIDTH = 980;
+const MAP_WIDTH = 780;
 const MAP_HEIGHT = 560;
 const TABLE_WIDTH = 110;
 const TABLE_HEIGHT = 76;
@@ -201,7 +201,25 @@ function AdminAreaMapEditor() {
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={dropToMap}
               >
-                {placedTables.map((table) => (
+
+              {placedTables.map((table) => {
+                // Determinar colores según estado
+                const getStatusColors = (status) => {
+                  switch (String(status || 'LIBRE').toLowerCase()) {
+                    case 'libre':
+                      return { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32' };
+                    case 'ocupada':
+                      return { bg: '#ffebee', border: '#f44336', text: '#c62828' };
+                    case 'reservada':
+                      return { bg: '#fff3e0', border: '#ff9800', text: '#ef6c00' };
+                    default:
+                      return { bg: '#f5f5f5', border: '#9e9e9e', text: '#616161' };
+                  }
+                };
+                
+                const colors = getStatusColors(table.status);
+                
+                return (
                   <article
                     key={table.id}
                     className={`table-card status-${String(table.status || 'LIBRE').toLowerCase()}`}
@@ -212,15 +230,33 @@ function AdminAreaMapEditor() {
                       width: TABLE_WIDTH,
                       minHeight: TABLE_HEIGHT,
                       cursor: 'grab',
+                      backgroundColor: colors.bg,
+                      borderLeft: `4px solid ${colors.border}`,
+                      color: colors.text,
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease',
                     }}
                     draggable
                     onDragStart={(event) => handleDragStart(event, table.id, 'map')}
                   >
-                    <header>Mesa {table.table_number}</header>
-                    <p>{table.status}</p>
-                    <small>{table.capacity || '-'} personas</small>
+                    <header style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                      Mesa {table.table_number}
+                    </header>
+                    <p style={{ margin: '2px 0', fontSize: '11px', fontWeight: 500 }}>
+                      {table.status || 'LIBRE'}
+                    </p>
+                    <small style={{ fontSize: '10px', opacity: 0.8 }}>
+                      {table.capacity || '-'} personas
+                    </small>
                   </article>
-                ))}
+                );
+              })}
               </div>
             )}
           </section>
