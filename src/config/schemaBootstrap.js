@@ -52,6 +52,12 @@ async function ensureCashSchema() {
   await ensureAreasSchema();
   await ensureArticlesSchema();
   await ensureStockSchema();
+  await ensureColumn(
+    'tables_restaurant',
+    'table_type',
+    "ENUM('REDONDA','CUADRADA','RECTANGULAR_HORIZONTAL','RECTANGULAR_VERTICAL') NOT NULL DEFAULT 'CUADRADA'",
+    'table_number'
+  );
   await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (

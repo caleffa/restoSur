@@ -5,6 +5,7 @@ import TableCard from '../components/TableCard';
 import { getAreas } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
 import { createSale, getAreaMap, getTables } from '../services/tableService';
+import { normalizeTableType } from '../utils/tableVisuals';
 import { canAccessPOS, canCreateSale } from '../utils/roles';
 
 function Tables() {
@@ -31,6 +32,7 @@ function Tables() {
           ...table,
           name: table.name || table.table_number || `Mesa ${table.id}`,
           capacity: Number(table.capacity) > 0 ? Number(table.capacity) : 1,
+          table_type: normalizeTableType(table.table_type),
         }))
       );
       setError('');
@@ -55,6 +57,7 @@ function Tables() {
         ...table,
         name: table.name || table.table_number || `Mesa ${table.id}`,
         capacity: Number(table.capacity) > 0 ? Number(table.capacity) : 1,
+        table_type: normalizeTableType(table.table_type),
       }));
 
       setTables(ordered);
@@ -183,7 +186,7 @@ function Tables() {
                   onClick={handleTableClick}
                   disabled={busyTableId === table.id}
                   style={selectedArea !== 'ALL' && Number.isFinite(Number(table.pos_x)) && Number.isFinite(Number(table.pos_y))
-                    ? { position: 'absolute', left: Number(table.pos_x), top: Number(table.pos_y), width: 130 }
+                    ? { position: 'absolute', left: Number(table.pos_x), top: Number(table.pos_y) }
                     : undefined}
                 />
               ))

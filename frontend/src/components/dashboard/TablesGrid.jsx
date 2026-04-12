@@ -1,3 +1,5 @@
+import { getTableTypeLabel, getTableVisualConfig } from '../../utils/tableVisuals';
+
 function getTableStatusClass(status) {
   if (status === 'LIBRE') return 'table-pill table-free';
   if (status === 'OCUPADA') return 'table-pill table-busy';
@@ -51,20 +53,29 @@ function TablesGrid({
         <p className="mb-0 text-muted">No hay mesas disponibles.</p>
       ) : (
         <div className="tables-grid dashboard-tables-grid">
-          {tables.map((table) => (
+          {tables.map((table) => {
+            const visual = getTableVisualConfig(table);
+            return (
             <button
               key={table.id}
               type="button"
               className={`dashboard-table-btn ${getTableStatusClass(table.status)}`}
               onClick={() => onTableClick(table)}
               disabled={busyTableId === table.id}
+              style={{
+                width: visual.width,
+                minHeight: visual.height,
+                borderRadius: visual.borderRadius,
+              }}
             >
               <span className="fw-semibold">{table.name}</span>
+              <span className="small">{getTableTypeLabel(table.table_type)}</span>
               <span className="small">Capacidad: {table.capacity} personas</span>
               <span className="small">{table.status}</span>
               <span className="small mt-2">{busyTableId === table.id ? 'Procesando...' : getActionLabel(table.status)}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
     </article>

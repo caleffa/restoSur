@@ -12,15 +12,16 @@ module.exports = {
   ),
   create: async (data) => {
     const result = await query(
-      'INSERT INTO tables_restaurant (branch_id, area_id, table_number, capacity, status) VALUES (?, ?, ?, ?, ?)',
-      [data.branchId, data.areaId, data.tableNumber, data.capacity, data.status || 'LIBRE']
+      'INSERT INTO tables_restaurant (branch_id, area_id, table_number, table_type, capacity, status) VALUES (?, ?, ?, ?, ?, ?)',
+      [data.branchId, data.areaId, data.tableNumber, data.tableType, data.capacity, data.status || 'LIBRE']
     );
     return { id: result.insertId, ...data };
   },
   update: (id, data) =>
-    query('UPDATE tables_restaurant SET area_id=?, table_number=?, capacity=?, status=? WHERE id=?', [
+    query('UPDATE tables_restaurant SET area_id=?, table_number=?, table_type=?, capacity=?, status=? WHERE id=?', [
       data.areaId,
       data.tableNumber,
+      data.tableType,
       data.capacity,
       data.status,
       id,
@@ -38,7 +39,7 @@ module.exports = {
     return rows[0] || null;
   },
   listByArea: (branchId, areaId) => query(
-    `SELECT id, table_number, status, capacity, area_id, pos_x, pos_y
+    `SELECT id, table_number, table_type, status, capacity, area_id, pos_x, pos_y
      FROM tables_restaurant
      WHERE branch_id = ? AND area_id = ?
      ORDER BY table_number`,

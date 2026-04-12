@@ -15,6 +15,7 @@ import {
   getSalesByHour,
   getTopProducts,
 } from '../services/dashboardService';
+import { normalizeTableType } from '../utils/tableVisuals';
 import { canAccessPOS, canCreateSale, ROLES } from '../utils/roles';
 import { useAuth } from '../context/AuthContext';
 import { getKitchenOrders, getSaleDetail, updateKitchenOrderStatus } from '../services/kitchenService';
@@ -60,6 +61,7 @@ function Dashboard() {
           ...table,
           name: table.name || table.table_number || `Mesa ${table.id}`,
           capacity: Number(table.capacity) > 0 ? Number(table.capacity) : 1,
+          table_type: normalizeTableType(table.table_type),
         }))
       );
       setOpenSales(salesData);
