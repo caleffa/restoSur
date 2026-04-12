@@ -1,7 +1,7 @@
 const asyncHandler = require('../../middlewares/asyncHandler');
 const service = require('./articles.service');
 
-const listArticles = asyncHandler(async (_req, res) => {
+const listArticles = asyncHandler(async (req, res) => {
   res.json({ ok: true, data: await service.listArticles(req.query) });
 });
 
