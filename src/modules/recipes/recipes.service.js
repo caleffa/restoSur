@@ -1,5 +1,5 @@
 const repo = require('./recipes.repository');
-const productsRepo = require('../products/products.repository');
+const articlesRepo = require('../articles/articles.repository');
 const AppError = require('../../utils/appError');
 
 function normalizeItem(rawItem) {
@@ -56,8 +56,10 @@ function validateFractions(items, articleMap) {
 }
 
 async function validateReferences(data, recipeId = null) {
-  const product = await productsRepo.findById(data.productId);
-  if (!product) throw new AppError('Producto no encontrado', 404);
+  const product = await articlesRepo.findById(data.productId);
+  if (!product || !(product.is_product === 1 || product.is_product === true)) {
+    throw new AppError('El producto seleccionado no es válido', 404);
+  }
 
   const existingRecipe = await repo.findByProductId(data.productId);
   if (existingRecipe && existingRecipe.id !== recipeId) {
@@ -69,6 +71,12 @@ async function validateReferences(data, recipeId = null) {
 
   if (articles.length !== articleIds.length) {
     throw new AppError('Uno o más artículos de la receta no existen', 404);
+  }
+
+  for (const article of articles) {
+    if (!(article.is_supply === 1 || article.is_supply === true)) {
+      throw new AppError(`El artículo ${article.name} no está marcado como insumo`, 400);
+    }
   }
 
   const articleMap = new Map(articles.map((article) => [article.id, article]));

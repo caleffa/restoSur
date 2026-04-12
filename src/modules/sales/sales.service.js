@@ -38,9 +38,11 @@ async function addItem(saleId, { productId, quantity, notes }) {
     if (sale.status === 'PAGADA') throw new AppError('No se puede agregar items a una venta PAGADA', 400);
 
     const product = await productRepo.findById(productId, conn);
-    if (!product || !product.active) throw new AppError('Producto inválido', 400);
+    if (!product || !(product.active === 1 || product.active === true) || !(product.is_product === 1 || product.is_product === true) || !(product.for_sale === 1 || product.for_sale === true)) {
+      throw new AppError('Producto inválido o no disponible para la venta', 400);
+    }
 
-    if (product.has_stock) {
+    if (product.has_stock === 1 || product.has_stock === true) {
       const recipeItems = await recipesRepo.findActiveItemsByProductIds([Number(productId)], conn);
       for (const recipeItem of recipeItems) {
         const requiredQty = Number(quantity) * Number(recipeItem.quantity);

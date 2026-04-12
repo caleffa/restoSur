@@ -210,14 +210,28 @@ async function ensureArticlesSchema() {
       barcode VARCHAR(120) NULL UNIQUE,
       article_type_id INT NOT NULL,
       measurement_unit_id INT NOT NULL,
+      category_id INT NULL,
       cost DECIMAL(12,2) NOT NULL DEFAULT 0,
+      sale_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+      manages_stock TINYINT(1) DEFAULT 1,
+      is_product TINYINT(1) DEFAULT 0,
+      is_supply TINYINT(1) DEFAULT 1,
+      for_sale TINYINT(1) DEFAULT 0,
       active TINYINT(1) DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (article_type_id) REFERENCES article_types(id),
-      FOREIGN KEY (measurement_unit_id) REFERENCES measurement_units(id)
+      FOREIGN KEY (measurement_unit_id) REFERENCES measurement_units(id),
+      FOREIGN KEY (category_id) REFERENCES categories(id)
     )`
   );
+
+  await ensureColumn('articles', 'category_id', 'INT NULL', 'measurement_unit_id');
+  await ensureColumn('articles', 'sale_price', 'DECIMAL(12,2) NOT NULL DEFAULT 0', 'cost');
+  await ensureColumn('articles', 'manages_stock', 'TINYINT(1) DEFAULT 1', 'sale_price');
+  await ensureColumn('articles', 'is_product', 'TINYINT(1) DEFAULT 0', 'manages_stock');
+  await ensureColumn('articles', 'is_supply', 'TINYINT(1) DEFAULT 1', 'is_product');
+  await ensureColumn('articles', 'for_sale', 'TINYINT(1) DEFAULT 0', 'is_supply');
 
   await query(
     `CREATE TABLE IF NOT EXISTS recipes (
@@ -228,7 +242,7 @@ async function ensureArticlesSchema() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY uq_recipe_product (product_id),
-      FOREIGN KEY (product_id) REFERENCES products(id)
+      FOREIGN KEY (product_id) REFERENCES articles(id)
     )`
   );
 

@@ -6,7 +6,6 @@ import {
   createRecipe,
   deleteRecipe,
   getArticles,
-  getProducts,
   getRecipes,
   updateRecipe,
   getRecipeById,
@@ -34,8 +33,8 @@ function AdminRecipes() {
     try {
       const [recipesData, productsData, articlesData] = await Promise.all([
         getRecipes(),
-        getProducts(),
-        getArticles(),
+        getArticles({ isProduct: true }),
+        getArticles({ isSupply: true }),
       ]);
       setRecipes(recipesData);
       setProducts(productsData);

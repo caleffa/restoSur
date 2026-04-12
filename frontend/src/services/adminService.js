@@ -213,8 +213,8 @@ export async function deleteMeasurementUnit(measurementUnitId) {
 }
 
 // Artículos
-export async function getArticles() {
-  const { data } = await http.get('/articles');
+export async function getArticles(params = {}) {
+  const { data } = await http.get('/articles', { params });
   return unwrap(data) || [];
 }
 
