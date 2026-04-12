@@ -28,12 +28,8 @@ function normalizePayload(data) {
   if (!Number.isFinite(salePrice) || salePrice < 0) throw new AppError('El precio de venta es inválido', 400);
 
   const isProduct = data.isProduct === undefined ? false : Boolean(data.isProduct);
-  const isSupply = data.isSupply === undefined ? true : Boolean(data.isSupply);
+  const isSupply = data.isSupply === undefined ? false : Boolean(data.isSupply);
   const forSale = data.forSale === undefined ? false : Boolean(data.forSale);
-
-  if (!isProduct && !isSupply) {
-    throw new AppError('El artículo debe ser producto o insumo', 400);
-  }
 
   if (isProduct && isSupply) {
     throw new AppError('Un artículo no puede ser producto e insumo al mismo tiempo', 400);
@@ -43,9 +39,6 @@ function normalizePayload(data) {
     throw new AppError('Un insumo no puede estar a la venta', 400);
   }
 
-  if (forSale && !isProduct) {
-    throw new AppError('Para vender un artículo debe estar marcado como producto', 400);
-  }
 
   return {
     name,
