@@ -1,11 +1,15 @@
 const { query } = require('../../repositories/baseRepository');
 
+const BASE_SELECT = `SELECT a.*, at.name AS article_type_name, mu.name AS unit_name, mu.code AS unit_code,
+                     c.name AS category_name
+                     FROM articles a
+                     JOIN article_types at ON at.id = a.article_type_id
+                     JOIN measurement_units mu ON mu.id = a.measurement_unit_id
+                     LEFT JOIN categories c ON c.id = a.category_id`;
+
 async function findById(id) {
   const rows = await query(
-    `SELECT a.*, at.name AS article_type_name, mu.name AS unit_name, mu.code AS unit_code
-     FROM articles a
-     JOIN article_types at ON at.id = a.article_type_id
-     JOIN measurement_units mu ON mu.id = a.measurement_unit_id
+    `${BASE_SELECT}
      WHERE a.id = ?
      LIMIT 1`,
     [id]
@@ -23,21 +27,56 @@ async function findByBarcode(barcode) {
   return rows[0] || null;
 }
 
-async function list() {
+async function list(filters = {}) {
+  const conditions = [];
+  const values = [];
+
+  if (filters.isProduct !== undefined) {
+    conditions.push('a.is_product = ?');
+    values.push(filters.isProduct ? 1 : 0);
+  }
+
+  if (filters.isSupply !== undefined) {
+    conditions.push('a.is_supply = ?');
+    values.push(filters.isSupply ? 1 : 0);
+  }
+
+  if (filters.forSale !== undefined) {
+    conditions.push('a.for_sale = ?');
+    values.push(filters.forSale ? 1 : 0);
+  }
+
+  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
   return query(
-    `SELECT a.*, at.name AS article_type_name, mu.name AS unit_name, mu.code AS unit_code
-     FROM articles a
-     JOIN article_types at ON at.id = a.article_type_id
-     JOIN measurement_units mu ON mu.id = a.measurement_unit_id
-     ORDER BY a.id DESC`
+    `${BASE_SELECT}
+     ${whereClause}
+     ORDER BY a.id DESC`,
+    values
   );
 }
 
 async function create(data) {
   const result = await query(
-    `INSERT INTO articles (name, sku, barcode, article_type_id, measurement_unit_id, cost, active)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [data.name, data.sku, data.barcode, data.articleTypeId, data.measurementUnitId, data.cost, data.active ? 1 : 0]
+    `INSERT INTO articles (
+      name, sku, barcode, article_type_id, measurement_unit_id, category_id, cost, sale_price,
+      manages_stock, is_product, is_supply, for_sale, active
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.name,
+      data.sku,
+      data.barcode,
+      data.articleTypeId,
+      data.measurementUnitId,
+      data.categoryId,
+      data.cost,
+      data.salePrice,
+      data.managesStock ? 1 : 0,
+      data.isProduct ? 1 : 0,
+      data.isSupply ? 1 : 0,
+      data.forSale ? 1 : 0,
+      data.active ? 1 : 0,
+    ]
   );
   return { id: result.insertId, ...data };
 }
@@ -45,9 +84,25 @@ async function create(data) {
 async function update(id, data) {
   await query(
     `UPDATE articles
-     SET name = ?, sku = ?, barcode = ?, article_type_id = ?, measurement_unit_id = ?, cost = ?, active = ?
+     SET name = ?, sku = ?, barcode = ?, article_type_id = ?, measurement_unit_id = ?, category_id = ?,
+         cost = ?, sale_price = ?, manages_stock = ?, is_product = ?, is_supply = ?, for_sale = ?, active = ?
      WHERE id = ?`,
-    [data.name, data.sku, data.barcode, data.articleTypeId, data.measurementUnitId, data.cost, data.active ? 1 : 0, id]
+    [
+      data.name,
+      data.sku,
+      data.barcode,
+      data.articleTypeId,
+      data.measurementUnitId,
+      data.categoryId,
+      data.cost,
+      data.salePrice,
+      data.managesStock ? 1 : 0,
+      data.isProduct ? 1 : 0,
+      data.isSupply ? 1 : 0,
+      data.forSale ? 1 : 0,
+      data.active ? 1 : 0,
+      id,
+    ]
   );
 }
 

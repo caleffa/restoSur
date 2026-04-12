@@ -7,6 +7,7 @@ import {
   deleteArticle,
   getArticleTypes,
   getArticles,
+  getCategories,
   getMeasurementUnits,
   updateArticle,
 } from '../services/adminService';
@@ -18,7 +19,13 @@ const initialForm = {
   barcode: '',
   articleTypeId: '',
   measurementUnitId: '',
+  categoryId: '',
   cost: '',
+  salePrice: '',
+  managesStock: true,
+  isProduct: false,
+  isSupply: true,
+  forSale: false,
   active: true,
 };
 
@@ -26,6 +33,7 @@ function AdminArticles() {
   const [articles, setArticles] = useState([]);
   const [articleTypes, setArticleTypes] = useState([]);
   const [measurementUnits, setMeasurementUnits] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -35,14 +43,16 @@ function AdminArticles() {
 
   const loadData = useCallback(async () => {
     try {
-      const [articlesData, articleTypesData, measurementUnitsData] = await Promise.all([
+      const [articlesData, articleTypesData, measurementUnitsData, categoriesData] = await Promise.all([
         getArticles(),
         getArticleTypes(),
         getMeasurementUnits(),
+        getCategories(),
       ]);
       setArticles(articlesData);
       setArticleTypes(articleTypesData);
       setMeasurementUnits(measurementUnitsData);
+      setCategories(categoriesData);
       setError('');
     } catch {
       setError('No se pudo cargar la información de artículos.');
@@ -75,7 +85,13 @@ function AdminArticles() {
         barcode: form.barcode || null,
         articleTypeId: Number(form.articleTypeId),
         measurementUnitId: Number(form.measurementUnitId),
+        categoryId: form.categoryId ? Number(form.categoryId) : null,
         cost: Number(form.cost),
+        salePrice: Number(form.salePrice),
+        managesStock: Boolean(form.managesStock),
+        isProduct: Boolean(form.isProduct),
+        isSupply: Boolean(form.isSupply),
+        forSale: Boolean(form.forSale),
         active: Boolean(form.active),
       };
 
@@ -110,7 +126,13 @@ function AdminArticles() {
       barcode: row.barcode || '',
       articleTypeId: row.article_type_id ?? row.articleTypeId ?? '',
       measurementUnitId: row.measurement_unit_id ?? row.measurementUnitId ?? '',
+      categoryId: row.category_id ?? row.categoryId ?? '',
       cost: row.cost,
+      salePrice: row.sale_price ?? row.salePrice ?? 0,
+      managesStock: row.manages_stock === 1 || row.manages_stock === true,
+      isProduct: row.is_product === 1 || row.is_product === true,
+      isSupply: row.is_supply === 1 || row.is_supply === true,
+      forSale: row.for_sale === 1 || row.for_sale === true,
       active: row.active === 1 || row.active === true,
     });
     setIsFormModalOpen(true);
@@ -173,6 +195,8 @@ function AdminArticles() {
             { key: 'articleType', label: 'Tipo', accessor: (row) => articleTypeMap[Number(row.article_type_id ?? row.articleTypeId)] || '-', sortable: true },
             { key: 'unit', label: 'Unidad', accessor: (row) => measurementUnitMap[Number(row.measurement_unit_id ?? row.measurementUnitId)] || '-' },
             { key: 'cost', label: 'Costo', accessor: (row) => formatCurrency(row.cost), sortable: true },
+            { key: 'salePrice', label: 'Precio venta', accessor: (row) => formatCurrency(row.sale_price ?? row.salePrice ?? 0), sortable: true },
+            { key: 'flags', label: 'Flags', accessor: (row) => `Venta:${row.for_sale ? 'Sí' : 'No'} · Prod:${row.is_product ? 'Sí' : 'No'} · Insumo:${row.is_supply ? 'Sí' : 'No'}` },
             { key: 'status', label: 'Estado', accessor: (row) => ((row.active === 1 || row.active === true) ? 'Activo' : 'Inactivo') },
             {
               key: 'actions',
@@ -232,6 +256,10 @@ function AdminArticles() {
                 <option value="">Seleccionar unidad de medida</option>
                 {measurementUnits.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.code})</option>)}
               </select>
+              <select value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}>
+                <option value="">Seleccionar categoría</option>
+                {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
               <input
                 type="number"
                 min="0"
@@ -241,6 +269,19 @@ function AdminArticles() {
                 onChange={(event) => setForm((prev) => ({ ...prev, cost: event.target.value }))}
                 required
               />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Precio de venta"
+                value={form.salePrice}
+                onChange={(event) => setForm((prev) => ({ ...prev, salePrice: event.target.value }))}
+                required
+              />
+              <label><input type="checkbox" checked={form.managesStock} onChange={(event) => setForm((prev) => ({ ...prev, managesStock: event.target.checked }))} /> Maneja stock</label>
+              <label><input type="checkbox" checked={form.isProduct} onChange={(event) => setForm((prev) => ({ ...prev, isProduct: event.target.checked }))} /> Es producto</label>
+              <label><input type="checkbox" checked={form.isSupply} onChange={(event) => setForm((prev) => ({ ...prev, isSupply: event.target.checked }))} /> Es insumo</label>
+              <label><input type="checkbox" checked={form.forSale} onChange={(event) => setForm((prev) => ({ ...prev, forSale: event.target.checked }))} /> A la venta</label>
               <label>
                 <input
                   type="checkbox"

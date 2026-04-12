@@ -1,7 +1,14 @@
 const repo = require('./articles.repository');
 const articleTypeRepo = require('../articleTypes/articleTypes.repository');
 const measurementUnitRepo = require('../measurementUnits/measurementUnits.repository');
+const categoriesRepo = require('../categories/categories.repository');
 const AppError = require('../../utils/appError');
+
+function toOptionalNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
 
 function normalizePayload(data) {
   const name = String(data.name || '').trim();
@@ -9,13 +16,28 @@ function normalizePayload(data) {
   const barcode = data.barcode ? String(data.barcode).trim() : null;
   const articleTypeId = Number(data.articleTypeId);
   const measurementUnitId = Number(data.measurementUnitId);
+  const categoryId = toOptionalNumber(data.categoryId);
   const cost = Number(data.cost);
+  const salePrice = Number(data.salePrice ?? data.price ?? 0);
 
   if (!name) throw new AppError('El nombre del artículo es obligatorio', 400);
   if (!sku) throw new AppError('El SKU del artículo es obligatorio', 400);
   if (!articleTypeId) throw new AppError('El tipo de artículo es obligatorio', 400);
   if (!measurementUnitId) throw new AppError('La unidad de medida es obligatoria', 400);
   if (!Number.isFinite(cost) || cost < 0) throw new AppError('El costo del artículo es inválido', 400);
+  if (!Number.isFinite(salePrice) || salePrice < 0) throw new AppError('El precio de venta es inválido', 400);
+
+  const isProduct = data.isProduct === undefined ? false : Boolean(data.isProduct);
+  const isSupply = data.isSupply === undefined ? true : Boolean(data.isSupply);
+  const forSale = data.forSale === undefined ? false : Boolean(data.forSale);
+
+  if (!isProduct && !isSupply) {
+    throw new AppError('El artículo debe ser producto o insumo (o ambos)', 400);
+  }
+
+  if (forSale && !isProduct) {
+    throw new AppError('Para vender un artículo debe estar marcado como producto', 400);
+  }
 
   return {
     name,
@@ -23,19 +45,27 @@ function normalizePayload(data) {
     barcode,
     articleTypeId,
     measurementUnitId,
+    categoryId,
     cost,
+    salePrice,
+    managesStock: data.managesStock === undefined ? true : Boolean(data.managesStock),
+    isProduct,
+    isSupply,
+    forSale,
     active: data.active === undefined ? true : Boolean(data.active),
   };
 }
 
 async function validateReferences(data) {
-  const [articleType, measurementUnit] = await Promise.all([
+  const [articleType, measurementUnit, category] = await Promise.all([
     articleTypeRepo.findById(data.articleTypeId),
     measurementUnitRepo.findById(data.measurementUnitId),
+    data.categoryId ? categoriesRepo.findById(data.categoryId) : Promise.resolve(null),
   ]);
 
   if (!articleType) throw new AppError('Tipo de artículo no encontrado', 404);
   if (!measurementUnit) throw new AppError('Unidad de medida no encontrada', 404);
+  if (data.categoryId && !category) throw new AppError('Categoría no encontrada', 404);
 }
 
 async function ensureUniqueFields(data, currentId = null) {
@@ -52,8 +82,21 @@ async function ensureUniqueFields(data, currentId = null) {
   }
 }
 
-async function listArticles() {
-  return repo.list();
+function normalizeListFilters(query) {
+  const parseBool = (value) => {
+    if (value === undefined) return undefined;
+    return ['1', 'true', 'si', 'yes'].includes(String(value).toLowerCase());
+  };
+
+  return {
+    isProduct: parseBool(query.isProduct),
+    isSupply: parseBool(query.isSupply),
+    forSale: parseBool(query.forSale),
+  };
+}
+
+async function listArticles(filters = {}) {
+  return repo.list(normalizeListFilters(filters));
 }
 
 async function getArticleById(id) {

@@ -51,9 +51,9 @@ async function addSaleItem({ saleId, productId, quantity, unitPrice, notes }, co
 
 async function listItemsBySale(saleId, conn) {
   return query(
-    `SELECT si.*, p.name AS product_name, p.has_stock
+    `SELECT si.*, p.name AS product_name, p.manages_stock AS has_stock
      FROM sale_items si
-     JOIN products p ON p.id = si.product_id
+     JOIN articles p ON p.id = si.product_id
      WHERE si.sale_id = ?`,
     [saleId],
     conn

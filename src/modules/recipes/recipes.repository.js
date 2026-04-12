@@ -7,7 +7,7 @@ async function list() {
             COUNT(ri.id) AS items_count,
             ROUND(COALESCE(SUM(ri.quantity * a.cost), 0), 2) AS estimated_cost
      FROM recipes r
-     JOIN products p ON p.id = r.product_id
+     JOIN articles p ON p.id = r.product_id
      LEFT JOIN recipe_items ri ON ri.recipe_id = r.id
      LEFT JOIN articles a ON a.id = ri.article_id
      GROUP BY r.id, p.name
@@ -19,7 +19,7 @@ async function findById(id) {
   const recipes = await query(
     `SELECT r.*, p.name AS product_name
      FROM recipes r
-     JOIN products p ON p.id = r.product_id
+     JOIN articles p ON p.id = r.product_id
      WHERE r.id = ?
      LIMIT 1`,
     [id]
@@ -68,7 +68,7 @@ async function findArticlesByIds(articleIds) {
 
   const placeholders = articleIds.map(() => '?').join(',');
   return query(
-    `SELECT a.id, a.name, a.measurement_unit_id,
+    `SELECT a.id, a.name, a.is_supply, a.measurement_unit_id,
             mu.name AS measurement_unit_name, mu.code AS measurement_unit_code,
             mu.allows_fraction AS measurement_unit_allows_fraction
      FROM articles a
