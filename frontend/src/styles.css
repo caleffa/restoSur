@@ -151,6 +151,48 @@ body {
   padding: 0.9rem;
 }
 
+.table-plan-token {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+}
+
+.table-plan-svg {
+  width: 70px;
+  height: 70px;
+}
+
+.table-plan-room {
+  fill: rgba(255, 255, 255, 0.14);
+}
+
+.table-plan-board {
+  fill: rgba(255, 255, 255, 0.3);
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 2;
+}
+
+.table-plan-seat {
+  fill: #f8fafc;
+  stroke: rgba(15, 23, 42, 0.22);
+  stroke-width: 1.2;
+}
+
+.table-plan-meta {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.table-plan-meta strong,
+.table-plan-meta small {
+  line-height: 1.05;
+}
+
+.table-plan-token.is-compact .table-plan-svg {
+  width: 62px;
+  height: 62px;
+}
+
 .table-free {
   background: #16a34a;
 }
@@ -292,6 +334,8 @@ body {
   flex-direction: column;
   justify-content: space-between;
   transition: transform 0.15s ease, filter 0.15s ease;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 
 .dashboard-table-btn:hover {
@@ -301,6 +345,10 @@ body {
 
 .dashboard-table-btn:disabled {
   opacity: 0.75;
+}
+
+.dashboard-map-canvas {
+  min-height: 480px;
 }
 
 .table-pill {
@@ -318,6 +366,18 @@ body {
 .table-pill.table-bill {
   background: #facc15;
   color: #111827;
+}
+
+.table-bill .table-plan-board,
+.table-pill.table-bill .table-plan-board {
+  fill: rgba(15, 23, 42, 0.08);
+  stroke: rgba(15, 23, 42, 0.45);
+}
+
+.table-bill .table-plan-seat,
+.table-pill.table-bill .table-plan-seat {
+  fill: #1f2937;
+  stroke: rgba(255, 255, 255, 0.25);
 }
 
 .table-pill.table-closed {
