@@ -28,7 +28,7 @@ async function createSale(data, user) {
   }
 }
 
-async function addItem(saleId, { productId, quantity, notes }) {
+async function addItem(saleId, { productId, articleId, quantity, notes }) {
   validateSaleId(saleId);
   const conn = await pool.getConnection();
   try {
@@ -37,13 +37,14 @@ async function addItem(saleId, { productId, quantity, notes }) {
     if (!sale) throw new AppError('Venta no encontrada', 404);
     if (sale.status === 'PAGADA') throw new AppError('No se puede agregar items a una venta PAGADA', 400);
 
-    const product = await productRepo.findById(productId, conn);
+    const selectedArticleId = Number(articleId ?? productId);
+    const product = await productRepo.findById(selectedArticleId, conn);
     if (!product || !(product.active === 1 || product.active === true) || !(product.is_product === 1 || product.is_product === true) || !(product.for_sale === 1 || product.for_sale === true)) {
       throw new AppError('Producto inválido o no disponible para la venta', 400);
     }
 
     if (product.has_stock === 1 || product.has_stock === true) {
-      const recipeItems = await recipesRepo.findActiveItemsByProductIds([Number(productId)], conn);
+      const recipeItems = await recipesRepo.findActiveItemsByProductIds([selectedArticleId], conn);
       for (const recipeItem of recipeItems) {
         const requiredQty = Number(quantity) * Number(recipeItem.quantity);
         const current = await stockRepo.findStock(sale.branch_id, Number(recipeItem.article_id), conn);
@@ -53,9 +54,9 @@ async function addItem(saleId, { productId, quantity, notes }) {
       }
     }
 
-    await salesRepo.addSaleItem({ saleId, productId, quantity, unitPrice: product.price, notes }, conn);
+    await salesRepo.addSaleItem({ saleId, articleId: selectedArticleId, quantity, unitPrice: product.price, notes }, conn);
     await conn.commit();
-    return { saleId, productId, quantity };
+    return { saleId, articleId: selectedArticleId, quantity };
   } catch (e) {
     await conn.rollback();
     throw e;
@@ -168,7 +169,7 @@ async function paySale(saleId, user, paymentData = {}) {
     const total = items.reduce((acc, it) => acc + Number(it.quantity) * Number(it.unit_price), 0);
 
     const recipeItems = await recipesRepo.findActiveItemsByProductIds(
-      [...new Set(items.map((item) => Number(item.product_id)))],
+      [...new Set(items.map((item) => Number(item.article_id)))],
       conn
     );
 
@@ -182,7 +183,7 @@ async function paySale(saleId, user, paymentData = {}) {
 
     const requiredByArticle = new Map();
     for (const item of items) {
-      const itemProductId = Number(item.product_id);
+      const itemProductId = Number(item.article_id);
       const productRecipes = recipeByProduct.get(itemProductId) || [];
 
       for (const recipeItem of productRecipes) {
