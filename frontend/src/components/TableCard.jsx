@@ -1,4 +1,5 @@
-import { getTableTypeLabel, getTableVisualConfig } from '../utils/tableVisuals';
+import { getTableVisualConfig } from '../utils/tableVisuals';
+import TablePlanToken from './TablePlanToken';
 
 const STATUS_STYLES = {
   LIBRE: 'table-card table-free',
@@ -25,9 +26,7 @@ function TableCard({ table, onClick, disabled = false, style = undefined }) {
       onClick={() => onClick(table)}
       aria-label={`Mesa ${table.name} para ${table.capacity} personas, estado ${table.status}`}
     >
-      <strong>{table.name}</strong>
-      <span>Tipo: {getTableTypeLabel(table.table_type)}</span>
-      <span>Capacidad: {table.capacity} personas</span>
+      <TablePlanToken table={table} />
       <span>Área: {table.area_name || 'Sin área'}</span>
       <span>{table.status}</span>
     </button>

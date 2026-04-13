@@ -1,4 +1,5 @@
-import { getTableTypeLabel, getTableVisualConfig } from '../../utils/tableVisuals';
+import { getTableVisualConfig } from '../../utils/tableVisuals';
+import TablePlanToken from '../TablePlanToken';
 
 function getTableStatusClass(status) {
   if (status === 'LIBRE') return 'table-pill table-free';
@@ -23,6 +24,9 @@ function TablesGrid({
   selectedArea = 'ALL',
   onAreaChange,
 }) {
+  const hasMappedPositions = selectedArea !== 'ALL'
+    && tables.some((table) => Number.isFinite(Number(table.pos_x)) && Number.isFinite(Number(table.pos_y)));
+
   return (
     <article className="dashboard-card shadow-sm">
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -52,7 +56,7 @@ function TablesGrid({
       ) : tables.length === 0 ? (
         <p className="mb-0 text-muted">No hay mesas disponibles.</p>
       ) : (
-        <div className="tables-grid dashboard-tables-grid">
+        <div className={hasMappedPositions ? 'tables-map-canvas dashboard-map-canvas' : 'tables-grid dashboard-tables-grid'}>
           {tables.map((table) => {
             const visual = getTableVisualConfig(table);
             return (
@@ -66,11 +70,16 @@ function TablesGrid({
                 width: visual.width,
                 minHeight: visual.height,
                 borderRadius: visual.borderRadius,
+                ...(hasMappedPositions && Number.isFinite(Number(table.pos_x)) && Number.isFinite(Number(table.pos_y))
+                  ? {
+                    position: 'absolute',
+                    left: Number(table.pos_x),
+                    top: Number(table.pos_y),
+                  }
+                  : {}),
               }}
             >
-              <span className="fw-semibold">{table.name}</span>
-              <span className="small">{getTableTypeLabel(table.table_type)}</span>
-              <span className="small">Capacidad: {table.capacity} personas</span>
+              <TablePlanToken table={table} compact />
               <span className="small">{table.status}</span>
               <span className="small mt-2">{busyTableId === table.id ? 'Procesando...' : getActionLabel(table.status)}</span>
             </button>

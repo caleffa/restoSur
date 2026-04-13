@@ -7,7 +7,7 @@ import TablesGrid from '../components/dashboard/TablesGrid';
 import TopProducts from '../components/dashboard/TopProducts';
 import KitchenOrdersGrid from '../components/dashboard/KitchenOrdersGrid';
 import KitchenOrderModal from '../components/dashboard/KitchenOrderModal';
-import { createSale, getTables } from '../services/tableService';
+import { createSale, getAreaMap, getTables } from '../services/tableService';
 import { getAreas } from '../services/adminService';
 import {
   getDashboardSummary,
@@ -46,9 +46,16 @@ function Dashboard() {
     try {
       setLoading(true);
 
+      const tablesPromise = selectedArea === 'ALL'
+        ? getTables({})
+        : getAreaMap(Number(selectedArea)).then((mapData) => [
+          ...(Array.isArray(mapData?.placedTables) ? mapData.placedTables : []),
+          ...(Array.isArray(mapData?.unplacedTables) ? mapData.unplacedTables : []),
+        ]);
+
       const [summaryData, tablesData, salesData, productsData, hourlyData, kitchenData] = await Promise.all([
         getDashboardSummary(),
-        getTables(selectedArea === 'ALL' ? {} : { areaId: Number(selectedArea) }),
+        tablesPromise,
         getOpenSales(),
         getTopProducts(),
         getSalesByHour(),
