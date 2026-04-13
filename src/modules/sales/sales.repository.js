@@ -40,10 +40,10 @@ async function listOpenSalesByBranch(branchId) {
   );
 }
 
-async function addSaleItem({ saleId, productId, quantity, unitPrice, notes }, conn) {
+async function addSaleItem({ saleId, articleId, quantity, unitPrice, notes }, conn) {
   const result = await query(
-    'INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, notes) VALUES (?, ?, ?, ?, ?)',
-    [saleId, productId, quantity, unitPrice, notes || null],
+    'INSERT INTO sale_items (sale_id, article_id, quantity, unit_price, notes) VALUES (?, ?, ?, ?, ?)',
+    [saleId, articleId, quantity, unitPrice, notes || null],
     conn
   );
   return { id: result.insertId };
@@ -51,9 +51,9 @@ async function addSaleItem({ saleId, productId, quantity, unitPrice, notes }, co
 
 async function listItemsBySale(saleId, conn) {
   return query(
-    `SELECT si.*, p.name AS product_name, p.manages_stock AS has_stock
+    `SELECT si.*, p.name AS article_name, p.manages_stock AS has_stock
      FROM sale_items si
-     JOIN articles p ON p.id = si.product_id
+     JOIN articles p ON p.id = si.article_id
      WHERE si.sale_id = ?`,
     [saleId],
     conn

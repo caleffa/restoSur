@@ -223,14 +223,14 @@ CREATE TABLE sales (
 CREATE TABLE sale_items (
   id INT AUTO_INCREMENT PRIMARY KEY,
   sale_id INT NOT NULL,
-  product_id INT NOT NULL,
+  article_id INT NOT NULL,
   quantity DECIMAL(12,3) NOT NULL,
   unit_price DECIMAL(12,2) NOT NULL,
   kitchen_status ENUM('PENDIENTE','ENVIADO','PREPARANDO','LISTO') DEFAULT 'PENDIENTE',
   notes VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sale_id) REFERENCES sales(id),
-  FOREIGN KEY (product_id) REFERENCES articles(id)
+  FOREIGN KEY (article_id) REFERENCES articles(id)
 );
 
 CREATE TABLE kitchen_orders (

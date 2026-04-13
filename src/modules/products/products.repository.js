@@ -78,7 +78,7 @@ async function listTopProductsByBranch(branchId, limit = 10) {
       ROUND(COALESCE(SUM(si.quantity * si.unit_price), 0), 2) AS total
     FROM sale_items si
     JOIN sales s ON s.id = si.sale_id
-    JOIN articles a ON a.id = si.product_id
+    JOIN articles a ON a.id = si.article_id
     WHERE s.branch_id = ?
       AND s.status = 'PAGADA'
       AND DATE(s.paid_at) = CURDATE()
