@@ -1,14 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from '../components/Navbar';
+import TablePlanToken from '../components/TablePlanToken';
 import { getAreas } from '../services/adminService';
 import { getAreaMap, saveAreaMap } from '../services/tableService';
 import { getTableTypeLabel, getTableVisualConfig, normalizeTableType } from '../utils/tableVisuals';
 
 const MAP_WIDTH = 780;
 const MAP_HEIGHT = 560;
+const MAP_TABLE_SCALE = 0.58;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function getTableStatusClass(status) {
+  if (status === 'LIBRE') return 'table-pill table-free';
+  if (status === 'OCUPADA') return 'table-pill table-busy';
+  if (status === 'CUENTA_PEDIDA') return 'table-pill table-bill';
+  if (status === 'CERRADA') return 'table-pill table-closed';
+  return 'table-pill';
 }
 
 function AdminAreaMapEditor() {
@@ -217,61 +227,34 @@ function AdminAreaMapEditor() {
 
               {placedTables.map((table) => {
                 const visual = getTableVisualConfig(table);
-
-                const getStatusColors = (status) => {
-                  switch (String(status || 'LIBRE').toLowerCase()) {
-                    case 'libre':
-                      return { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32' };
-                    case 'ocupada':
-                      return { bg: '#ffebee', border: '#f44336', text: '#c62828' };
-                    case 'reservada':
-                      return { bg: '#fff3e0', border: '#ff9800', text: '#ef6c00' };
-                    default:
-                      return { bg: '#f5f5f5', border: '#9e9e9e', text: '#616161' };
-                  }
-                };
-                
-                const colors = getStatusColors(table.status);
+                const width = Math.round(visual.width * MAP_TABLE_SCALE);
+                const height = Math.round(visual.height * MAP_TABLE_SCALE);
                 
                 return (
-                  <article
+                  <button
                     key={table.id}
-                    className={`table-card status-${String(table.status || 'LIBRE').toLowerCase()}`}
+                    type="button"
+                    className={`dashboard-table-btn ${getTableStatusClass(table.status)}`}
                     style={{
                       position: 'absolute',
                       left: Number(table.pos_x),
                       top: Number(table.pos_y),
-                      width: visual.width,
-                      minHeight: visual.height,
+                      width,
+                      minHeight: height,
                       cursor: 'grab',
-                      backgroundColor: colors.bg,
-                      borderLeft: `4px solid ${colors.border}`,
-                      color: colors.text,
                       borderRadius: visual.borderRadius,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                      padding: '8px',
-                      display: 'flex',
-                      flexDirection: 'column',
+                      padding: '0.35rem',
+                      gap: '0.15rem',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
+                      userSelect: 'none',
                     }}
                     draggable
                     onDragStart={(event) => handleDragStart(event, table.id, 'map')}
                   >
-                    <header style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
-                      Mesa {table.table_number}
-                    </header>
-                    <p style={{ margin: '2px 0', fontSize: '11px', fontWeight: 500 }}>
-                      {table.status || 'LIBRE'}
-                    </p>
-                    <small style={{ fontSize: '10px', opacity: 0.8 }}>
-                      {getTableTypeLabel(table.table_type)}
-                    </small>
-                    <small style={{ fontSize: '10px', opacity: 0.8 }}>
-                      {table.capacity || '-'} personas
-                    </small>
-                  </article>
+                    <TablePlanToken table={table} compact />
+                    <strong style={{ fontSize: '0.7rem', lineHeight: 1 }}>Mesa {table.table_number}</strong>
+                    <small style={{ fontSize: '0.58rem', lineHeight: 1.05 }}>{getTableTypeLabel(table.table_type)}</small>
+                  </button>
                 );
               })}
               </div>
