@@ -42,13 +42,13 @@ async function listStock(branchId) {
       a.sku AS article_sku,
       a.active,
       mu.code AS measurement_unit_code,
-      GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ', ') AS related_products
+      GROUP_CONCAT(DISTINCT rp.name ORDER BY rp.name SEPARATOR ', ') AS related_products
      FROM articles a
      LEFT JOIN stock s ON s.article_id = a.id AND s.branch_id = ?
      LEFT JOIN measurement_units mu ON mu.id = a.measurement_unit_id
      LEFT JOIN recipe_items ri ON ri.article_id = a.id
      LEFT JOIN recipes r ON r.id = ri.recipe_id AND r.active = 1
-     LEFT JOIN products p ON p.id = r.product_id AND p.active = 1
+     LEFT JOIN articles rp ON rp.id = r.product_id AND rp.active = 1
     WHERE a.active = 1
     GROUP BY
       s.id,
@@ -77,13 +77,13 @@ async function listMovements(branchId, limit = 100) {
       sm.created_at,
       a.name AS article_name,
       u.name AS user_name,
-      GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ', ') AS related_products
+      GROUP_CONCAT(DISTINCT rp.name ORDER BY rp.name SEPARATOR ', ') AS related_products
      FROM stock_movements sm
      JOIN articles a ON a.id = sm.article_id
      LEFT JOIN users u ON u.id = sm.user_id
      LEFT JOIN recipe_items ri ON ri.article_id = a.id
      LEFT JOIN recipes r ON r.id = ri.recipe_id AND r.active = 1
-     LEFT JOIN products p ON p.id = r.product_id AND p.active = 1
+     LEFT JOIN articles rp ON rp.id = r.product_id AND rp.active = 1
     WHERE sm.branch_id = ?
     GROUP BY
       sm.id,

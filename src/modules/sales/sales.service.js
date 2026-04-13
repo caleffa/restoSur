@@ -39,17 +39,24 @@ async function addItem(saleId, { productId, articleId, quantity, notes }) {
 
     const selectedArticleId = Number(articleId ?? productId);
     const product = await productRepo.findById(selectedArticleId, conn);
-    if (!product || !(product.active === 1 || product.active === true) || !(product.is_product === 1 || product.is_product === true) || !(product.for_sale === 1 || product.for_sale === true)) {
-      throw new AppError('Producto inválido o no disponible para la venta', 400);
+    if (!product || !(product.active === 1 || product.active === true) || !(product.for_sale === 1 || product.for_sale === true)) {
+      throw new AppError('Artículo inválido o no disponible para la venta', 400);
     }
 
     if (product.has_stock === 1 || product.has_stock === true) {
       const recipeItems = await recipesRepo.findActiveItemsByProductIds([selectedArticleId], conn);
-      for (const recipeItem of recipeItems) {
-        const requiredQty = Number(quantity) * Number(recipeItem.quantity);
-        const current = await stockRepo.findStock(sale.branch_id, Number(recipeItem.article_id), conn);
-        if (Number(current?.quantity || 0) < requiredQty) {
-          throw new AppError('Stock insuficiente para la receta del producto', 400);
+      if (recipeItems.length > 0) {
+        for (const recipeItem of recipeItems) {
+          const requiredQty = Number(quantity) * Number(recipeItem.quantity);
+          const current = await stockRepo.findStock(sale.branch_id, Number(recipeItem.article_id), conn);
+          if (Number(current?.quantity || 0) < requiredQty) {
+            throw new AppError('Stock insuficiente para la receta del artículo', 400);
+          }
+        }
+      } else {
+        const current = await stockRepo.findStock(sale.branch_id, selectedArticleId, conn);
+        if (Number(current?.quantity || 0) < Number(quantity)) {
+          throw new AppError('Stock insuficiente para el artículo', 400);
         }
       }
     }
@@ -183,14 +190,20 @@ async function paySale(saleId, user, paymentData = {}) {
 
     const requiredByArticle = new Map();
     for (const item of items) {
-      const itemProductId = Number(item.article_id);
-      const productRecipes = recipeByProduct.get(itemProductId) || [];
+      const itemArticleId = Number(item.article_id);
+      const productRecipes = recipeByProduct.get(itemArticleId) || [];
 
-      for (const recipeItem of productRecipes) {
-        const articleId = Number(recipeItem.article_id);
-        const requiredQty = Number(item.quantity) * Number(recipeItem.quantity);
-        const accumulated = requiredByArticle.get(articleId) || 0;
-        requiredByArticle.set(articleId, Number((accumulated + requiredQty).toFixed(3)));
+      if (productRecipes.length > 0) {
+        for (const recipeItem of productRecipes) {
+          const articleId = Number(recipeItem.article_id);
+          const requiredQty = Number(item.quantity) * Number(recipeItem.quantity);
+          const accumulated = requiredByArticle.get(articleId) || 0;
+          requiredByArticle.set(articleId, Number((accumulated + requiredQty).toFixed(3)));
+        }
+      } else if (item.has_stock === 1 || item.has_stock === true) {
+        const requiredQty = Number(item.quantity);
+        const accumulated = requiredByArticle.get(itemArticleId) || 0;
+        requiredByArticle.set(itemArticleId, Number((accumulated + requiredQty).toFixed(3)));
       }
     }
 
