@@ -8,24 +8,45 @@ export const ROLES = {
 export const MENU_BY_ROLE = {
   [ROLES.ADMIN]: [
     { label: 'Dashboard', path: '/dashboard' },
-    { label: 'Mesas', path: '/tables' },
-    { label: 'Admin Mesas', path: '/admin/tables' },
-    { label: 'Áreas', path: '/admin/management/areas' },
-    { label: 'Mapa Salón', path: '/admin/management/areas-map' },
-    { label: 'Admin Usuarios', path: '/admin/management/users' },
-    { label: 'Admin Categorías', path: '/admin/management/categories' },
-    { label: 'Admin Productos', path: '/admin/management/products' },
-    { label: 'Admin Recetas', path: '/admin/management/recipes' },
-    { label: 'Admin Tipos de Artículos', path: '/admin/management/article-types' },
-    { label: 'Admin Unidades de Medida', path: '/admin/management/measurement-units' },
-    { label: 'Admin Artículos', path: '/admin/management/articles' },
-    { label: 'Cajas', path: '/cash/registers' },
-    { label: 'Caja', path: '/cash' },
-    { label: 'Reportes Caja', path: '/cash/reports' },
+    {
+      label: 'Mesas',
+      path: '/admin/tables',
+      children: [
+        { label: 'Mesas', path: '/admin/tables' },
+        { label: 'Áreas', path: '/admin/management/areas' },
+        { label: 'Mapa salón', path: '/admin/management/areas-map' },
+      ],
+    },
+    {
+      label: 'Artículos',
+      path: '/admin/management/articles',
+      children: [
+        { label: 'Tipos de artículos', path: '/admin/management/article-types' },
+        { label: 'Unidades de medida', path: '/admin/management/measurement-units' },
+      ],
+    },
     { label: 'Stock', path: '/admin/management/stock' },
-    { label: 'Ventas', path: '/sales/management' },
-    { label: 'Facturación', path: '/admin/management/invoices' },
-    { label: 'Comandas', path: '/comandas' },
+    {
+      label: 'Productos',
+      path: '/admin/management/products',
+      children: [
+        { label: 'Recetas', path: '/admin/management/recipes' },
+      ],
+    },
+    {
+      label: 'Caja',
+      path: '/cash',
+      children: [
+        { label: 'Admin cajas', path: '/cash/registers' },
+      ],
+    },
+    {
+      label: 'Ventas',
+      path: '/sales/management',
+      children: [
+        { label: 'Facturación', path: '/admin/management/invoices' },
+      ],
+    },
   ],
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },
