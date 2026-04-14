@@ -10,11 +10,19 @@ function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
   const [logoError, setLogoError] = useState(false);
+  const [activeParentPath, setActiveParentPath] = useState(null);
   const menuItems = MENU_BY_ROLE[user?.role] || [];
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const matchedParent = menuItems.find(
+      (item) => item.children?.some((child) => child.path === location.pathname),
+    );
+    setActiveParentPath(matchedParent?.path || null);
+  }, [location.pathname, menuItems]);
 
   // Función para construir URL completa de la imagen
   const getImageUrl = (path) => {
@@ -57,6 +65,10 @@ function Navbar() {
     loadLogo();
   }, []);
 
+  const visibleMenuItems = activeParentPath
+    ? menuItems.find((item) => item.path === activeParentPath)?.children || []
+    : menuItems;
+
   return (
     <header className="app-navbar">
       <div className="navbar-top-row">
@@ -93,14 +105,34 @@ function Navbar() {
         </button>
       </div>
       <nav className={`navbar-actions ${mobileMenuOpen ? 'is-open' : ''}`}>
-        {menuItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`touch-btn ${location.pathname === item.path ? 'active' : ''}`}
+        {activeParentPath && (
+          <button
+            type="button"
+            className="touch-btn"
+            onClick={() => setActiveParentPath(null)}
           >
-            {item.label}
-          </Link>
+            ← Volver
+          </button>
+        )}
+        {visibleMenuItems.map((item) => (
+          item.children ? (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`touch-btn ${location.pathname === item.path ? 'active' : ''}`}
+              onClick={() => setActiveParentPath(item.path)}
+            >
+              {item.label}
+            </Link>
+          ) : (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`touch-btn ${location.pathname === item.path ? 'active' : ''}`}
+            >
+              {item.label}
+            </Link>
+          )
         ))}
         <button type="button" className="touch-btn btn-danger" onClick={logout}>
           Salir
