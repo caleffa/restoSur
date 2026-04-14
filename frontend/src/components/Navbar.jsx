@@ -19,7 +19,10 @@ function Navbar() {
 
   useEffect(() => {
     const matchedParent = menuItems.find(
-      (item) => item.children?.some((child) => child.path === location.pathname),
+      (item) => (
+        (item.children?.some((child) => child.path === location.pathname))
+        || (item.children && item.path === location.pathname)
+      ),
     );
     setActiveParentPath(matchedParent?.path || null);
   }, [location.pathname, menuItems]);
@@ -116,14 +119,14 @@ function Navbar() {
         )}
         {visibleMenuItems.map((item) => (
           item.children ? (
-            <Link
+            <button
               key={item.path}
-              to={item.path}
-              className={`touch-btn ${location.pathname === item.path ? 'active' : ''}`}
+              type="button"
+              className={`touch-btn ${activeParentPath === item.path ? 'active' : ''}`}
               onClick={() => setActiveParentPath(item.path)}
             >
               {item.label}
-            </Link>
+            </button>
           ) : (
             <Link
               key={item.path}
