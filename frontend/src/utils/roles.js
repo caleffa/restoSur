@@ -8,6 +8,7 @@ export const ROLES = {
 export const MENU_BY_ROLE = {
   [ROLES.ADMIN]: [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Usuarios', path: '/admin/management/users' },
     {
       label: 'Mesas',
       path: '/admin/tables',
@@ -21,6 +22,7 @@ export const MENU_BY_ROLE = {
       label: 'Artículos',
       path: '/admin/management/articles',
       children: [
+        { label: 'Artículos', path: '/admin/management/articles' },
         { label: 'Tipos de artículos', path: '/admin/management/article-types' },
         { label: 'Unidades de medida', path: '/admin/management/measurement-units' },
       ],
@@ -30,6 +32,7 @@ export const MENU_BY_ROLE = {
       label: 'Productos',
       path: '/admin/management/products',
       children: [
+        { label: 'Productos', path: '/admin/management/products' },
         { label: 'Recetas', path: '/admin/management/recipes' },
       ],
     },
@@ -37,6 +40,7 @@ export const MENU_BY_ROLE = {
       label: 'Caja',
       path: '/cash',
       children: [
+        { label: 'Caja', path: '/cash' },
         { label: 'Admin cajas', path: '/cash/registers' },
       ],
     },
@@ -44,6 +48,7 @@ export const MENU_BY_ROLE = {
       label: 'Ventas',
       path: '/sales/management',
       children: [
+        { label: 'Gestión ventas', path: '/sales/management' },
         { label: 'Facturación', path: '/admin/management/invoices' },
       ],
     },
