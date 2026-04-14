@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MENU_BY_ROLE } from '../utils/roles';
 import { getAfipConfig } from '../services/adminService';
@@ -7,6 +7,7 @@ import { getAfipConfig } from '../services/adminService';
 function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
   const [logoError, setLogoError] = useState(false);
@@ -72,6 +73,11 @@ function Navbar() {
     ? menuItems.find((item) => item.path === activeParentPath)?.children || []
     : menuItems;
 
+  const handleParentMenuClick = (item) => {
+    setActiveParentPath(item.path);
+    navigate(item.path);
+  };
+
   return (
     <header className="app-navbar">
       <div className="navbar-top-row">
@@ -123,7 +129,7 @@ function Navbar() {
               key={item.path}
               type="button"
               className={`touch-btn ${activeParentPath === item.path ? 'active' : ''}`}
-              onClick={() => setActiveParentPath(item.path)}
+              onClick={() => handleParentMenuClick(item)}
             >
               {item.label}
             </button>
