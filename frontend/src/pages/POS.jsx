@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import KitchenOrders from '../components/pos/KitchenOrders';
 import OrderTable from '../components/pos/OrderTable';
+import Modal from '../components/Modal';
 import PaymentModal from '../components/pos/PaymentModal';
 import ProductSelector from '../components/pos/ProductSelector';
 import TableActions from '../components/pos/TableActions';
@@ -130,6 +131,7 @@ function POS() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [error, setError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [wsConnected, setWsConnected] = useState(false);
@@ -482,16 +484,24 @@ function POS() {
     }
   }, [sale, saving, tableId, navigate, totals.total, printFiscalTicket]);
 
+  const handleOpenCancelModal = useCallback(() => {
+    if (!sale || saving) return;
+    setShowCancelModal(true);
+  }, [sale, saving]);
+
+  const handleCloseCancelModal = useCallback(() => {
+    if (saving) return;
+    setShowCancelModal(false);
+  }, [saving]);
+
   const handleCancelTable = useCallback(async () => {
     if (!sale || saving) return;
-    if (!window.confirm('¿Seguro que querés cancelar esta mesa? Se eliminarán los items cargados de la venta actual.')) {
-      return;
-    }
 
     try {
       setSaving(true);
       await cancelSale(sale.id);
       clearLocalPOS(tableId);
+      setShowCancelModal(false);
       setToastMessage('Mesa cancelada correctamente');
       navigate('/dashboard');
     } catch (err) {
@@ -541,7 +551,7 @@ function POS() {
               canEdit={canEdit}
               onRequestBill={handleRequestBill}
               onOpenPayment={() => setShowPaymentModal(true)}
-              onCancelTable={handleCancelTable}
+              onCancelTable={handleOpenCancelModal}
             />
           </div>
         </section>
@@ -582,6 +592,30 @@ function POS() {
           onClose={() => !saving && setShowPaymentModal(false)}
           onConfirm={handleCloseSale}
         />
+      )}
+
+      {showCancelModal && (
+        <Modal
+          title={`Cancelar mesa ${sale?.tableId || tableId}`}
+          onClose={handleCloseCancelModal}
+          actions={(
+            <>
+              <button type="button" className="touch-btn" onClick={handleCloseCancelModal} disabled={saving}>
+                Volver
+              </button>
+              <button type="button" className="touch-btn btn-danger" onClick={handleCancelTable} disabled={saving}>
+                {saving ? 'Cancelando...' : 'Sí, cancelar mesa'}
+              </button>
+            </>
+          )}
+        >
+          <p className="mb-2">
+            ¿Seguro que querés cancelar esta mesa?
+          </p>
+          <p className="mb-0 text-muted">
+            Esta acción eliminará los items cargados de la venta actual.
+          </p>
+        </Modal>
       )}
     </div>
   );
