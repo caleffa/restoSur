@@ -363,27 +363,43 @@ function validateISODate(value, label) {
   return value;
 }
 
+function toNumberOrNull(rawValue) {
+  if (rawValue === undefined || rawValue === null || rawValue === '') return null;
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 async function getSalesReport(branchId, rawFilters = {}) {
   if (!Number.isInteger(branchId) || branchId <= 0) {
     throw new AppError('Sucursal inválida', 400);
   }
 
+  const maxPageSize = rawFilters.forExport ? 5000 : 200;
   const filters = {
     from: validateISODate(rawFilters.from, 'Fecha desde'),
     to: validateISODate(rawFilters.to, 'Fecha hasta'),
     status: rawFilters.status ? String(rawFilters.status).toUpperCase() : '',
     paymentMethod: rawFilters.paymentMethod ? String(rawFilters.paymentMethod).toUpperCase() : '',
-    userId: rawFilters.userId ? Number(rawFilters.userId) : null,
-    tableId: rawFilters.tableId ? Number(rawFilters.tableId) : null,
+    userId: toNumberOrNull(rawFilters.userId),
+    tableId: toNumberOrNull(rawFilters.tableId),
+    page: Math.max(1, Number(rawFilters.page) || 1),
+    pageSize: Math.min(maxPageSize, Math.max(10, Number(rawFilters.pageSize) || 50)),
+    search: String(rawFilters.search || '').trim(),
+    sortBy: String(rawFilters.sortBy || 'date'),
+    sortDirection: String(rawFilters.sortDirection || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
   };
 
   if (filters.from && filters.to && filters.from > filters.to) {
     throw new AppError('El rango de fechas es inválido', 400);
   }
 
-  const rows = await salesRepo.getSalesReportByBranch(branchId, filters);
+  const [result, totalsRows] = await Promise.all([
+    salesRepo.getSalesReportByBranch(branchId, filters),
+    salesRepo.getSalesTotalsByBranch(branchId, filters),
+  ]);
+  const rows = result.rows || [];
 
-  const totals = rows.reduce(
+  const totals = totalsRows.reduce(
     (acc, row) => {
       const amount = Number(row.total || 0);
       const qty = Number(row.itemsQty || 0);
@@ -395,7 +411,7 @@ async function getSalesReport(branchId, rawFilters = {}) {
       return acc;
     },
     {
-      tickets: rows.length,
+      tickets: totalsRows.length,
       totalAmount: 0,
       totalPaid: 0,
       totalOpen: 0,
@@ -407,12 +423,89 @@ async function getSalesReport(branchId, rawFilters = {}) {
   const averageTicket = totals.tickets ? totals.totalAmount / totals.tickets : 0;
 
   return {
+    pagination: {
+      page: filters.page,
+      pageSize: filters.pageSize,
+      totalRecords: result.totalRecords,
+      totalPages: Math.max(1, Math.ceil(Number(result.totalRecords || 0) / filters.pageSize)),
+    },
     totals: {
       ...totals,
       averageTicket: Number(averageTicket.toFixed(2)),
     },
     rows,
   };
+}
+
+function escapeCsv(value) {
+  if (value === null || value === undefined) return '';
+  const text = String(value);
+  if (text.includes('"') || text.includes(',') || text.includes('\n')) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+function buildSalesCsv(reportData) {
+  const header = [
+    'ID Venta',
+    'Fecha',
+    'Mesa',
+    'Vendedor',
+    'Items',
+    'Metodo Pago',
+    'Estado',
+    'Total',
+  ];
+
+  const lines = [header.join(',')];
+  for (const row of reportData.rows || []) {
+    lines.push([
+      row.id,
+      row.paidAt || row.openedAt || '',
+      row.tableNumber,
+      row.userName,
+      Number(row.itemsQty || 0),
+      row.paymentMethod,
+      row.status,
+      Number(row.total || 0).toFixed(2),
+    ].map(escapeCsv).join(','));
+  }
+  return lines.join('\n');
+}
+
+async function exportSalesReportCsv(branchId, rawFilters = {}) {
+  const reportData = await getSalesReport(branchId, {
+    ...rawFilters,
+    page: 1,
+    pageSize: 5000,
+    forExport: true,
+  });
+  return buildSalesCsv(reportData);
+}
+
+async function getVatSalesBook(branchId, rawFilters = {}) {
+  if (!Number.isInteger(branchId) || branchId <= 0) {
+    throw new AppError('Sucursal inválida', 400);
+  }
+  const filters = {
+    from: validateISODate(rawFilters.from, 'Fecha desde'),
+    to: validateISODate(rawFilters.to, 'Fecha hasta'),
+    invoiceType: rawFilters.invoiceType ? String(rawFilters.invoiceType).toUpperCase() : '',
+  };
+  if (filters.from && filters.to && filters.from > filters.to) {
+    throw new AppError('El rango de fechas es inválido', 400);
+  }
+
+  const rows = await salesRepo.getVatSalesBookByBranch(branchId, filters);
+  const totals = rows.reduce((acc, row) => {
+    acc.total += Number(row.total || 0);
+    acc.netAmount += Number(row.netAmount || 0);
+    acc.vat21 += Number(row.vat21 || 0);
+    return acc;
+  }, { total: 0, netAmount: 0, vat21: 0, vouchers: rows.length });
+
+  return { rows, totals };
 }
 
 module.exports = {
@@ -428,4 +521,6 @@ module.exports = {
   getSaleDetailByTable,
   listOpenSales,
   getSalesReport,
+  exportSalesReportCsv,
+  getVatSalesBook,
 };

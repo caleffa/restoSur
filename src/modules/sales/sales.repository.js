@@ -133,9 +133,23 @@ async function getSalesReportByBranch(branchId, filters = {}) {
     conditions.push('cm.payment_method = ?');
     values.push(filters.paymentMethod);
   }
+  if (filters.search) {
+    conditions.push('(CAST(s.id AS CHAR) LIKE ? OR u.name LIKE ? OR tr.table_number LIKE ?)');
+    const like = `%${filters.search}%`;
+    values.push(like, like, like);
+  }
 
-  return query(
-    `SELECT
+  const baseFrom = `
+    FROM sales s
+    JOIN tables_restaurant tr ON tr.id = s.table_id
+    JOIN users u ON u.id = s.user_id
+    LEFT JOIN sale_items si ON si.sale_id = s.id
+    LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    WHERE ${conditions.join(' AND ')}
+  `;
+
+  const groupedSelect = `
+    SELECT
       s.id,
       s.status,
       s.total,
@@ -147,14 +161,145 @@ async function getSalesReportByBranch(branchId, filters = {}) {
       COALESCE(cm.payment_method, '-') AS paymentMethod,
       COUNT(si.id) AS itemsCount,
       COALESCE(SUM(si.quantity), 0) AS itemsQty
+    ${baseFrom}
+    GROUP BY s.id, s.status, s.total, s.opened_at, s.paid_at, tr.table_number, u.id, u.name, cm.payment_method
+  `;
+
+  const countRows = await query(
+    `SELECT COUNT(*) AS totalRecords FROM (${groupedSelect}) report_rows`,
+    values
+  );
+
+  const sortColumnMap = {
+    id: 'id',
+    date: 'COALESCE(paidAt, openedAt)',
+    table: 'tableNumber',
+    user: 'userName',
+    items: 'itemsQty',
+    paymentMethod: 'paymentMethod',
+    status: 'status',
+    total: 'total',
+  };
+  const sortBy = sortColumnMap[filters.sortBy] || 'COALESCE(paidAt, openedAt)';
+  const sortDirection = String(filters.sortDirection || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+  const pageSize = Number(filters.pageSize || 50);
+  const page = Number(filters.page || 1);
+  const offset = (page - 1) * pageSize;
+
+  const rows = await query(
+    `SELECT
+      report_rows.*
+    FROM (${groupedSelect}) report_rows
+    ORDER BY ${sortBy} ${sortDirection}
+    LIMIT ? OFFSET ?`,
+    [...values, pageSize, offset]
+  );
+
+  return {
+    rows,
+    totalRecords: Number(countRows[0]?.totalRecords || 0),
+  };
+}
+
+async function getSalesTotalsByBranch(branchId, filters = {}) {
+  const conditions = ['s.branch_id = ?'];
+  const values = [branchId];
+
+  if (filters.from) {
+    conditions.push('DATE(COALESCE(s.paid_at, s.opened_at)) >= ?');
+    values.push(filters.from);
+  }
+  if (filters.to) {
+    conditions.push('DATE(COALESCE(s.paid_at, s.opened_at)) <= ?');
+    values.push(filters.to);
+  }
+  if (filters.status) {
+    conditions.push('s.status = ?');
+    values.push(filters.status);
+  }
+  if (filters.userId) {
+    conditions.push('s.user_id = ?');
+    values.push(filters.userId);
+  }
+  if (filters.tableId) {
+    conditions.push('s.table_id = ?');
+    values.push(filters.tableId);
+  }
+  if (filters.paymentMethod) {
+    conditions.push('cm.payment_method = ?');
+    values.push(filters.paymentMethod);
+  }
+  if (filters.search) {
+    conditions.push('(CAST(s.id AS CHAR) LIKE ? OR u.name LIKE ? OR tr.table_number LIKE ?)');
+    const like = `%${filters.search}%`;
+    values.push(like, like, like);
+  }
+
+  const baseFrom = `
     FROM sales s
     JOIN tables_restaurant tr ON tr.id = s.table_id
     JOIN users u ON u.id = s.user_id
     LEFT JOIN sale_items si ON si.sale_id = s.id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
     WHERE ${conditions.join(' AND ')}
-    GROUP BY s.id, s.status, s.total, s.opened_at, s.paid_at, tr.table_number, u.id, u.name, cm.payment_method
-    ORDER BY COALESCE(s.paid_at, s.opened_at) DESC`,
+  `;
+
+  const rows = await query(
+    `SELECT
+      s.id,
+      s.status,
+      s.total,
+      COALESCE(SUM(si.quantity), 0) AS itemsQty
+    ${baseFrom}
+    GROUP BY s.id, s.status, s.total`,
+    values
+  );
+
+  return rows;
+}
+
+async function getVatSalesBookByBranch(branchId, filters = {}) {
+  const conditions = ['i.branch_id = ?'];
+  const values = [branchId];
+
+  if (filters.from) {
+    conditions.push('DATE(i.created_at) >= ?');
+    values.push(filters.from);
+  }
+  if (filters.to) {
+    conditions.push('DATE(i.created_at) <= ?');
+    values.push(filters.to);
+  }
+  if (filters.invoiceType) {
+    conditions.push('i.invoice_type = ?');
+    values.push(filters.invoiceType);
+  }
+
+  return query(
+    `SELECT
+      i.id,
+      i.created_at AS issueDate,
+      i.invoice_type AS invoiceType,
+      i.authorization_type AS authorizationType,
+      i.authorization_code AS authorizationCode,
+      i.voucher_number AS voucherNumber,
+      i.total,
+      u.name AS customer,
+      COALESCE(cm.payment_method, '-') AS paymentMethod,
+      CASE
+        WHEN i.invoice_type = 'C' THEN ROUND(i.total, 2)
+        ELSE ROUND(i.total / 1.21, 2)
+      END AS netAmount,
+      CASE
+        WHEN i.invoice_type = 'C' THEN 0
+        ELSE ROUND(i.total - (i.total / 1.21), 2)
+      END AS vat21
+    FROM invoices i
+    JOIN sales s ON s.id = i.sale_id
+    JOIN users u ON u.id = s.user_id
+    LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY i.created_at DESC`,
     values
   );
 }
@@ -175,4 +320,6 @@ module.exports = {
   updateSaleTotalsAndStatus,
   markTableOccupied,
   getSalesReportByBranch,
+  getSalesTotalsByBranch,
+  getVatSalesBookByBranch,
 };

@@ -12,3 +12,16 @@ export async function getSalesReport(params = {}) {
   const { data } = await http.get('/sales/reports', { params });
   return unwrap(data) || { totals: {}, rows: [] };
 }
+
+export async function exportSalesReport(params = {}) {
+  const response = await http.get('/sales/reports/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
+export async function getVatSalesBook(params = {}) {
+  const { data } = await http.get('/sales/reports/vat-book', { params });
+  return unwrap(data) || { totals: {}, rows: [] };
+}
