@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Navbar from '../components/Navbar';
-import TablePlanToken from '../components/TablePlanToken';
 import { getAreas } from '../services/adminService';
 import { getAreaMap, saveAreaMap } from '../services/tableService';
-import { getTableTypeLabel, getTableVisualConfig, normalizeTableType } from '../utils/tableVisuals';
+import { getTableVisualConfig, normalizeTableType } from '../utils/tableVisuals';
 
 const MAP_WIDTH = 780;
 const MAP_HEIGHT = 560;
-const MAP_TABLE_SCALE = 0.58;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -207,7 +205,7 @@ function AdminAreaMapEditor() {
                   draggable
                   onDragStart={(event) => handleDragStart(event, table.id, 'panel')}
                 >
-                  Mesa {table.table_number} · {getTableTypeLabel(table.table_type)}
+                  Mesa {table.table_number}
                 </button>
               ))}
             </div>
@@ -225,35 +223,38 @@ function AdminAreaMapEditor() {
                 onDrop={dropToMap}
               >
 
+              <div className="area-map-static-label" style={{ left: 20, top: 20, width: 120, height: 42 }}>Acceso</div>
+              <div className="area-map-static-label" style={{ right: 20, top: 20, width: 140, height: 42 }}>Baños</div>
+              <div className="area-map-static-label" style={{ right: 20, bottom: 20, width: 140, height: 42 }}>Cocina</div>
+              <div className="area-map-static-line" style={{ left: 160, top: 88, width: 560, height: 2 }} />
+              <div className="area-map-static-line" style={{ left: 220, top: 120, width: 2, height: 380 }} />
+              <div className="area-map-static-column" style={{ left: 290, top: 170 }} />
+              <div className="area-map-static-column" style={{ left: 510, top: 300 }} />
+              <div className="area-map-static-plant" style={{ left: 64, top: 290 }} />
+              <div className="area-map-static-plant" style={{ left: 694, top: 246 }} />
+
               {placedTables.map((table) => {
                 const visual = getTableVisualConfig(table);
-                const width = Math.round(visual.width * MAP_TABLE_SCALE);
-                const height = Math.round(visual.height * MAP_TABLE_SCALE);
-                
+
                 return (
                   <button
                     key={table.id}
                     type="button"
-                    className={`dashboard-table-btn ${getTableStatusClass(table.status)}`}
+                    className={`dashboard-table-btn table-shape-only ${getTableStatusClass(table.status)}`}
                     style={{
                       position: 'absolute',
                       left: Number(table.pos_x),
                       top: Number(table.pos_y),
-                      width,
-                      minHeight: height,
+                      width: visual.width,
+                      minHeight: visual.height,
                       cursor: 'grab',
                       borderRadius: visual.borderRadius,
-                      padding: '0.35rem',
-                      gap: '0.15rem',
-                      alignItems: 'center',
                       userSelect: 'none',
                     }}
                     draggable
                     onDragStart={(event) => handleDragStart(event, table.id, 'map')}
                   >
-                    <TablePlanToken table={table} compact />
-                    <strong style={{ fontSize: '0.7rem', lineHeight: 1 }}>Mesa {table.table_number}</strong>
-                    <small style={{ fontSize: '0.58rem', lineHeight: 1.05 }}>{getTableTypeLabel(table.table_type)}</small>
+                    <span className="table-number-label">{table.table_number}</span>
                   </button>
                 );
               })}

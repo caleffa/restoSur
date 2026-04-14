@@ -1,5 +1,4 @@
 import { getTableVisualConfig } from '../../utils/tableVisuals';
-import TablePlanToken from '../TablePlanToken';
 
 function getTableStatusClass(status) {
   if (status === 'LIBRE') return 'table-pill table-free';
@@ -63,9 +62,10 @@ function TablesGrid({
             <button
               key={table.id}
               type="button"
-              className={`dashboard-table-btn ${getTableStatusClass(table.status)}`}
+              className={`dashboard-table-btn table-shape-only ${getTableStatusClass(table.status)}`}
               onClick={() => onTableClick(table)}
               disabled={busyTableId === table.id}
+              title={busyTableId === table.id ? 'Procesando...' : getActionLabel(table.status)}
               style={{
                 width: visual.width,
                 minHeight: visual.height,
@@ -79,9 +79,7 @@ function TablesGrid({
                   : {}),
               }}
             >
-              <TablePlanToken table={table} compact />
-              <span className="small">{table.status}</span>
-              <span className="small mt-2">{busyTableId === table.id ? 'Procesando...' : getActionLabel(table.status)}</span>
+              <span className="table-number-label">{table.table_number}</span>
             </button>
             );
           })}
