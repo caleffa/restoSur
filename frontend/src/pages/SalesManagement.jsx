@@ -3,7 +3,7 @@ import Modal from '../components/Modal';
 import Navbar from '../components/Navbar';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { getSaleDetail } from '../services/kitchenService';
-import { getSalesReport } from '../services/salesService';
+import { exportSalesReport, getSalesReport, getVatSalesBook } from '../services/salesService';
 import { createInvoice, getAfipConfig, getInvoices } from '../services/adminService';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
@@ -13,6 +13,8 @@ const initialFilters = {
   status: '',
   paymentMethod: '',
 };
+const initialPagination = { page: 1, pageSize: 25 };
+const initialSort = { sortBy: 'date', sortDirection: 'DESC' };
 
 function formatAmount(value) {
   return formatCurrency(value || 0);
@@ -67,7 +69,12 @@ function buildAfipQrData({ issueDate, cuit, pointOfSale, invoiceType, voucherNum
 
 function SalesManagement() {
   const [filters, setFilters] = useState(initialFilters);
-  const [report, setReport] = useState({ totals: {}, rows: [] });
+  const [report, setReport] = useState({ totals: {}, rows: [], pagination: initialPagination });
+  const [vatBook, setVatBook] = useState({ totals: {}, rows: [] });
+  const [showVatBook, setShowVatBook] = useState(false);
+  const [search, setSearch] = useState('');
+  const [pagination, setPagination] = useState(initialPagination);
+  const [sort, setSort] = useState(initialSort);
   const [afipConfig, setAfipConfig] = useState(null);
   const [invoiceModalSale, setInvoiceModalSale] = useState(null);
   const [selectedInvoiceType, setSelectedInvoiceType] = useState('B');
@@ -76,15 +83,29 @@ function SalesManagement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async (nextFilters = filters) => {
+  const load = useCallback(async ({
+    nextFilters = filters,
+    nextPagination = pagination,
+    nextSort = sort,
+    nextSearch = search,
+  } = {}) => {
     setLoading(true);
     try {
       const [data, invoices, afipConfigData] = await Promise.all([
-        getSalesReport(nextFilters),
+        getSalesReport({
+          ...nextFilters,
+          page: nextPagination.page,
+          pageSize: nextPagination.pageSize,
+          search: nextSearch,
+          sortBy: nextSort.sortBy,
+          sortDirection: nextSort.sortDirection,
+        }),
         getInvoices(),
         getAfipConfig(),
       ]);
       setReport(data);
+      const vatBookData = await getVatSalesBook(nextFilters);
+      setVatBook(vatBookData);
       setInvoicedSaleIds(new Set((invoices || []).map((invoice) => Number(invoice.sale_id))));
       setInvoicesBySaleId(new Map((invoices || []).map((invoice) => [Number(invoice.sale_id), invoice])));
       setAfipConfig(afipConfigData || null);
@@ -94,10 +115,15 @@ function SalesManagement() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, pagination, search, sort]);
 
   useEffect(() => {
-    load(initialFilters);
+    load({
+      nextFilters: initialFilters,
+      nextPagination: initialPagination,
+      nextSort: initialSort,
+      nextSearch: '',
+    });
   }, [load]);
 
   const paymentOptions = useMemo(() => {
@@ -235,13 +261,13 @@ function SalesManagement() {
 
       await loadSaleAndPrint(invoiceModalSale.id, invoice, invoiceModalSale.paymentMethod);
       setInvoiceModalSale(null);
-      await load(filters);
+      await load();
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'No se pudo facturar la venta.');
     } finally {
       setLoading(false);
     }
-  }, [filters, invoiceModalSale, load, loadSaleAndPrint, loading, selectedInvoiceType]);
+  }, [invoiceModalSale, load, loadSaleAndPrint, loading, selectedInvoiceType]);
 
   const handleReprint = useCallback(async (row) => {
     const invoice = invoicesBySaleId.get(Number(row.id));
@@ -256,6 +282,31 @@ function SalesManagement() {
       setLoading(false);
     }
   }, [invoicesBySaleId, loadSaleAndPrint, loading]);
+
+  const handleExportExcel = useCallback(async () => {
+    try {
+      setLoading(true);
+      const blob = await exportSalesReport({
+        ...filters,
+        search,
+        sortBy: sort.sortBy,
+        sortDirection: sort.sortDirection,
+      });
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      const dateTag = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.setAttribute('download', `reporte_ventas_${dateTag}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('No se pudo exportar el reporte.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, search, sort.sortBy, sort.sortDirection]);
 
   return (
     <div className="app-layout">
@@ -316,7 +367,16 @@ function SalesManagement() {
             </div>
           </div>
           <div className="mt-3 admin-actions-row">
-            <button type="button" className="touch-btn btn-primary" onClick={() => load(filters)} disabled={loading}>
+            <button
+              type="button"
+              className="touch-btn btn-primary"
+              onClick={() => {
+                const nextPagination = { ...pagination, page: 1 };
+                setPagination(nextPagination);
+                load({ nextFilters: filters, nextPagination });
+              }}
+              disabled={loading}
+            >
               {loading ? 'Cargando...' : 'Aplicar filtros'}
             </button>
             <button
@@ -324,12 +384,75 @@ function SalesManagement() {
               className="touch-btn"
               onClick={() => {
                 setFilters(initialFilters);
-                load(initialFilters);
+                setSearch('');
+                setSort(initialSort);
+                setPagination(initialPagination);
+                load({
+                  nextFilters: initialFilters,
+                  nextPagination: initialPagination,
+                  nextSort: initialSort,
+                  nextSearch: '',
+                });
               }}
               disabled={loading}
             >
               Limpiar
             </button>
+            <button type="button" className="touch-btn" onClick={handleExportExcel} disabled={loading}>
+              Exportar a Excel (CSV)
+            </button>
+            <button type="button" className="touch-btn" onClick={() => setShowVatBook((prev) => !prev)}>
+              {showVatBook ? 'Ocultar libro IVA' : 'Ver libro IVA ventas'}
+            </button>
+          </div>
+        </section>
+
+        <section className="admin-card">
+          <div className="admin-actions-row">
+            <label className="mb-0 d-grid">
+              Búsqueda rápida
+              <input
+                type="search"
+                className="form-control"
+                placeholder="ID venta, vendedor o mesa"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="touch-btn btn-primary"
+              onClick={() => {
+                const nextPagination = { ...pagination, page: 1 };
+                setPagination(nextPagination);
+                load({ nextSearch: search, nextPagination });
+              }}
+              disabled={loading}
+            >
+              Buscar
+            </button>
+            <label className="mb-0">
+              Orden
+              <select
+                className="form-select"
+                value={`${sort.sortBy}:${sort.sortDirection}`}
+                onChange={(event) => {
+                  const [sortBy, sortDirection] = event.target.value.split(':');
+                  const nextSort = { sortBy, sortDirection };
+                  setSort(nextSort);
+                  const nextPagination = { ...pagination, page: 1 };
+                  setPagination(nextPagination);
+                  load({ nextSort, nextPagination });
+                }}
+              >
+                <option value="date:DESC">Fecha desc</option>
+                <option value="date:ASC">Fecha asc</option>
+                <option value="total:DESC">Mayor total</option>
+                <option value="total:ASC">Menor total</option>
+                <option value="id:DESC">ID desc</option>
+                <option value="id:ASC">ID asc</option>
+              </select>
+            </label>
           </div>
         </section>
 
@@ -346,7 +469,7 @@ function SalesManagement() {
         <SimpleDataTable
           title="Detalle de ventas"
           rows={report.rows || []}
-          pageSize={10}
+          pageSize={report.pagination?.pageSize || pagination.pageSize}
           filters={[
             {
               key: 'status',
@@ -407,6 +530,99 @@ function SalesManagement() {
             },
           ]}
         />
+        <section className="admin-card">
+          <div className="admin-pagination-row">
+            <span>
+              Página {report.pagination?.page || 1} de {report.pagination?.totalPages || 1} | Registros: {formatNumber(report.pagination?.totalRecords || 0, 0)}
+            </span>
+            <div className="admin-actions-row">
+              <button
+                type="button"
+                className="touch-btn"
+                onClick={() => {
+                  const nextPage = Math.max(1, (pagination.page || 1) - 1);
+                  const nextPagination = { ...pagination, page: nextPage };
+                  setPagination(nextPagination);
+                  load({ nextPagination });
+                }}
+                disabled={loading || (report.pagination?.page || 1) <= 1}
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                className="touch-btn"
+                onClick={() => {
+                  const current = report.pagination?.page || 1;
+                  const totalPages = report.pagination?.totalPages || 1;
+                  const nextPage = Math.min(totalPages, current + 1);
+                  const nextPagination = { ...pagination, page: nextPage };
+                  setPagination(nextPagination);
+                  load({ nextPagination });
+                }}
+                disabled={loading || (report.pagination?.page || 1) >= (report.pagination?.totalPages || 1)}
+              >
+                Siguiente
+              </button>
+              <select
+                className="form-select"
+                style={{ width: 140 }}
+                value={pagination.pageSize}
+                onChange={(event) => {
+                  const nextPagination = { page: 1, pageSize: Number(event.target.value) };
+                  setPagination(nextPagination);
+                  load({ nextPagination });
+                }}
+              >
+                <option value={25}>25 por página</option>
+                <option value={50}>50 por página</option>
+                <option value={100}>100 por página</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {showVatBook && (
+          <section className="admin-card">
+            <h3>Libro IVA Ventas</h3>
+            <p className="mb-2">
+              Comprobantes: {formatNumber(vatBook.totals?.vouchers || 0, 0)} | Neto: {formatAmount(vatBook.totals?.netAmount || 0)} | IVA 21%: {formatAmount(vatBook.totals?.vat21 || 0)} | Total: {formatAmount(vatBook.totals?.total || 0)}
+            </p>
+            <div className="admin-table-wrap">
+              <table className="table table-striped table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Comprobante</th>
+                    <th>Autorización</th>
+                    <th>Neto</th>
+                    <th>IVA 21%</th>
+                    <th>Total</th>
+                    <th>Pago</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(vatBook.rows || []).map((row) => (
+                    <tr key={row.id}>
+                      <td>{formatDate(row.issueDate)}</td>
+                      <td>Factura {row.invoiceType}</td>
+                      <td>{row.voucherNumber || '-'}</td>
+                      <td>{row.authorizationType} {row.authorizationCode}</td>
+                      <td>{formatAmount(row.netAmount)}</td>
+                      <td>{formatAmount(row.vat21)}</td>
+                      <td>{formatAmount(row.total)}</td>
+                      <td>{row.paymentMethod || '-'}</td>
+                    </tr>
+                  ))}
+                  {!(vatBook.rows || []).length && (
+                    <tr><td colSpan={8} className="text-center py-3">Sin comprobantes para el período.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
         {invoiceModalSale && (
           <Modal
             title={`Facturar venta #${invoiceModalSale.id}`}

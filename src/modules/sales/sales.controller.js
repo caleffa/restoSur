@@ -61,6 +61,19 @@ const report = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const exportReport = asyncHandler(async (req, res) => {
+  const csv = await service.exportSalesReportCsv(Number(req.user.branchId), req.query || {});
+  const filename = `ventas_${new Date().toISOString().slice(0, 10)}.csv`;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(`\uFEFF${csv}`);
+});
+
+const vatBook = asyncHandler(async (req, res) => {
+  const data = await service.getVatSalesBook(Number(req.user.branchId), req.query || {});
+  res.json({ ok: true, data });
+});
+
 module.exports = {
   createSale,
   addItem,
@@ -74,4 +87,6 @@ module.exports = {
   getByTable,
   listOpen,
   report,
+  exportReport,
+  vatBook,
 };
