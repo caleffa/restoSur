@@ -5,6 +5,7 @@ const productRepo = require('../products/products.repository');
 const stockRepo = require('../stock/stock.repository');
 const recipesRepo = require('../recipes/recipes.repository');
 const cashRepo = require('../cash/cash.repository');
+const invoicesRepo = require('../invoices/invoices.repository');
 
 function validateSaleId(saleId) {
   if (!Number.isInteger(saleId) || saleId <= 0) {
@@ -289,6 +290,42 @@ async function closeSale(saleId) {
   }
 }
 
+async function cancelSale(saleId) {
+  validateSaleId(saleId);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const sale = await salesRepo.findSaleById(saleId, conn);
+    if (!sale) throw new AppError('Venta no encontrada', 404);
+    if (sale.status !== 'ABIERTA') {
+      throw new AppError('Solo se puede cancelar una venta ABIERTA', 400);
+    }
+
+    const invoice = await invoicesRepo.findBySaleId(saleId);
+    if (invoice) {
+      throw new AppError('No se puede cancelar una venta facturada', 400);
+    }
+
+    await salesRepo.deleteKitchenOrdersBySaleId(saleId, conn);
+    await salesRepo.deleteItemsBySaleId(saleId, conn);
+    await salesRepo.cancelSaleById(saleId, conn);
+    await salesRepo.markTableOccupied(sale.table_id, 'LIBRE', conn);
+
+    await conn.commit();
+    return {
+      saleId,
+      status: 'CANCELADA',
+      tableStatus: 'LIBRE',
+      itemsRemoved: true,
+    };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
 async function getSaleDetail(saleId) {
   validateSaleId(saleId);
   const sale = await salesRepo.findSaleById(saleId);
@@ -386,6 +423,7 @@ module.exports = {
   requestBill,
   paySale,
   closeSale,
+  cancelSale,
   getSaleDetail,
   getSaleDetailByTable,
   listOpenSales,

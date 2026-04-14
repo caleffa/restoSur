@@ -5,6 +5,7 @@ function TableActions({
   canEdit,
   onRequestBill,
   onOpenPayment,
+  onCancelTable,
 }) {
   const isFree = tableStatus === 'LIBRE';
   const isBillRequested = tableStatus === 'CUENTA_PEDIDA';
@@ -28,6 +29,15 @@ function TableActions({
         disabled={loading || !hasItems}
       >
         💳 Cobrar
+      </button>
+
+      <button
+        type="button"
+        className="btn btn-outline-danger"
+        onClick={onCancelTable}
+        disabled={loading || isFree}
+      >
+        ❌ Cancelar mesa
       </button>
 
       {!canEdit && (

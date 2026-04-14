@@ -11,6 +11,7 @@ import {
   addSaleItem,
   clearLocalPOS,
   closeSale,
+  cancelSale,
   createKitchenOrder,
   deleteSaleItem,
   getProducts,
@@ -481,6 +482,26 @@ function POS() {
     }
   }, [sale, saving, tableId, navigate, totals.total, printFiscalTicket]);
 
+  const handleCancelTable = useCallback(async () => {
+    if (!sale || saving) return;
+    if (!window.confirm('¿Seguro que querés cancelar esta mesa? Se eliminarán los items cargados de la venta actual.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await cancelSale(sale.id);
+      clearLocalPOS(tableId);
+      setToastMessage('Mesa cancelada correctamente');
+      navigate('/dashboard');
+    } catch (err) {
+      const apiMessage = err?.response?.data?.message || err?.message;
+      setError(apiMessage || 'No se pudo cancelar la mesa.');
+    } finally {
+      setSaving(false);
+    }
+  }, [sale, saving, tableId, navigate]);
+
   if (loading) {
     return (
       <div className="app-layout">
@@ -520,6 +541,7 @@ function POS() {
               canEdit={canEdit}
               onRequestBill={handleRequestBill}
               onOpenPayment={() => setShowPaymentModal(true)}
+              onCancelTable={handleCancelTable}
             />
           </div>
         </section>

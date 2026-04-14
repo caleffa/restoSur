@@ -134,6 +134,11 @@ export async function closeSale(saleId) {
   return unwrap(data);
 }
 
+export async function cancelSale(saleId) {
+  const { data } = await http.post(`/sales/${saleId}/cancel`);
+  return unwrap(data);
+}
+
 export async function getProducts() {
   const { data } = await http.get('/products');
   return unwrap(data) || [];

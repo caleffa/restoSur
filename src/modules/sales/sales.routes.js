@@ -16,5 +16,6 @@ router.delete('/items/:itemId', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), contr
 router.post('/:id/request-bill', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.requestBill);
 router.post('/:id/pay', roleMiddleware('ADMIN', 'CAJERO'), controller.paySale);
 router.post('/:id/close', roleMiddleware('ADMIN', 'CAJERO'), controller.closeSale);
+router.post('/:id/cancel', roleMiddleware('ADMIN', 'MOZO', 'CAJERO'), controller.cancelSale);
 
 module.exports = router; 

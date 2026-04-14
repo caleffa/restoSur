@@ -85,6 +85,18 @@ async function deleteSaleItemById(itemId, conn) {
   await query('DELETE FROM sale_items WHERE id = ?', [itemId], conn);
 }
 
+async function deleteItemsBySaleId(saleId, conn) {
+  await query('DELETE FROM sale_items WHERE sale_id = ?', [saleId], conn);
+}
+
+async function deleteKitchenOrdersBySaleId(saleId, conn) {
+  await query('DELETE FROM kitchen_orders WHERE sale_id = ?', [saleId], conn);
+}
+
+async function cancelSaleById(saleId, conn) {
+  await query('UPDATE sales SET status = "CANCELADA", total = 0, paid_at = NULL WHERE id = ?', [saleId], conn);
+}
+
 async function updateSaleTotalsAndStatus(saleId, total, status, conn) {
   await query('UPDATE sales SET total = ?, status = ?, paid_at = NOW() WHERE id = ?', [total, status, saleId], conn);
 }
@@ -157,6 +169,9 @@ module.exports = {
   findSaleItemById,
   updateSaleItemQuantity,
   deleteSaleItemById,
+  deleteItemsBySaleId,
+  deleteKitchenOrdersBySaleId,
+  cancelSaleById,
   updateSaleTotalsAndStatus,
   markTableOccupied,
   getSalesReportByBranch,
