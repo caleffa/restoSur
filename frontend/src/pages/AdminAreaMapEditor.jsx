@@ -223,16 +223,6 @@ function AdminAreaMapEditor() {
                 onDrop={dropToMap}
               >
 
-              <div className="area-map-static-label" style={{ left: 20, top: 20, width: 120, height: 42 }}>Acceso</div>
-              <div className="area-map-static-label" style={{ right: 20, top: 20, width: 140, height: 42 }}>Baños</div>
-              <div className="area-map-static-label" style={{ right: 20, bottom: 20, width: 140, height: 42 }}>Cocina</div>
-              <div className="area-map-static-line" style={{ left: 160, top: 88, width: 560, height: 2 }} />
-              <div className="area-map-static-line" style={{ left: 220, top: 120, width: 2, height: 380 }} />
-              <div className="area-map-static-column" style={{ left: 290, top: 170 }} />
-              <div className="area-map-static-column" style={{ left: 510, top: 300 }} />
-              <div className="area-map-static-plant" style={{ left: 64, top: 290 }} />
-              <div className="area-map-static-plant" style={{ left: 694, top: 246 }} />
-
               {placedTables.map((table) => {
                 const visual = getTableVisualConfig(table);
 
