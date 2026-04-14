@@ -36,6 +36,11 @@ const closeSale = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const cancelSale = asyncHandler(async (req, res) => {
+  const data = await service.cancelSale(Number(req.params.id));
+  res.json({ ok: true, data });
+});
+
 const getById = asyncHandler(async (req, res) => {
   const data = await service.getSaleDetail(Number(req.params.id));
   res.json({ ok: true, data });
@@ -64,6 +69,7 @@ module.exports = {
   requestBill,
   paySale,
   closeSale,
+  cancelSale,
   getById,
   getByTable,
   listOpen,
