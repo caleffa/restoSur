@@ -128,7 +128,7 @@ function Dashboard() {
     const isValidWaiter = waiterId === null
       || waiterId === undefined
       || selectedWaiter?.role === ROLES.MOZO;
-
+    console.table(selectedWaiter);
     if (!isValidWaiter) {
       setError('Solo se puede asignar un usuario con rol MOZO.');
       return;

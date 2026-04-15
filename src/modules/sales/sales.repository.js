@@ -46,7 +46,7 @@ async function findOpenSaleByTable(tableId, conn) {
 
 async function listWaitersByBranch(branchId) {
   return query(
-    `SELECT id, name
+    `SELECT id, name, role
      FROM users
      WHERE branch_id = ? AND role = 'MOZO' AND active = 1
      ORDER BY name ASC`,
