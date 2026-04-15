@@ -391,7 +391,7 @@ function POS() {
       .join('');
 
     const html = `
-      <html>
+       <html>
         <head>
           <title>Ticket Fiscal</title>
           <style>
@@ -405,7 +405,6 @@ function POS() {
             .line{border-top:1px dashed #333; margin:6px 0;}
             .right{text-align:right;}
             .qr-wrap{text-align:center; margin-top:6px;}
-            .small{font-size:9px; word-break:break-word;}
             .logo-wrap{text-align:center; margin-bottom:6px;}
             .logo-wrap img{max-width:46mm; max-height:20mm; object-fit:contain;}
           </style>
@@ -416,16 +415,15 @@ function POS() {
           <h2>${issuerAddress}</h2>
           <p>CUIT: ${issuerCuit || '-'}</p>
           <p>Fecha: ${issueDate}</p>
-          <p>Venta: #${saleData?.id || '-'}</p>
-          <p>Mesa: ${saleData?.tableId || saleData?.table_id || '-'}</p>
-          <p>Comprobante: ${invoiceData?.invoiceType || '-'} | PV ${pointOfSale} - N° ${voucherNumber}</p>
-          <p>${authorizationLabel}: ${authorizationCode}</p>
-          <p>Vto ${authorizationLabel}: ${caeExpiration}</p>
-          <p>Pago: ${paymentMethod}</p>
+          <p>Venta: #${saleData?.id || invoiceData?.sale_id || '-'}</p>
+          <p>Mesa: ${saleData?.tableId || saleData?.table_id || invoiceData?.table_id || '-'}</p>
+          <p>Comprobante: ${invoiceType} | PV ${pointOfSale} - N° ${voucherNumber}</p>
+          <p>Pago: ${paymentMethod || '-'}</p>
           <div class="line"></div>
           <table>
             <thead>
-              <tr><th>Item</th><th>Cant.</th><th>P.Unit</th><th class="right">Subtotal</th></tr>
+              <tr><th colspan="4">Cantidad x Precio unitario</th></tr>
+              <tr><th colspan="3">Descripción</th><th class="right">Subtotal</th></tr>
             </thead>
             <tbody>${itemsHtml}</tbody>
           </table>
@@ -433,9 +431,15 @@ function POS() {
           ${taxBreakdown.map((line) => `<p>${line.label} | Neto: ${formatCurrency(line.net)} | Impuesto: ${formatCurrency(line.iva)}</p>`).join('')}
           <p class="right"><strong>TOTAL: ${formatCurrency(ticketTotal)}</strong></p>
           <div class="line"></div>
+          <p>Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)</p>
+          <p> IVA contenido: ${taxBreakdown.map((line) => `${formatCurrency(line.iva)}`).join('')}</p>
+          <p>Otros Impuestos Nacionales Indirectos: $ 0,00</p>
+          <div class="line"></div>
+          <p>Referencia electrónica del comprobante.</p>
           <div class="qr-wrap">
             <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
           </div>
+          <p>${authorizationLabel}: ${authorizationCode} | Vto ${authorizationLabel}: ${caeExpiration}</p>          
           <p>Gracias por su compra.</p>
         </body>
       </html>`;

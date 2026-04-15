@@ -52,6 +52,15 @@ export const MENU_BY_ROLE = {
         { label: 'Facturación', path: '/admin/management/invoices' },
       ],
     },
+    { 
+      label: 'Cocina', 
+      path: '/comandas' ,
+      children: [
+        { label: 'Cocina ventas', path: '/comandas' },
+        { label: 'Gestión cocina', path: '/' },
+      ],
+    },
+
   ],
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },

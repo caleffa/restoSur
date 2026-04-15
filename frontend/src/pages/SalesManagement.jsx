@@ -159,13 +159,15 @@ function SalesManagement() {
       authorizationType: invoiceData?.authorization_type || invoiceData?.authorizationType,
       authorizationCode,
     });
-
+console.table(saleData);
     const itemsHtml = (saleData?.items || [])
       .map((item) => `
         <tr>
-          <td>${item.productName}</td>
-          <td style="text-align:center;">${Number(item.quantity)}</td>
-          <td style="text-align:right;">${formatCurrency(item.unitPrice)}</td>
+          <td colspan="4" style="text-align:left;">${Number(item.quantity)} x ${formatCurrency(item.unitPrice)}</td>          
+
+        </tr>
+        <tr>
+          <td colspan="3">${item.articleName}</td>
           <td style="text-align:right;">${formatCurrency(Number(item.quantity) * Number(item.unitPrice))}</td>
         </tr>
       `)
@@ -199,13 +201,12 @@ function SalesManagement() {
           <p>Venta: #${saleData?.id || invoiceData?.sale_id || '-'}</p>
           <p>Mesa: ${saleData?.tableId || saleData?.table_id || invoiceData?.table_id || '-'}</p>
           <p>Comprobante: ${invoiceType} | PV ${pointOfSale} - N° ${voucherNumber}</p>
-          <p>${authorizationLabel}: ${authorizationCode}</p>
-          <p>Vto ${authorizationLabel}: ${caeExpiration}</p>
           <p>Pago: ${paymentMethod || '-'}</p>
           <div class="line"></div>
           <table>
             <thead>
-              <tr><th>Item</th><th>Cant.</th><th>P.Unit</th><th class="right">Subtotal</th></tr>
+              <tr><th colspan="4">Cantidad x Precio unitario</th></tr>
+              <tr><th colspan="3">Descripción</th><th class="right">Subtotal</th></tr>
             </thead>
             <tbody>${itemsHtml}</tbody>
           </table>
@@ -213,9 +214,15 @@ function SalesManagement() {
           ${taxBreakdown.map((line) => `<p>${line.label} | Neto: ${formatCurrency(line.net)} | Impuesto: ${formatCurrency(line.iva)}</p>`).join('')}
           <p class="right"><strong>TOTAL: ${formatCurrency(ticketTotal)}</strong></p>
           <div class="line"></div>
+          <p>Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)</p>
+          <p> IVA contenido: ${taxBreakdown.map((line) => `${formatCurrency(line.iva)}`).join('')}</p>
+          <p>Otros Impuestos Nacionales Indirectos: $ 0,00</p>
+          <div class="line"></div>
+          <p>Referencia electrónica del comprobante.</p>
           <div class="qr-wrap">
             <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
           </div>
+          <p>${authorizationLabel}: ${authorizationCode} | Vto ${authorizationLabel}: ${caeExpiration}</p>          
           <p>Gracias por su compra.</p>
         </body>
       </html>`;
@@ -236,7 +243,7 @@ function SalesManagement() {
       total: saleDetail?.total ?? invoiceData?.total,
       items: (saleDetail?.items || []).map((item) => ({
         ...item,
-        productName: item.productName || item.product_name || item.name,
+        articleName: item.articleName || item.article_name || item.name,
         unitPrice: Number(item.unitPrice ?? item.unit_price ?? 0),
         quantity: Number(item.quantity ?? 0),
       })),
