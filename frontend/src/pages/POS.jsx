@@ -23,6 +23,8 @@ import {
   paySale,
   persistLocalSale,
   createInvoice,
+  getWaiters,
+  updateSaleWaiter,
   updateTableStatus,
   updateSaleItem,
 } from '../services/posService';
@@ -137,6 +139,9 @@ function POS() {
   const [wsConnected, setWsConnected] = useState(false);
   const [afipConfig, setAfipConfig] = useState(null);
   const [caeaList, setCaeaList] = useState([]);
+  const [waiters, setWaiters] = useState([]);
+  const [showWaiterModal, setShowWaiterModal] = useState(false);
+  const [selectedWaiterId, setSelectedWaiterId] = useState(null);
 
   const canEditWhenBillRequested = user?.role === 'ADMIN';
   const canEmitFiscalTicket = user?.role === 'ADMIN' || user?.role === 'CAJERO';
@@ -167,6 +172,14 @@ function POS() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    getWaiters().then(setWaiters).catch(() => setWaiters([]));
+  }, []);
+
+  useEffect(() => {
+    setSelectedWaiterId(Number(sale?.waiterId || sale?.user_id || 0) || null);
+  }, [sale?.waiterId, sale?.user_id]);
 
   useEffect(() => {
     if (!canEmitFiscalTicket) return;
@@ -512,6 +525,29 @@ function POS() {
     }
   }, [sale, saving, tableId, navigate]);
 
+  const handleUpdateWaiter = useCallback(async () => {
+    if (!sale || !selectedWaiterId || saving) return;
+
+    try {
+      setSaving(true);
+      const updated = await updateSaleWaiter(sale.id, selectedWaiterId);
+      const selected = waiters.find((item) => Number(item.id) === Number(selectedWaiterId));
+      upsertSaleAndPersist((current) => ({
+        ...current,
+        waiterId: Number(updated?.waiterId || selectedWaiterId),
+        waiterName: updated?.waiterName || selected?.name || current?.waiterName || null,
+      }));
+      setShowWaiterModal(false);
+      setToastMessage('Mozo actualizado');
+      setError('');
+    } catch (err) {
+      const apiMessage = err?.response?.data?.message || err?.message;
+      setError(apiMessage || 'No se pudo actualizar el mozo.');
+    } finally {
+      setSaving(false);
+    }
+  }, [sale, selectedWaiterId, saving, waiters, upsertSaleAndPersist]);
+
   if (loading) {
     return (
       <div className="app-layout">
@@ -535,6 +571,9 @@ function POS() {
                 <span className={`badge ${tableStatus === 'CUENTA_PEDIDA' ? 'text-bg-warning' : 'text-bg-danger'}`}>
                   {tableStatus}
                 </span>
+                <span className="badge text-bg-secondary">
+                  Mozo: {sale?.waiterName || 'Sin asignar'}
+                </span>
                 <span className="fw-semibold">Total acumulado: {formatCurrency(totals.total)}</span>
                 {import.meta.env.VITE_KITCHEN_WS_URL && (
                   <small className={wsConnected ? 'text-success' : 'text-muted'}>
@@ -553,6 +592,15 @@ function POS() {
               onOpenPayment={() => setShowPaymentModal(true)}
               onCancelTable={handleOpenCancelModal}
             />
+
+            <button
+              type="button"
+              className="touch-btn"
+              onClick={() => setShowWaiterModal(true)}
+              disabled={saving || tableStatus !== 'OCUPADA'}
+            >
+              Cambiar mozo
+            </button>
           </div>
         </section>
 
@@ -615,6 +663,37 @@ function POS() {
           <p className="mb-0 text-muted">
             Esta acción eliminará los items cargados de la venta actual.
           </p>
+        </Modal>
+      )}
+
+      {showWaiterModal && (
+        <Modal
+          title={`Mozo de mesa ${sale?.tableId || tableId}`}
+          onClose={() => !saving && setShowWaiterModal(false)}
+          actions={(
+            <>
+              <button type="button" className="touch-btn" onClick={() => setShowWaiterModal(false)} disabled={saving}>
+                Volver
+              </button>
+              <button type="button" className="touch-btn btn-primary" onClick={handleUpdateWaiter} disabled={saving || !selectedWaiterId}>
+                {saving ? 'Guardando...' : 'Guardar mozo'}
+              </button>
+            </>
+          )}
+        >
+          <p className="modal-helper-text">Elegí el mozo asignado para esta venta.</p>
+          <div className="waiters-touch-grid">
+            {waiters.map((waiter) => (
+              <button
+                key={waiter.id}
+                type="button"
+                className={`touch-btn waiter-choice ${Number(selectedWaiterId) === Number(waiter.id) ? 'active' : ''}`}
+                onClick={() => setSelectedWaiterId(Number(waiter.id))}
+              >
+                {waiter.name}
+              </button>
+            ))}
+          </div>
         </Modal>
       )}
     </div>

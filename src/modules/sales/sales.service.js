@@ -14,10 +14,20 @@ function validateSaleId(saleId) {
 }
 
 async function createSale(data, user) {
+  const waiterId = Number(data.waiterId || user.id);
+  if (!Number.isInteger(waiterId) || waiterId <= 0) {
+    throw new AppError('Mozo inválido', 400);
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const sale = await salesRepo.createSale({ ...data, userId: user.id }, conn);
+    const waiter = await salesRepo.findWaiterById(Number(user.branchId), waiterId, conn);
+    if (!waiter) {
+      throw new AppError('El mozo seleccionado no es válido para esta sucursal', 400);
+    }
+
+    const sale = await salesRepo.createSale({ ...data, userId: waiterId }, conn);
     await salesRepo.markTableOccupied(data.tableId, 'OCUPADA', conn);
     await conn.commit();
     return sale;
@@ -356,6 +366,56 @@ async function listOpenSales(branchId) {
   return salesRepo.listOpenSalesByBranch(branchId);
 }
 
+async function listWaiters(branchId) {
+  if (!Number.isInteger(branchId) || branchId <= 0) {
+    throw new AppError('Sucursal inválida', 400);
+  }
+
+  return salesRepo.listWaitersByBranch(branchId);
+}
+
+async function reassignWaiter(saleId, waiterId, branchId) {
+  validateSaleId(saleId);
+
+  const normalizedWaiterId = Number(waiterId);
+  if (!Number.isInteger(normalizedWaiterId) || normalizedWaiterId <= 0) {
+    throw new AppError('Mozo inválido', 400);
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const sale = await salesRepo.findSaleById(saleId, conn);
+    if (!sale) throw new AppError('Venta no encontrada', 404);
+    if (Number(sale.branch_id) !== Number(branchId)) {
+      throw new AppError('No autorizado para cambiar el mozo de esta venta', 403);
+    }
+    if (sale.status !== 'ABIERTA') {
+      throw new AppError('Solo se puede cambiar el mozo en ventas ABIERTAS', 400);
+    }
+
+    const waiter = await salesRepo.findWaiterById(Number(branchId), normalizedWaiterId, conn);
+    if (!waiter) {
+      throw new AppError('El mozo seleccionado no es válido para esta sucursal', 400);
+    }
+
+    await salesRepo.updateSaleWaiter(saleId, normalizedWaiterId, conn);
+    await conn.commit();
+
+    return {
+      saleId,
+      waiterId: normalizedWaiterId,
+      waiterName: waiter.name,
+    };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
 function validateISODate(value, label) {
   if (!value) return null;
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -520,6 +580,8 @@ module.exports = {
   getSaleDetail,
   getSaleDetailByTable,
   listOpenSales,
+  listWaiters,
+  reassignWaiter,
   getSalesReport,
   exportSalesReportCsv,
   getVatSalesBook,

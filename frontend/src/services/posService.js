@@ -57,6 +57,8 @@ function normalizeSale(tableId, payload) {
     tableId: Number(payload.tableId ?? payload.table_id ?? tableId),
     table_id: Number(payload.table_id ?? payload.tableId ?? tableId),
     tableStatus: payload.tableStatus ?? payload.table_status ?? payload.status_table ?? 'OCUPADA',
+    waiterId: Number(payload.waiterId ?? payload.waiter_id ?? payload.userId ?? payload.user_id ?? 0) || null,
+    waiterName: payload.waiterName ?? payload.waiter_name ?? null,
     status: payload.status || 'ABIERTA',
     items,
   };
@@ -111,6 +113,16 @@ export async function updateTableStatus(tableId, status) {
 
 export async function paySale(saleId, payload = {}) {
   const { data } = await http.post(`/sales/${saleId}/pay`, payload);
+  return unwrap(data);
+}
+
+export async function getWaiters() {
+  const { data } = await http.get('/sales/waiters');
+  return unwrap(data) || [];
+}
+
+export async function updateSaleWaiter(saleId, waiterId) {
+  const { data } = await http.put(`/sales/${saleId}/waiter`, { waiterId });
   return unwrap(data);
 }
 

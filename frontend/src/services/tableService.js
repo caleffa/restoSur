@@ -51,3 +51,14 @@ export async function createSale(tableId) {
   const { data } = await http.post('/sales', { branchId, tableId });
   return unwrap(data);
 }
+
+export async function getWaiters() {
+  const { data } = await http.get('/sales/waiters');
+  return unwrap(data) || [];
+}
+
+export async function createSaleWithWaiter(tableId, waiterId) {
+  const branchId = 1;
+  const { data } = await http.post('/sales', { branchId, tableId, waiterId });
+  return unwrap(data);
+}

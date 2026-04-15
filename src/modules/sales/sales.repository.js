@@ -10,17 +10,64 @@ async function createSale({ branchId, tableId, userId }, conn) {
 }
 
 async function findSaleById(id, conn) {
-  const rows = await query('SELECT * FROM sales WHERE id = ? LIMIT 1', [id], conn);
+  const rows = await query(
+    `SELECT
+      s.*,
+      tr.status AS table_status,
+      u.name AS waiter_name
+    FROM sales s
+    JOIN tables_restaurant tr ON tr.id = s.table_id
+    JOIN users u ON u.id = s.user_id
+    WHERE s.id = ?
+    LIMIT 1`,
+    [id],
+    conn
+  );
   return rows[0] || null;
 }
 
 async function findOpenSaleByTable(tableId, conn) {
   const rows = await query(
-    'SELECT * FROM sales WHERE table_id = ? AND status = "ABIERTA" ORDER BY opened_at DESC LIMIT 1',
+    `SELECT
+      s.*,
+      tr.status AS table_status,
+      u.name AS waiter_name
+    FROM sales s
+    JOIN tables_restaurant tr ON tr.id = s.table_id
+    JOIN users u ON u.id = s.user_id
+    WHERE s.table_id = ? AND s.status = "ABIERTA"
+    ORDER BY s.opened_at DESC
+    LIMIT 1`,
     [tableId],
     conn
   );
   return rows[0] || null;
+}
+
+async function listWaitersByBranch(branchId) {
+  return query(
+    `SELECT id, name
+     FROM users
+     WHERE branch_id = ? AND role = 'MOZO' AND active = 1
+     ORDER BY name ASC`,
+    [branchId]
+  );
+}
+
+async function findWaiterById(branchId, waiterId, conn) {
+  const rows = await query(
+    `SELECT id, name
+     FROM users
+     WHERE branch_id = ? AND id = ? AND role = 'MOZO' AND active = 1
+     LIMIT 1`,
+    [branchId, waiterId],
+    conn
+  );
+  return rows[0] || null;
+}
+
+async function updateSaleWaiter(saleId, waiterId, conn) {
+  await query('UPDATE sales SET user_id = ? WHERE id = ?', [waiterId, saleId], conn);
 }
 
 async function listOpenSalesByBranch(branchId) {
@@ -322,4 +369,7 @@ module.exports = {
   getSalesReportByBranch,
   getSalesTotalsByBranch,
   getVatSalesBookByBranch,
+  listWaitersByBranch,
+  findWaiterById,
+  updateSaleWaiter,
 };

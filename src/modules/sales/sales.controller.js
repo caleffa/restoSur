@@ -56,6 +56,20 @@ const listOpen = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const listWaiters = asyncHandler(async (req, res) => {
+  const data = await service.listWaiters(Number(req.user.branchId));
+  res.json({ ok: true, data });
+});
+
+const reassignWaiter = asyncHandler(async (req, res) => {
+  const data = await service.reassignWaiter(
+    Number(req.params.id),
+    req.body?.waiterId,
+    Number(req.user.branchId)
+  );
+  res.json({ ok: true, data });
+});
+
 const report = asyncHandler(async (req, res) => {
   const data = await service.getSalesReport(Number(req.user.branchId), req.query || {});
   res.json({ ok: true, data });
@@ -86,6 +100,8 @@ module.exports = {
   getById,
   getByTable,
   listOpen,
+  listWaiters,
+  reassignWaiter,
   report,
   exportReport,
   vatBook,
