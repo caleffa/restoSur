@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Modal from '../components/Modal';
 import Navbar from '../components/Navbar';
 import SalesList from '../components/dashboard/SalesList';
 import StatsCards from '../components/dashboard/StatsCards';
@@ -7,7 +8,12 @@ import TablesGrid from '../components/dashboard/TablesGrid';
 import TopProducts from '../components/dashboard/TopProducts';
 import KitchenOrdersGrid from '../components/dashboard/KitchenOrdersGrid';
 import KitchenOrderModal from '../components/dashboard/KitchenOrderModal';
-import { createSale, getAreaMap, getTables } from '../services/tableService';
+import {
+  createSaleWithWaiter,
+  getAreaMap,
+  getTables,
+  getWaiters,
+} from '../services/tableService';
 import { getAreas } from '../services/adminService';
 import {
   getDashboardSummary,
@@ -18,7 +24,11 @@ import {
 import { normalizeTableType } from '../utils/tableVisuals';
 import { canAccessPOS, canCreateSale, ROLES } from '../utils/roles';
 import { useAuth } from '../context/AuthContext';
-import { getKitchenOrders, getSaleDetail, updateKitchenOrderStatus } from '../services/kitchenService';
+import {
+  getKitchenOrders,
+  getSaleDetail,
+  updateKitchenOrderStatus,
+} from '../services/kitchenService';
 
 function Dashboard() {
   const [summary, setSummary] = useState(null);
@@ -30,6 +40,8 @@ function Dashboard() {
   const [salesByHour, setSalesByHour] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyTableId, setBusyTableId] = useState(null);
+  const [waiters, setWaiters] = useState([]);
+  const [pendingTable, setPendingTable] = useState(null);
   const [kitchenOrders, setKitchenOrders] = useState([]);
   const [selectedKitchenOrder, setSelectedKitchenOrder] = useState(null);
   const [selectedSaleDetail, setSelectedSaleDetail] = useState(null);
@@ -97,24 +109,52 @@ function Dashboard() {
   }, [loadAreas]);
 
   useEffect(() => {
+    getWaiters()
+      .then((data) => setWaiters(Array.isArray(data) ? data : []))
+      .catch(() => setWaiters([]));
+  }, []);
+
+  useEffect(() => {
     loadDashboard();
     const interval = setInterval(loadDashboard, 5000);
 
     return () => clearInterval(interval);
   }, [loadDashboard]);
 
+  const openTableWithWaiter = async (table, waiterId = null) => {
+    if (!table) return;
+
+    const selectedWaiter = waiters.find((waiter) => Number(waiter.id) === Number(waiterId));
+    const isValidWaiter = waiterId === null
+      || waiterId === undefined
+      || selectedWaiter?.role === ROLES.MOZO;
+
+    if (!isValidWaiter) {
+      setError('Solo se puede asignar un usuario con rol MOZO.');
+      return;
+    }
+
+    try {
+      setBusyTableId(table.id);
+      await createSaleWithWaiter(table.id, waiterId);
+      setPendingTable(null);
+      await loadDashboard();
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'No se pudo abrir la venta de la mesa.');
+    } finally {
+      setBusyTableId(null);
+    }
+  };
+
   const handleTableClick = async (table) => {
     if (!table || busyTableId) return;
 
     if (table.status === 'LIBRE' && canCreateSale(user?.role)) {
-      try {
-        setBusyTableId(table.id);
-        await createSale(table.id);
-        await loadDashboard();
-      } catch (err) {
-        setError(err?.response?.data?.message || 'No se pudo abrir la venta de la mesa.');
-      } finally {
-        setBusyTableId(null);
+      if (user?.role === ROLES.MOZO) {
+        await openTableWithWaiter(table, Number(user?.id));
+      } else {
+        setPendingTable(table);
       }
       return;
     }
@@ -162,6 +202,21 @@ function Dashboard() {
       setKitchenStatusLoading(false);
     }
   };
+
+  const handleWaiterSelection = async (waiterId) => {
+    if (!pendingTable) return;
+    await openTableWithWaiter(pendingTable, waiterId);
+  };
+
+  const handleCloseWaitersModal = () => {
+    if (busyTableId) return;
+    setPendingTable(null);
+  };
+
+  const availableWaiters = useMemo(
+    () => waiters.filter((waiter) => waiter?.role === ROLES.MOZO),
+    [waiters]
+  );
 
   const alerts = useMemo(() => {
     const outOfStockProducts = topProducts.filter((product) => product.quantity === 0);
@@ -276,6 +331,7 @@ function Dashboard() {
             </ul>
           </article>
         </section>
+
         {selectedKitchenOrder ? (
           <KitchenOrderModal
             order={selectedKitchenOrder}
@@ -288,6 +344,53 @@ function Dashboard() {
             }}
             onChangeStatus={handleKitchenStatusChange}
           />
+        ) : null}
+
+        {pendingTable ? (
+          <Modal
+            title={`Abrir mesa ${pendingTable.table_number || pendingTable.name || pendingTable.id}`}
+            onClose={handleCloseWaitersModal}
+            size="sm"
+            actions={(
+              <>
+                <button
+                  type="button"
+                  className="touch-btn"
+                  onClick={handleCloseWaitersModal}
+                  disabled={busyTableId === pendingTable.id}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="touch-btn btn-primary"
+                  onClick={() => handleWaiterSelection(null)}
+                  disabled={busyTableId === pendingTable.id}
+                >
+                  Sin asignar
+                </button>
+              </>
+            )}
+          >
+            <p className="modal-helper-text">Seleccioná un mozo disponible o abrí la mesa sin asignar.</p>
+            <div className="waiters-touch-grid">
+              {availableWaiters.map((waiter) => (
+                <button
+                  key={waiter.id}
+                  type="button"
+                  className="waiter-card"
+                  onClick={() => handleWaiterSelection(Number(waiter.id))}
+                  disabled={busyTableId === pendingTable.id}
+                >
+                  <span className="waiter-card-name">{waiter.name}</span>
+                  <span className="waiter-card-meta">Mozo activo</span>
+                </button>
+              ))}
+              {!availableWaiters.length ? (
+                <p className="modal-helper-text mb-0">No hay mozos disponibles en este momento.</p>
+              ) : null}
+            </div>
+          </Modal>
         ) : null}
       </main>
     </div>
