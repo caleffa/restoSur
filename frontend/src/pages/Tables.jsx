@@ -7,7 +7,7 @@ import { getAreas } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
 import { createSaleWithWaiter, getAreaMap, getTables, getWaiters } from '../services/tableService';
 import { normalizeTableType } from '../utils/tableVisuals';
-import { canAccessPOS, canCreateSale } from '../utils/roles';
+import { canAccessPOS, canCreateSale, ROLES } from '../utils/roles';
 
 function Tables() {
   const [tables, setTables] = useState([]);
@@ -18,7 +18,6 @@ function Tables() {
   const [loading, setLoading] = useState(true);
   const [waiters, setWaiters] = useState([]);
   const [pendingTable, setPendingTable] = useState(null);
-  const [selectedWaiterId, setSelectedWaiterId] = useState(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -121,9 +120,11 @@ function Tables() {
     setError('');
 
     if (table.status === 'LIBRE' && canCreateSale(user?.role)) {
-      const defaultWaiter = waiters.find((item) => Number(item.id) === Number(user?.id)) || waiters[0] || null;
-      setPendingTable(table);
-      setSelectedWaiterId(defaultWaiter ? Number(defaultWaiter.id) : null);
+      if (user?.role === ROLES.MOZO) {
+        await openTableWithWaiter(table, Number(user?.id));
+      } else {
+        setPendingTable(table);
+      }
       return;
     }
 
@@ -140,15 +141,14 @@ function Tables() {
     [areas]
   );
 
-  const confirmOpenTable = async () => {
-    if (!pendingTable || !selectedWaiterId) {
-      setError('Seleccioná un mozo para abrir la mesa.');
+  const openTableWithWaiter = async (table, waiterId = null) => {
+    if (!table) {
       return;
     }
 
     try {
-      setBusyTableId(pendingTable.id);
-      await createSaleWithWaiter(pendingTable.id, selectedWaiterId);
+      setBusyTableId(table.id);
+      await createSaleWithWaiter(table.id, waiterId);
       setPendingTable(null);
       if (selectedArea === 'ALL') {
         await loadTables(null);
@@ -225,22 +225,29 @@ function Tables() {
               <button type="button" className="touch-btn" onClick={() => setPendingTable(null)}>
                 Cancelar
               </button>
-              <button type="button" className="touch-btn btn-primary" onClick={confirmOpenTable}>
-                Confirmar
+              <button
+                type="button"
+                className="touch-btn btn-primary"
+                onClick={() => openTableWithWaiter(pendingTable, null)}
+                disabled={busyTableId === pendingTable.id}
+              >
+                Abrir sin asignar
               </button>
             </>
           )}
         >
-          <p className="modal-helper-text">Seleccioná el mozo asignado para esta mesa.</p>
+          <p className="modal-helper-text">Seleccioná un mozo activo para asignarlo. Si no, podés abrir sin asignar.</p>
           <div className="waiters-touch-grid">
             {waiters.map((waiter) => (
               <button
                 key={waiter.id}
                 type="button"
-                className={`touch-btn waiter-choice ${Number(selectedWaiterId) === Number(waiter.id) ? 'active' : ''}`}
-                onClick={() => setSelectedWaiterId(Number(waiter.id))}
+                className="waiter-card"
+                onClick={() => openTableWithWaiter(pendingTable, Number(waiter.id))}
+                disabled={busyTableId === pendingTable.id}
               >
-                {waiter.name}
+                <span className="waiter-card-name">{waiter.name}</span>
+                <span className="waiter-card-meta">Mozo activo</span>
               </button>
             ))}
           </div>

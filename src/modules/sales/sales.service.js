@@ -14,20 +14,32 @@ function validateSaleId(saleId) {
 }
 
 async function createSale(data, user) {
-  const waiterId = Number(data.waiterId || user.id);
-  if (!Number.isInteger(waiterId) || waiterId <= 0) {
+  const hasExplicitWaiter = data.waiterId !== undefined && data.waiterId !== null && `${data.waiterId}`.trim() !== '';
+  const requestedWaiterId = hasExplicitWaiter ? Number(data.waiterId) : null;
+
+  if (hasExplicitWaiter && (!Number.isInteger(requestedWaiterId) || requestedWaiterId <= 0)) {
     throw new AppError('Mozo inválido', 400);
   }
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const waiter = await salesRepo.findWaiterById(Number(user.branchId), waiterId, conn);
-    if (!waiter) {
-      throw new AppError('El mozo seleccionado no es válido para esta sucursal', 400);
+    let assignedUserId = Number(user.id);
+
+    if (hasExplicitWaiter) {
+      const waiter = await salesRepo.findWaiterById(Number(user.branchId), requestedWaiterId, conn);
+      if (!waiter) {
+        throw new AppError('El mozo seleccionado no es válido para esta sucursal', 400);
+      }
+      assignedUserId = requestedWaiterId;
+    } else if (user.role === 'MOZO') {
+      const selfWaiter = await salesRepo.findWaiterById(Number(user.branchId), Number(user.id), conn);
+      if (!selfWaiter) {
+        throw new AppError('El mozo seleccionado no es válido para esta sucursal', 400);
+      }
     }
 
-    const sale = await salesRepo.createSale({ ...data, userId: waiterId }, conn);
+    const sale = await salesRepo.createSale({ ...data, userId: assignedUserId }, conn);
     await salesRepo.markTableOccupied(data.tableId, 'OCUPADA', conn);
     await conn.commit();
     return sale;
