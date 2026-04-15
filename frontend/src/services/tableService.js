@@ -59,6 +59,10 @@ export async function getWaiters() {
 
 export async function createSaleWithWaiter(tableId, waiterId) {
   const branchId = 1;
-  const { data } = await http.post('/sales', { branchId, tableId, waiterId });
+  const payload = { branchId, tableId };
+  if (waiterId !== null && waiterId !== undefined) {
+    payload.waiterId = waiterId;
+  }
+  const { data } = await http.post('/sales', payload);
   return unwrap(data);
 }
