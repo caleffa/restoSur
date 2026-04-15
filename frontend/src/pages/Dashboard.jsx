@@ -214,7 +214,7 @@ function Dashboard() {
   };
 
   const availableWaiters = useMemo(
-    () => waiters.filter((waiter) => waiter?.role === ROLES.MOZO),
+    () => waiters,
     [waiters]
   );
 
