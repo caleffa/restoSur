@@ -215,6 +215,21 @@ body {
   margin: 0;
 }
 
+.modal-helper-text {
+  margin: 0 0 0.75rem;
+}
+
+.waiters-touch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.waiter-choice {
+  min-height: 56px;
+  font-size: 1rem;
+}
+
 .table-admin-screen {
   max-width: 900px;
   margin: 0 auto;

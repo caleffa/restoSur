@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Modal from '../components/Modal';
 import Navbar from '../components/Navbar';
 import TableCard from '../components/TableCard';
 import { getAreas } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
-import { createSale, getAreaMap, getTables } from '../services/tableService';
+import { createSaleWithWaiter, getAreaMap, getTables, getWaiters } from '../services/tableService';
 import { normalizeTableType } from '../utils/tableVisuals';
 import { canAccessPOS, canCreateSale } from '../utils/roles';
 
@@ -15,6 +16,9 @@ function Tables() {
   const [error, setError] = useState('');
   const [busyTableId, setBusyTableId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [waiters, setWaiters] = useState([]);
+  const [pendingTable, setPendingTable] = useState(null);
+  const [selectedWaiterId, setSelectedWaiterId] = useState(null);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -86,6 +90,10 @@ function Tables() {
   }, [loadAreas]);
 
   useEffect(() => {
+    getWaiters().then(setWaiters).catch(() => setWaiters([]));
+  }, []);
+
+  useEffect(() => {
     let isMounted = true;
 
     const fetchData = async () => {
@@ -113,22 +121,9 @@ function Tables() {
     setError('');
 
     if (table.status === 'LIBRE' && canCreateSale(user?.role)) {
-      try {
-        setBusyTableId(table.id);
-        await createSale(table.id);
-        if (selectedArea === 'ALL') {
-          await loadTables(null);
-        } else {
-          await loadMappedTables(Number(selectedArea));
-        }
-      } catch (err) {
-        setError(
-          err?.response?.data?.message ||
-          'No se pudo abrir la venta para esta mesa.'
-        );
-      } finally {
-        setBusyTableId(null);
-      }
+      const defaultWaiter = waiters.find((item) => Number(item.id) === Number(user?.id)) || waiters[0] || null;
+      setPendingTable(table);
+      setSelectedWaiterId(defaultWaiter ? Number(defaultWaiter.id) : null);
       return;
     }
 
@@ -144,6 +139,31 @@ function Tables() {
     () => [{ id: 'ALL', name: 'Todas las áreas' }, ...areas],
     [areas]
   );
+
+  const confirmOpenTable = async () => {
+    if (!pendingTable || !selectedWaiterId) {
+      setError('Seleccioná un mozo para abrir la mesa.');
+      return;
+    }
+
+    try {
+      setBusyTableId(pendingTable.id);
+      await createSaleWithWaiter(pendingTable.id, selectedWaiterId);
+      setPendingTable(null);
+      if (selectedArea === 'ALL') {
+        await loadTables(null);
+      } else {
+        await loadMappedTables(Number(selectedArea));
+      }
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+        'No se pudo abrir la venta para esta mesa.'
+      );
+    } finally {
+      setBusyTableId(null);
+    }
+  };
 
   return (
     <div className="app-layout">
@@ -194,6 +214,38 @@ function Tables() {
           </section>
         )}
       </main>
+
+      {pendingTable && (
+        <Modal
+          title={`Abrir mesa ${pendingTable.table_number}`}
+          onClose={() => setPendingTable(null)}
+          size="sm"
+          actions={(
+            <>
+              <button type="button" className="touch-btn" onClick={() => setPendingTable(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="touch-btn btn-primary" onClick={confirmOpenTable}>
+                Confirmar
+              </button>
+            </>
+          )}
+        >
+          <p className="modal-helper-text">Seleccioná el mozo asignado para esta mesa.</p>
+          <div className="waiters-touch-grid">
+            {waiters.map((waiter) => (
+              <button
+                key={waiter.id}
+                type="button"
+                className={`touch-btn waiter-choice ${Number(selectedWaiterId) === Number(waiter.id) ? 'active' : ''}`}
+                onClick={() => setSelectedWaiterId(Number(waiter.id))}
+              >
+                {waiter.name}
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
