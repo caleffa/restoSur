@@ -353,45 +353,53 @@ function POS() {
   };
 
   const printFiscalTicket = useCallback(({ saleData, invoiceData, paymentMethod }) => {
-    const issueDateDate = new Date();
+    const issueDateDate = new Date(invoiceData?.created_at || new Date());
     const issueDate = issueDateDate.toLocaleString('es-AR');
     const issueDateAfip = issueDateDate.toISOString().slice(0, 10);
-    const authorizationLabel = invoiceData?.authorizationType === 'CAEA' ? 'CAEA' : 'CAE';
-    const authorizationCode = invoiceData?.authorizationCode || '-';
-    const voucherNumber = invoiceData?.voucherNumber ? String(invoiceData.voucherNumber).padStart(8, '0') : '-';
-    const voucherNumberNumeric = invoiceData?.voucherNumber ? Number(invoiceData.voucherNumber) : 0;
+    const authorizationLabel = invoiceData?.authorization_type === 'CAEA' || invoiceData?.authorizationType === 'CAEA' ? 'CAEA' : 'CAE';
+    const authorizationCode = invoiceData?.authorization_code || invoiceData?.authorizationCode || '-';
+    const voucherRaw = invoiceData?.voucher_number || invoiceData?.voucherNumber;
+    const voucherNumber = voucherRaw ? String(voucherRaw).padStart(8, '0') : '-';
+    const voucherNumberNumeric = voucherRaw ? Number(voucherRaw) : 0;
     const pointOfSale = afipConfig?.point_of_sale || afipConfig?.pointOfSale || '-';
-    const caeExpiration = invoiceData?.caeExpiration ? String(invoiceData.caeExpiration).slice(0, 10) : '-';
+    const caeExpiration = invoiceData?.cae_expiration || invoiceData?.caeExpiration ? String(invoiceData?.cae_expiration || invoiceData?.caeExpiration).slice(0, 10) : '-';
     const issuerCuit = sanitizeCuit(afipConfig?.cuit);
     const issuerName = afipConfig?.issuer_name || afipConfig?.issuerName || 'NO INFORMADO';
     const issuerAddress = afipConfig?.issuer_address || afipConfig?.issuerAddress || 'NO INFORMADO';
     const ticketLogoPath = afipConfig?.ticket_logo_path || afipConfig?.ticketLogoPath || '';
-    const ticketTotal = Number(saleData?.total || 0);
-    const taxBreakdown = resolveTaxBreakdown(invoiceData?.invoiceType, ticketTotal);
-    const { qrVerificationUrl, qrImageUrl } = buildAfipQrData({
+    const ticketTotal = Number(saleData?.total || invoiceData?.total || 0);
+    const invoiceType = invoiceData?.invoice_type || invoiceData?.invoiceType || 'B';
+    const taxBreakdown = resolveTaxBreakdown(invoiceType, ticketTotal);
+    const { qrImageUrl } = buildAfipQrData({
       issueDate: issueDateAfip,
       cuit: issuerCuit,
       pointOfSale,
-      invoiceType: invoiceData?.invoiceType,
+      invoiceType,
       voucherNumber: voucherNumberNumeric,
       total: ticketTotal,
-      authorizationType: invoiceData?.authorizationType,
+      authorizationType: invoiceData?.authorization_type || invoiceData?.authorizationType,
       authorizationCode,
     });
 
     const itemsHtml = (saleData?.items || [])
-      .map((item) => `
-        <tr>
-          <td>${item.productName}</td>
-          <td style="text-align:center;">${Number(item.quantity)}</td>
-          <td style="text-align:right;">${formatCurrency(item.unitPrice)}</td>
-          <td style="text-align:right;">${formatCurrency(Number(item.quantity) * Number(item.unitPrice))}</td>
-        </tr>
-      `)
+      .map((item) => {
+        const articleName = item.articleName || item.article_name || item.productName || item.name || 'Producto';
+        const quantity = Number(item.quantity || 0);
+        const unitPrice = Number(item.unitPrice ?? item.unit_price ?? 0);
+        return `
+          <tr>
+            <td colspan="4" style="text-align:left;">${quantity} x ${formatCurrency(unitPrice)}</td>
+          </tr>
+          <tr>
+            <td colspan="3">${articleName}</td>
+            <td style="text-align:right;">${formatCurrency(quantity * unitPrice)}</td>
+          </tr>
+        `;
+      })
       .join('');
 
     const html = `
-       <html>
+      <html>
         <head>
           <title>Ticket Fiscal</title>
           <style>
@@ -439,7 +447,7 @@ function POS() {
           <div class="qr-wrap">
             <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
           </div>
-          <p>${authorizationLabel}: ${authorizationCode} | Vto ${authorizationLabel}: ${caeExpiration}</p>          
+          <p>${authorizationLabel}: ${authorizationCode} | Vto ${authorizationLabel}: ${caeExpiration}</p>
           <p>Gracias por su compra.</p>
         </body>
       </html>`;
