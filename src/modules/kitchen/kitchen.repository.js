@@ -1,19 +1,23 @@
 const { query } = require('../../repositories/baseRepository');
 
-async function createKitchenOrder({ saleId, branchId }, conn) {
-  const result = await query('INSERT INTO kitchen_orders (sale_id, branch_id, status) VALUES (?, ?, "PENDIENTE")', [saleId, branchId], conn);
+async function createKitchenOrder({ saleId, saleItemId, branchId, quantity }, conn) {
+  const result = await query(
+    'INSERT INTO kitchen_orders (sale_id, sale_item_id, branch_id, quantity, status) VALUES (?, ?, ?, ?, "PENDIENTE")',
+    [saleId, saleItemId, branchId, quantity],
+    conn
+  );
   return { id: result.insertId };
 }
 
-async function updateSaleItemsAsSent(saleId, conn) {
+async function updateSaleItemAsSent(saleItemId, conn) {
   await query(
     `UPDATE sale_items si
      JOIN articles a ON a.id = si.article_id
      SET si.kitchen_status = "ENVIADO"
-     WHERE si.sale_id = ?
+     WHERE si.id = ?
        AND si.kitchen_status = "PENDIENTE"
        AND a.is_product = 1`,
-    [saleId],
+    [saleItemId],
     conn
   );
 }
@@ -23,13 +27,18 @@ async function listPending(branchId) {
     `SELECT
       ko.id,
       ko.sale_id,
+      ko.sale_item_id,
       ko.branch_id,
+      ko.quantity,
       ko.status,
       ko.sent_at,
       ko.updated_at,
-      s.table_id
+      s.table_id,
+      a.name AS article_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
+    JOIN sale_items si ON si.id = ko.sale_item_id
+    JOIN articles a ON a.id = si.article_id
     WHERE ko.branch_id = ?
     ORDER BY ko.id DESC`,
     [branchId]
@@ -45,13 +54,18 @@ async function findById(id, conn) {
     `SELECT
       ko.id,
       ko.sale_id,
+      ko.sale_item_id,
       ko.branch_id,
+      ko.quantity,
       ko.status,
       ko.sent_at,
       ko.updated_at,
-      s.table_id
+      s.table_id,
+      a.name AS article_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
+    JOIN sale_items si ON si.id = ko.sale_item_id
+    JOIN articles a ON a.id = si.article_id
     WHERE ko.id = ?
     LIMIT 1`,
     [id],
@@ -71,12 +85,10 @@ async function syncSaleItemsKitchenStatusByOrderId(orderId, kitchenOrderStatus, 
 
   await query(
     `UPDATE sale_items si
-     JOIN kitchen_orders ko ON ko.sale_id = si.sale_id
-     JOIN articles a ON a.id = si.article_id
+     JOIN kitchen_orders ko ON ko.sale_item_id = si.id
      SET si.kitchen_status = ?
      WHERE ko.id = ?
-       AND si.kitchen_status <> "LISTO"
-       AND a.is_product = 1`,
+       AND si.kitchen_status <> "LISTO"`,
     [saleItemsStatus, orderId],
     conn
   );
@@ -87,13 +99,18 @@ async function listByTable(tableId, branchId) {
     `SELECT
       ko.id,
       ko.sale_id,
+      ko.sale_item_id,
       ko.branch_id,
+      ko.quantity,
       ko.status,
       ko.sent_at,
       ko.updated_at,
-      s.table_id
+      s.table_id,
+      a.name AS article_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
+    JOIN sale_items si ON si.id = ko.sale_item_id
+    JOIN articles a ON a.id = si.article_id
     WHERE s.table_id = ? AND ko.branch_id = ?
     ORDER BY ko.id DESC`,
     [tableId, branchId]
@@ -102,7 +119,7 @@ async function listByTable(tableId, branchId) {
 
 module.exports = {
   createKitchenOrder,
-  updateSaleItemsAsSent,
+  updateSaleItemAsSent,
   listPending,
   updateKitchenStatus,
   syncSaleItemsKitchenStatusByOrderId,

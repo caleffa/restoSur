@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
-import { getKitchenOrders, getSaleDetail, updateKitchenOrderStatus } from '../services/kitchenService';
+import { getKitchenOrders, updateKitchenOrderStatus } from '../services/kitchenService';
 import { ROLES } from '../utils/roles';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,7 +27,6 @@ function Comandas() {
   const [statusFilter, setStatusFilter] = useState('TODOS');
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [selectedSale, setSelectedSale] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [error, setError] = useState('');
@@ -68,18 +67,7 @@ function Comandas() {
 
   const openOrderDetail = async (order) => {
     setSelectedOrder(order);
-    setSelectedSale(null);
-
-    try {
-      setDetailLoading(true);
-      const sale = await getSaleDetail(order.saleId);
-      setSelectedSale(sale);
-      setError('');
-    } catch (err) {
-      setError(err?.response?.data?.message || 'No se pudo cargar el detalle de la comanda.');
-    } finally {
-      setDetailLoading(false);
-    }
+    setDetailLoading(false);
   };
 
   const changeStatus = async (status) => {
@@ -209,7 +197,7 @@ function Comandas() {
               <div className="kitchen-modal-header">
                 <div>
                   <p><strong>Venta:</strong> #{selectedOrder.saleId}</p>
-                  <p><strong>Mesa:</strong> {selectedSale?.table?.name || selectedSale?.tableName || `Mesa ${selectedSale?.tableId || '-'}`}</p>
+                  <p><strong>Mesa:</strong> {`Mesa ${selectedOrder.tableId || '-'}`}</p>
                 </div>
                 <span className={`badge fs-6 ${STATUS_CLASS[selectedOrder.status] || 'text-bg-secondary'}`}>
                   {selectedOrder.status}
@@ -236,16 +224,14 @@ function Comandas() {
 
               <div>
                 <h6>Items de la venta</h6>
-                {!selectedSale?.items?.length ? (
+                {!selectedOrder?.articleName ? (
                   <p className="text-muted mb-0">No hay items asociados.</p>
                 ) : (
                   <ul className="dashboard-list kitchen-items-list">
-                    {selectedSale.items.map((item) => (
-                      <li key={item.id} className="list-row-split">
-                        <span>{item.article_name || item.name}</span>
-                        <strong>x{item.quantity}</strong>
-                      </li>
-                    ))}
+                    <li className="list-row-split">
+                      <span>{selectedOrder.articleName}</span>
+                      <strong>x{selectedOrder.quantity}</strong>
+                    </li>
                   </ul>
                 )}
               </div>

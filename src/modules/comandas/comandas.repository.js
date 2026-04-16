@@ -25,13 +25,18 @@ async function list({ branchId, status, tableId }) {
     `SELECT
       ko.id,
       ko.sale_id,
+      ko.sale_item_id,
       ko.branch_id,
+      ko.quantity,
       ko.status,
       ko.sent_at,
       ko.updated_at,
-      s.table_id
+      s.table_id,
+      a.name AS article_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
+    JOIN sale_items si ON si.id = ko.sale_item_id
+    JOIN articles a ON a.id = si.article_id
     ${where}
     ORDER BY ko.id DESC`,
     params
@@ -43,13 +48,18 @@ async function findById(id) {
     `SELECT
       ko.id,
       ko.sale_id,
+      ko.sale_item_id,
       ko.branch_id,
+      ko.quantity,
       ko.status,
       ko.sent_at,
       ko.updated_at,
-      s.table_id
+      s.table_id,
+      a.name AS article_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
+    JOIN sale_items si ON si.id = ko.sale_item_id
+    JOIN articles a ON a.id = si.article_id
     WHERE ko.id = ?
     LIMIT 1`,
     [id]
@@ -58,8 +68,11 @@ async function findById(id) {
   return rows[0] || null;
 }
 
-async function create({ saleId, branchId }) {
-  const result = await query('INSERT INTO kitchen_orders (sale_id, branch_id, status) VALUES (?, ?, "PENDIENTE")', [saleId, branchId]);
+async function create({ saleId, saleItemId, branchId, quantity }) {
+  const result = await query(
+    'INSERT INTO kitchen_orders (sale_id, sale_item_id, branch_id, quantity, status) VALUES (?, ?, ?, ?, "PENDIENTE")',
+    [saleId, saleItemId, branchId, quantity]
+  );
   return { id: result.insertId };
 }
 

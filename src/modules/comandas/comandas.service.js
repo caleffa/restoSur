@@ -24,8 +24,11 @@ function mapComanda(row) {
   return {
     id: row.id,
     saleId: row.sale_id,
+    saleItemId: row.sale_item_id,
     branchId: row.branch_id,
     tableId: row.table_id,
+    articleName: row.article_name,
+    quantity: Number(row.quantity),
     status: row.status,
     createdAt: row.sent_at,
     updatedAt: row.updated_at,
@@ -50,12 +53,21 @@ async function getComandaById(id) {
   return mapComanda(row);
 }
 
-async function createComanda({ saleId, status }) {
+async function createComanda({ saleId, saleItemId, quantity, status }) {
   const normalizedSaleId = parseId(saleId, 'saleId');
+  const normalizedSaleItemId = parseId(saleItemId, 'saleItemId');
   const sale = await salesRepo.findSaleById(normalizedSaleId);
   if (!sale) throw new AppError('Venta no encontrada', 404);
+  const saleItems = await salesRepo.listItemsBySale(normalizedSaleId);
+  const targetItem = saleItems.find((item) => Number(item.id) === normalizedSaleItemId);
+  if (!targetItem || !targetItem.is_product) throw new AppError('saleItemId inválido para comanda', 400);
 
-  const created = await repo.create({ saleId: normalizedSaleId, branchId: sale.branch_id });
+  const created = await repo.create({
+    saleId: normalizedSaleId,
+    saleItemId: normalizedSaleItemId,
+    branchId: sale.branch_id,
+    quantity: Number(quantity) > 0 ? quantity : targetItem.quantity,
+  });
 
   if (status) {
     await repo.updateStatus(created.id, normalizeStatus(status));

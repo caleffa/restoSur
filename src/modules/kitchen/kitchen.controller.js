@@ -25,23 +25,23 @@ const listOrdersByTable = asyncHandler(async (req, res) => {
 
 const createOrder = asyncHandler(async (req, res) => {
   const tableId = Number(req.body.tableId);
+  const saleItemId = Number(req.body.saleItemId);
+  const quantity = Number(req.body.quantity);
   if (!Number.isInteger(tableId) || tableId <= 0) throw new AppError('tableId inválido', 400);
+  if (!Number.isInteger(saleItemId) || saleItemId <= 0) throw new AppError('saleItemId inválido', 400);
+  if (!Number.isFinite(quantity) || quantity <= 0) throw new AppError('quantity inválido', 400);
 
   const payload = {
     tableId,
+    saleItemId,
+    quantity,
     branchId: Number(req.user.branchId),
     status: req.body.status,
   };
   const created = await service.createByTable(payload);
   res.status(201).json({
     ok: true,
-    data: {
-      ...created,
-      productId: req.body.productId,
-      articleName: req.body.articleName,
-      quantity: Number(req.body.quantity || 0),
-      timestamp: req.body.timestamp || created.createdAt,
-    },
+    data: created,
   });
 });
 

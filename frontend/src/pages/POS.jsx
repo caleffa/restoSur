@@ -223,20 +223,17 @@ function POS() {
   }, [sale]);
 
   const sendKitchenOrder = useCallback(async (pendingItems) => {
-    const quantity = pendingItems.reduce((acc, entry) => acc + Number(entry.quantity || 0), 0);
-    const articleName = pendingItems
-      .map((entry) => `${entry.articleName} x${entry.quantity}`)
-      .join(' · ');
+    const createdOrders = await Promise.all(
+      pendingItems.map((entry) => createKitchenOrder({
+        tableId: Number(tableId),
+        saleItemId: Number(entry.id),
+        articleName: entry.articleName,
+        quantity: Number(entry.quantity || 0),
+        status: 'PENDIENTE',
+      }))
+    );
 
-    const order = await createKitchenOrder({
-      tableId: Number(tableId),
-      articleName,
-      quantity,
-      timestamp: new Date().toISOString(),
-      status: 'PENDIENTE',
-    });
-
-    setKitchenOrders((prev) => [order, ...prev]);
+    setKitchenOrders((prev) => [...createdOrders, ...prev]);
     playKitchenSound();
 
     if (import.meta.env.VITE_AUTO_PRINT_KITCHEN === 'true') {
@@ -301,9 +298,9 @@ function POS() {
       if (newItem.isProduct) {
         const order = await createKitchenOrder({
           tableId: Number(tableId),
-          productName: newItem.productName,
+          saleItemId: Number(newItem.id),
+          articleName: newItem.articleName,
           quantity: newItem.quantity,
-          timestamp: new Date().toISOString(),
           status: 'PENDIENTE',
         });
         setKitchenOrders((prev) => [order, ...prev]);
@@ -351,9 +348,9 @@ function POS() {
       if (item.isProduct && diff > 0) {
         const order = await createKitchenOrder({
           tableId: Number(tableId),
-          productName: item.productName,
+          saleItemId: Number(item.id),
+          articleName: item.articleName,
           quantity: diff,
-          timestamp: new Date().toISOString(),
           status: 'PENDIENTE',
         });
         setKitchenOrders((prev) => [order, ...prev]);
