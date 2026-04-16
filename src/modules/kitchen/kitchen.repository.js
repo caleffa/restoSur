@@ -1,9 +1,10 @@
 const { query } = require('../../repositories/baseRepository');
 
-async function createKitchenOrder({ saleId, saleItemId, branchId, quantity }, conn) {
+async function createKitchenOrder({ saleId, saleItemId, branchId, quantity, kitchenId }, conn) {
   const result = await query(
-    'INSERT INTO kitchen_orders (sale_id, sale_item_id, branch_id, quantity, status) VALUES (?, ?, ?, ?, "PENDIENTE")',
-    [saleId, saleItemId, branchId, quantity],
+    `INSERT INTO kitchen_orders (sale_id, sale_item_id, branch_id, quantity, kitchen_id, status)
+     VALUES (?, ?, ?, ?, ?, "PENDIENTE")`,
+    [saleId, saleItemId, branchId, quantity, kitchenId || null],
     conn
   );
   return { id: result.insertId };
@@ -30,23 +31,29 @@ async function listPending(branchId) {
       ko.sale_item_id,
       ko.branch_id,
       ko.quantity,
+      ko.kitchen_id,
+      ko.user_id,
       ko.status,
       ko.sent_at,
       ko.updated_at,
       s.table_id,
-      a.name AS article_name
+      a.name AS article_name,
+      k.name AS kitchen_name,
+      u.name AS user_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
     JOIN sale_items si ON si.id = ko.sale_item_id
     JOIN articles a ON a.id = si.article_id
+    LEFT JOIN kitchens k ON k.id = ko.kitchen_id
+    LEFT JOIN users u ON u.id = ko.user_id
     WHERE ko.branch_id = ?
     ORDER BY ko.id DESC`,
     [branchId]
   );
 }
 
-async function updateKitchenStatus(id, status, conn) {
-  await query('UPDATE kitchen_orders SET status=? WHERE id=?', [status, id], conn);
+async function updateKitchenStatus(id, status, userId, conn) {
+  await query('UPDATE kitchen_orders SET status=?, user_id=? WHERE id=?', [status, userId || null, id], conn);
 }
 
 async function findById(id, conn) {
@@ -57,15 +64,21 @@ async function findById(id, conn) {
       ko.sale_item_id,
       ko.branch_id,
       ko.quantity,
+      ko.kitchen_id,
+      ko.user_id,
       ko.status,
       ko.sent_at,
       ko.updated_at,
       s.table_id,
-      a.name AS article_name
+      a.name AS article_name,
+      k.name AS kitchen_name,
+      u.name AS user_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
     JOIN sale_items si ON si.id = ko.sale_item_id
     JOIN articles a ON a.id = si.article_id
+    LEFT JOIN kitchens k ON k.id = ko.kitchen_id
+    LEFT JOIN users u ON u.id = ko.user_id
     WHERE ko.id = ?
     LIMIT 1`,
     [id],
@@ -102,15 +115,21 @@ async function listByTable(tableId, branchId) {
       ko.sale_item_id,
       ko.branch_id,
       ko.quantity,
+      ko.kitchen_id,
+      ko.user_id,
       ko.status,
       ko.sent_at,
       ko.updated_at,
       s.table_id,
-      a.name AS article_name
+      a.name AS article_name,
+      k.name AS kitchen_name,
+      u.name AS user_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
     JOIN sale_items si ON si.id = ko.sale_item_id
     JOIN articles a ON a.id = si.article_id
+    LEFT JOIN kitchens k ON k.id = ko.kitchen_id
+    LEFT JOIN users u ON u.id = ko.user_id
     WHERE s.table_id = ? AND ko.branch_id = ?
     ORDER BY ko.id DESC`,
     [tableId, branchId]

@@ -61,12 +61,22 @@ async function ensureCashSchema() {
   await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
   await ensureColumn('kitchen_orders', 'sale_item_id', 'INT NULL', 'sale_id');
   await ensureColumn('kitchen_orders', 'quantity', 'DECIMAL(12,3) NOT NULL DEFAULT 1', 'branch_id');
+  await ensureColumn('kitchen_orders', 'kitchen_id', 'INT NULL', 'quantity');
+  await ensureColumn('kitchen_orders', 'user_id', 'INT NULL', 'kitchen_id');
 
   await query(
     `UPDATE kitchen_orders ko
      JOIN sale_items si ON si.sale_id = ko.sale_id
      SET ko.sale_item_id = si.id, ko.quantity = si.quantity
      WHERE ko.sale_item_id IS NULL`
+  ).catch(() => {});
+
+  await query(
+    `UPDATE kitchen_orders ko
+     JOIN sale_items si ON si.id = ko.sale_item_id
+     JOIN recipes r ON r.product_id = si.article_id
+     SET ko.kitchen_id = r.kitchen_id
+     WHERE ko.kitchen_id IS NULL`
   ).catch(() => {});
 
   await query('ALTER TABLE kitchen_orders MODIFY sale_item_id INT NOT NULL').catch(() => {});
@@ -76,6 +86,22 @@ async function ensureCashSchema() {
       `ALTER TABLE kitchen_orders
        ADD CONSTRAINT fk_kitchen_orders_sale_item
        FOREIGN KEY (sale_item_id) REFERENCES sale_items(id)`
+    ).catch(() => {});
+  }
+
+  if (!(await foreignKeyExists('kitchen_orders', 'kitchen_id'))) {
+    await query(
+      `ALTER TABLE kitchen_orders
+       ADD CONSTRAINT fk_kitchen_orders_kitchen
+       FOREIGN KEY (kitchen_id) REFERENCES kitchens(id)`
+    ).catch(() => {});
+  }
+
+  if (!(await foreignKeyExists('kitchen_orders', 'user_id'))) {
+    await query(
+      `ALTER TABLE kitchen_orders
+       ADD CONSTRAINT fk_kitchen_orders_user
+       FOREIGN KEY (user_id) REFERENCES users(id)`
     ).catch(() => {});
   }
 
@@ -205,6 +231,38 @@ async function ensureStockSchema() {
 
 async function ensureArticlesSchema() {
   await query(
+    `CREATE TABLE IF NOT EXISTS kitchen_types (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL UNIQUE,
+      description VARCHAR(255) NULL,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`
+  );
+
+  await ensureColumn('kitchen_types', 'active', 'TINYINT(1) DEFAULT 1', 'description');
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS kitchens (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL,
+      kitchen_type_id INT NOT NULL,
+      name VARCHAR(120) NOT NULL,
+      description VARCHAR(255) NULL,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_kitchen_branch_name (branch_id, name),
+      FOREIGN KEY (branch_id) REFERENCES branches(id),
+      FOREIGN KEY (kitchen_type_id) REFERENCES kitchen_types(id)
+    )`
+  );
+
+  await ensureColumn('kitchens', 'description', 'VARCHAR(255) NULL', 'name');
+  await ensureColumn('kitchens', 'active', 'TINYINT(1) DEFAULT 1', 'description');
+
+  await query(
     `CREATE TABLE IF NOT EXISTS article_types (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(120) NOT NULL UNIQUE,
@@ -263,14 +321,17 @@ async function ensureArticlesSchema() {
     `CREATE TABLE IF NOT EXISTS recipes (
       id INT AUTO_INCREMENT PRIMARY KEY,
       product_id INT NOT NULL,
+      kitchen_id INT NULL,
       notes VARCHAR(255) NULL,
       active TINYINT(1) DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY uq_recipe_product (product_id),
-      FOREIGN KEY (product_id) REFERENCES articles(id)
+      FOREIGN KEY (product_id) REFERENCES articles(id),
+      FOREIGN KEY (kitchen_id) REFERENCES kitchens(id)
     )`
   );
+  await ensureColumn('recipes', 'kitchen_id', 'INT NULL', 'product_id');
 
   await query(
     `CREATE TABLE IF NOT EXISTS recipe_items (

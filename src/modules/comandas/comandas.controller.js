@@ -22,7 +22,7 @@ const createComanda = asyncHandler(async (req, res) => {
 });
 
 const updateComandaStatus = asyncHandler(async (req, res) => {
-  const data = await service.updateComandaStatus(req.params.id, req.body.status);
+  const data = await service.updateComandaStatus(req.params.id, req.body.status, req.user.id);
   res.json({ ok: true, data });
 });
 

@@ -17,6 +17,8 @@ const articleTypesRoutes = require('../modules/articleTypes/articleTypes.routes'
 const measurementUnitsRoutes = require('../modules/measurementUnits/measurementUnits.routes');
 const articlesRoutes = require('../modules/articles/articles.routes');
 const recipesRoutes = require('../modules/recipes/recipes.routes');
+const kitchenTypesRoutes = require('../modules/kitchenTypes/kitchenTypes.routes');
+const kitchensRoutes = require('../modules/kitchens/kitchens.routes');
 
 const router = express.Router();
 
@@ -40,5 +42,7 @@ router.use('/', articleTypesRoutes);
 router.use('/', measurementUnitsRoutes);
 router.use('/', articlesRoutes);
 router.use('/', recipesRoutes);
+router.use('/', kitchenTypesRoutes);
+router.use('/', kitchensRoutes);
 
 module.exports = router;

@@ -16,8 +16,12 @@ function normalizeKitchenOrder(order) {
     branchId: Number(order.branchId ?? order.branch_id),
     tableId: Number(order.tableId ?? order.table_id),
     articleName: order.articleName ?? order.article_name,
+    kitchenId: Number(order.kitchenId ?? order.kitchen_id ?? 0) || null,
+    kitchenName: order.kitchenName ?? order.kitchen_name ?? null,
     quantity: Number(order.quantity ?? 0),
     status: order.status,
+    userId: Number(order.userId ?? order.user_id ?? 0) || null,
+    updatedByName: order.updatedByName ?? order.user_name ?? null,
     createdAt: order.createdAt ?? order.created_at ?? order.sentAt ?? order.sent_at,
     updatedAt: order.updatedAt ?? order.updated_at,
   };

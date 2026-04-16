@@ -32,6 +32,16 @@ const ADMIN_MODULES = [
     description: 'Definición de insumos por producto con cantidades y fracciones según unidad.',
     path: '/admin/management/recipes',
   },
+  {
+    title: 'Tipos de cocina',
+    description: 'Alta, edición y baja de tipos para organizar cocinas.',
+    path: '/admin/management/kitchen-types',
+  },
+  {
+    title: 'Cocinas',
+    description: 'Gestión de cocinas operativas con filtros por tipo y estado.',
+    path: '/admin/management/kitchens',
+  },
 
 
   {

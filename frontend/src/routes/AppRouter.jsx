@@ -22,6 +22,8 @@ import Comandas from '../pages/Comandas';
 import SalesManagement from '../pages/SalesManagement';
 import AdminInvoices from '../pages/AdminInvoices';
 import AdminRecipes from '../pages/AdminRecipes';
+import AdminKitchenTypes from '../pages/AdminKitchenTypes';
+import AdminKitchens from '../pages/AdminKitchens';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -110,6 +112,24 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminRecipes />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/kitchen-types"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminKitchenTypes />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/kitchens"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminKitchens />
           </ProtectedRoute>
         )}
       />

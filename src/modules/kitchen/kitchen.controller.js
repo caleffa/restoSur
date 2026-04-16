@@ -12,7 +12,7 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  await service.updateStatus(Number(req.params.id), req.body.status);
+  await service.updateStatus(Number(req.params.id), req.body.status, Number(req.user.id));
   res.json({ ok: true });
 });
 
