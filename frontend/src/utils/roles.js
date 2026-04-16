@@ -42,6 +42,7 @@ export const MENU_BY_ROLE = {
       children: [
         { label: 'Caja', path: '/cash' },
         { label: 'Admin cajas', path: '/cash/registers' },
+        { label: 'Reportes', path: '/cash/reports' },
       ],
     },
     {
@@ -56,8 +57,9 @@ export const MENU_BY_ROLE = {
       label: 'Cocina', 
       path: '/comandas' ,
       children: [
-        { label: 'Cocina ventas', path: '/comandas' },
-        { label: 'Gestión cocina', path: '/' },
+        { label: 'Comandas', path: '/comandas' },
+        { label: 'Cocinas', path: '/admin/management/kitchens' },
+        { label: 'Tipos de cocina', path: '/admin/management/kitchen-types' },
       ],
     },
 
@@ -73,6 +75,7 @@ export const MENU_BY_ROLE = {
     { label: 'Comandas', path: '/comandas' },
   ],
   [ROLES.MOZO]: [
+    { label: 'Dashboard', path: '/dashboard' },
     { label: 'Mesas', path: '/tables' },
   ],
   [ROLES.COCINA]: [
