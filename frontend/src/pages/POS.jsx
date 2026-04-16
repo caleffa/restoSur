@@ -285,24 +285,24 @@ function POS() {
 
   const handleAddProduct = async (product, quantity) => {
     if (!sale || saving || !canEdit) return;
-    console.table(sale.items);
     try {
       setSaving(true);
       const parsedQty = Number(quantity || 1);
-
-      await addSaleItem(sale.id, { productId: product.id, quantity: parsedQty });
+      const createdItem = await addSaleItem(sale.id, { productId: product.id, quantity: parsedQty });
 
       const newItem = {
-        id: `tmp-${Date.now()}`,
-        productId: product.id,
-        productName: product.name,
-        categoryId: Number(product.category_id ?? product.categoryId ?? 0),
-        isProduct: product.is_product === 1 || product.is_product === true || product.isProduct === true,
-        unitPrice: Number(product.price),
-        quantity: parsedQty,
-        kitchenStatus: product.is_product === 1 || product.is_product === true || product.isProduct === true
-          ? 'PENDIENTE'
-          : 'SIN_COMANDA',
+        id: createdItem?.id ?? `tmp-${Date.now()}`,
+        articleId: createdItem?.articleId ?? product.id,
+        productName: createdItem?.articleName ?? product.name,
+        categoryId: Number(createdItem?.categoryId ?? product.category_id ?? product.categoryId ?? 0),
+        isProduct: createdItem?.isProduct ?? (product.is_product === 1 || product.is_product === true || product.isProduct === true),
+        unitPrice: Number(createdItem?.unitPrice ?? product.price),
+        quantity: Number(createdItem?.quantity ?? parsedQty),
+        kitchenStatus: createdItem?.kitchenStatus ?? (
+          (product.is_product === 1 || product.is_product === true || product.isProduct === true)
+            ? 'PENDIENTE'
+            : 'SIN_COMANDA'
+        ),
       };
 
       upsertSaleAndPersist((current) => ({
