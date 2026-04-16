@@ -53,6 +53,11 @@ async function createSale(data, user) {
 
 async function addItem(saleId, { productId, articleId, quantity, notes }) {
   validateSaleId(saleId);
+  const normalizedQuantity = Number(quantity);
+  if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) {
+    throw new AppError('Cantidad inválida', 400);
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -75,7 +80,7 @@ async function addItem(saleId, { productId, articleId, quantity, notes }) {
       const recipeItems = await recipesRepo.findActiveItemsByProductIds([selectedArticleId], conn);
       if (recipeItems.length > 0) {
         for (const recipeItem of recipeItems) {
-          const requiredQty = Number(quantity) * Number(recipeItem.quantity);
+          const requiredQty = normalizedQuantity * Number(recipeItem.quantity);
           const current = await stockRepo.findStock(sale.branch_id, Number(recipeItem.article_id), conn);
           if (Number(current?.quantity || 0) < requiredQty) {
             throw new AppError('Stock insuficiente para la receta del artículo', 400);
@@ -83,15 +88,30 @@ async function addItem(saleId, { productId, articleId, quantity, notes }) {
         }
       } else {
         const current = await stockRepo.findStock(sale.branch_id, selectedArticleId, conn);
-        if (Number(current?.quantity || 0) < Number(quantity)) {
+        if (Number(current?.quantity || 0) < normalizedQuantity) {
           throw new AppError('Stock insuficiente para el artículo', 400);
         }
       }
     }
 
-    await salesRepo.addSaleItem({ saleId, articleId: selectedArticleId, quantity, unitPrice: product.price, notes }, conn);
+    const createdItem = await salesRepo.addSaleItem(
+      { saleId, articleId: selectedArticleId, quantity: normalizedQuantity, unitPrice: product.price, notes },
+      conn
+    );
     await conn.commit();
-    return { saleId, articleId: selectedArticleId, quantity };
+    return {
+      id: createdItem.id,
+      saleId,
+      articleId: selectedArticleId,
+      articleName: product.name,
+      categoryId: Number(product.category_id ?? product.categoryId ?? 0),
+      isProduct: product.is_product === 1 || product.is_product === true || product.isProduct === true,
+      unitPrice: Number(product.price),
+      quantity: normalizedQuantity,
+      kitchenStatus: product.is_product === 1 || product.is_product === true || product.isProduct === true
+        ? 'PENDIENTE'
+        : 'SIN_COMANDA',
+    };
   } catch (e) {
     await conn.rollback();
     throw e;

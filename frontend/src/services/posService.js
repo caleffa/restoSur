@@ -71,42 +71,25 @@ function normalizeSale(tableId, payload) {
 export async function getSaleByTable(tableId) {
   const storageKey = `${SALE_PREFIX}${tableId}`;
 
-  try {
-    const { data } = await http.get(`/sales/table/${tableId}`);
-    const sale = normalizeSale(tableId, unwrap(data));
-    saveStorage(storageKey, sale);
-    return sale;
-  } catch {
-    const saved = readStorage(storageKey, null);
-    return normalizeSale(tableId, saved || buildMockSale(tableId));
-  }
+  const { data } = await http.get(`/sales/table/${tableId}`);
+  const sale = normalizeSale(tableId, unwrap(data));
+  saveStorage(storageKey, sale);
+  return sale;
 }
 
 export async function addSaleItem(saleId, payload) {
-  try {
-    const { data } = await http.post(`/sales/${saleId}/items`, payload);
-    return unwrap(data);
-  } catch {
-    return { ok: true, mocked: true };
-  }
+  const { data } = await http.post(`/sales/${saleId}/items`, payload);
+  return unwrap(data);
 }
 
 export async function updateSaleItem(itemId, payload) {
-  try {
-    const { data } = await http.put(`/sales/items/${itemId}`, payload);
-    return unwrap(data);
-  } catch {
-    return { ok: true, mocked: true };
-  }
+  const { data } = await http.put(`/sales/items/${itemId}`, payload);
+  return unwrap(data);
 }
 
 export async function deleteSaleItem(itemId) {
-  try {
-    const { data } = await http.delete(`/sales/items/${itemId}`);
-    return unwrap(data);
-  } catch {
-    return { ok: true, mocked: true };
-  }
+  const { data } = await http.delete(`/sales/items/${itemId}`);
+  return unwrap(data);
 }
 
 
