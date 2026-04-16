@@ -286,7 +286,7 @@ function POS() {
 
   const handleAddProduct = async (product, quantity) => {
     if (!sale || saving || !canEdit) return;
-
+    console.table(sale.items);
     try {
       setSaving(true);
       const parsedQty = Number(quantity || 1);

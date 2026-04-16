@@ -38,8 +38,8 @@ function buildMockSale(tableId) {
 function normalizeItem(item) {
   return {
     id: item.id,
-    productId: item.productId ?? item.product_id,
-    productName: item.productName ?? item.product_name ?? item.name,
+    articleId: item.articleId ?? item.article_id,
+    articleName: item.articleName ?? item.article_name ?? item.name,
     categoryId: Number(item.categoryId ?? item.category_id ?? 0),
     unitPrice: Number(item.unitPrice ?? item.unit_price ?? item.price ?? 0),
     quantity: Number(item.quantity ?? 0),
