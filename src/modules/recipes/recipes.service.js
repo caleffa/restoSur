@@ -1,5 +1,6 @@
 const repo = require('./recipes.repository');
 const articlesRepo = require('../articles/articles.repository');
+const kitchensRepo = require('../kitchens/kitchens.repository');
 const AppError = require('../../utils/appError');
 
 function normalizeItem(rawItem) {
@@ -17,6 +18,8 @@ function normalizeItem(rawItem) {
 function normalizePayload(data) {
   const productId = Number(data.productId);
   if (!productId) throw new AppError('El producto es obligatorio', 400);
+  const kitchenId = Number(data.kitchenId);
+  if (!kitchenId) throw new AppError('La cocina es obligatoria', 400);
 
   const notes = data.notes ? String(data.notes).trim() : null;
   const active = data.active === undefined ? true : Boolean(data.active);
@@ -32,6 +35,7 @@ function normalizePayload(data) {
 
   return {
     productId,
+    kitchenId,
     notes,
     active,
     items: Array.from(dedupedMap.entries()).map(([articleId, quantity]) => ({ articleId, quantity })),
@@ -64,6 +68,11 @@ async function validateReferences(data, recipeId = null) {
   const existingRecipe = await repo.findByProductId(data.productId);
   if (existingRecipe && existingRecipe.id !== recipeId) {
     throw new AppError('Ya existe una receta para ese producto', 409);
+  }
+
+  const kitchen = await kitchensRepo.findById(data.kitchenId);
+  if (!kitchen || !(kitchen.active === 1 || kitchen.active === true)) {
+    throw new AppError('La cocina seleccionada no es válida', 404);
   }
 
   const articleIds = data.items.map((item) => item.articleId);

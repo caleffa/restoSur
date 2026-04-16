@@ -121,15 +121,41 @@ CREATE TABLE articles (
 );
 
 
+CREATE TABLE kitchen_types (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  description VARCHAR(255) NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE kitchens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL,
+  kitchen_type_id INT NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  description VARCHAR(255) NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_kitchen_branch_name (branch_id, name),
+  FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (kitchen_type_id) REFERENCES kitchen_types(id)
+);
+
+
 CREATE TABLE recipes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   product_id INT NOT NULL,
+  kitchen_id INT NOT NULL,
   notes VARCHAR(255) NULL,
   active TINYINT(1) DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_recipe_product (product_id),
-  FOREIGN KEY (product_id) REFERENCES articles(id)
+  FOREIGN KEY (product_id) REFERENCES articles(id),
+  FOREIGN KEY (kitchen_id) REFERENCES kitchens(id)
 );
 
 CREATE TABLE recipe_items (
@@ -226,12 +252,16 @@ CREATE TABLE kitchen_orders (
   sale_item_id INT NOT NULL,
   branch_id INT NOT NULL,
   quantity DECIMAL(12,3) NOT NULL,
+  kitchen_id INT NULL,
+  user_id INT NULL,
   status ENUM('PENDIENTE','PREPARANDO','LISTO') DEFAULT 'PENDIENTE',
   sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (sale_id) REFERENCES sales(id),
   FOREIGN KEY (sale_item_id) REFERENCES sale_items(id),
-  FOREIGN KEY (branch_id) REFERENCES branches(id)
+  FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (kitchen_id) REFERENCES kitchens(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 

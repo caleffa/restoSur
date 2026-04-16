@@ -118,6 +118,48 @@ export async function deleteRecipe(recipeId) {
   return unwrap(data);
 }
 
+// Tipos de cocina
+export async function getKitchenTypes() {
+  const { data } = await http.get('/kitchen-types');
+  return unwrap(data) || [];
+}
+
+export async function createKitchenType(payload) {
+  const { data } = await http.post('/kitchen-types', payload);
+  return unwrap(data);
+}
+
+export async function updateKitchenType(kitchenTypeId, payload) {
+  const { data } = await http.put(`/kitchen-types/${kitchenTypeId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteKitchenType(kitchenTypeId) {
+  const { data } = await http.delete(`/kitchen-types/${kitchenTypeId}`);
+  return unwrap(data);
+}
+
+// Cocinas
+export async function getKitchens(params = {}) {
+  const { data } = await http.get('/kitchens', { params });
+  return unwrap(data) || [];
+}
+
+export async function createKitchen(payload) {
+  const { data } = await http.post('/kitchens', payload);
+  return unwrap(data);
+}
+
+export async function updateKitchen(kitchenId, payload) {
+  const { data } = await http.put(`/kitchens/${kitchenId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteKitchen(kitchenId) {
+  const { data } = await http.delete(`/kitchens/${kitchenId}`);
+  return unwrap(data);
+}
+
 // Stock
 export async function getStock(params = {}) {
   const { data } = await http.get('/stock', { params });

@@ -150,13 +150,14 @@ function Comandas() {
                     <th>Creada</th>
                     <th>Última actualización</th>
                     <th>Estado</th>
+                    <th>Cocina</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center text-muted py-4">No hay comandas con los filtros actuales.</td>
+                      <td colSpan={7} className="text-center text-muted py-4">No hay comandas con los filtros actuales.</td>
                     </tr>
                   ) : filteredOrders.map((order) => (
                     <tr key={order.id}>
@@ -167,6 +168,7 @@ function Comandas() {
                       <td>
                         <span className={`badge ${STATUS_CLASS[order.status] || 'text-bg-secondary'}`}>{order.status}</span>
                       </td>
+                      <td>{order.kitchenName || '-'}</td>
                       <td>
                         <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => openOrderDetail(order)}>
                           Ver detalle
@@ -198,6 +200,8 @@ function Comandas() {
                 <div>
                   <p><strong>Venta:</strong> #{selectedOrder.saleId}</p>
                   <p><strong>Mesa:</strong> {`Mesa ${selectedOrder.tableId || '-'}`}</p>
+                  <p><strong>Cocina:</strong> {selectedOrder.kitchenName || '-'}</p>
+                  <p><strong>Último cambio por:</strong> {selectedOrder.updatedByName || '-'}</p>
                 </div>
                 <span className={`badge fs-6 ${STATUS_CLASS[selectedOrder.status] || 'text-bg-secondary'}`}>
                   {selectedOrder.status}

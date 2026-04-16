@@ -1,5 +1,6 @@
 const repo = require('./comandas.repository');
 const salesRepo = require('../sales/sales.repository');
+const recipesRepo = require('../recipes/recipes.repository');
 const AppError = require('../../utils/appError');
 
 const ALLOWED_STATUS = ['PENDIENTE', 'PREPARANDO', 'LISTO'];
@@ -28,8 +29,12 @@ function mapComanda(row) {
     branchId: row.branch_id,
     tableId: row.table_id,
     articleName: row.article_name,
+    kitchenId: row.kitchen_id ? Number(row.kitchen_id) : null,
+    kitchenName: row.kitchen_name || null,
     quantity: Number(row.quantity),
     status: row.status,
+    userId: row.user_id ? Number(row.user_id) : null,
+    updatedByName: row.user_name || null,
     createdAt: row.sent_at,
     updatedAt: row.updated_at,
   };
@@ -61,12 +66,17 @@ async function createComanda({ saleId, saleItemId, quantity, status }) {
   const saleItems = await salesRepo.listItemsBySale(normalizedSaleId);
   const targetItem = saleItems.find((item) => Number(item.id) === normalizedSaleItemId);
   if (!targetItem || !targetItem.is_product) throw new AppError('saleItemId inválido para comanda', 400);
+  const recipe = await recipesRepo.findByProductId(targetItem.article_id);
+  if (!recipe || !recipe.kitchen_id) {
+    throw new AppError(`El producto "${targetItem.article_name}" no tiene receta con cocina asignada`, 400);
+  }
 
   const created = await repo.create({
     saleId: normalizedSaleId,
     saleItemId: normalizedSaleItemId,
     branchId: sale.branch_id,
     quantity: Number(quantity) > 0 ? quantity : targetItem.quantity,
+    kitchenId: recipe.kitchen_id,
   });
 
   if (status) {
@@ -77,12 +87,12 @@ async function createComanda({ saleId, saleItemId, quantity, status }) {
   return mapComanda(row);
 }
 
-async function updateComandaStatus(id, status) {
+async function updateComandaStatus(id, status, userId) {
   const comandaId = parseId(id, 'ID de comanda');
   const existing = await repo.findById(comandaId);
   if (!existing) throw new AppError('Comanda no encontrada', 404);
 
-  await repo.updateStatus(comandaId, normalizeStatus(status));
+  await repo.updateStatus(comandaId, normalizeStatus(status), userId);
   return getComandaById(comandaId);
 }
 

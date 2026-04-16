@@ -9,10 +9,12 @@ import {
   getRecipes,
   updateRecipe,
   getRecipeById,
+  getKitchens,
 } from '../services/adminService';
 
 const initialForm = {
   productId: '',
+  kitchenId: '',
   notes: '',
   active: true,
   items: [{ articleId: '', quantity: '' }],
@@ -22,6 +24,7 @@ function AdminRecipes() {
   const [recipes, setRecipes] = useState([]);
   const [products, setProducts] = useState([]);
   const [articles, setArticles] = useState([]);
+  const [kitchens, setKitchens] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,14 +34,16 @@ function AdminRecipes() {
 
   const loadData = useCallback(async () => {
     try {
-      const [recipesData, productsData, articlesData] = await Promise.all([
+      const [recipesData, productsData, articlesData, kitchensData] = await Promise.all([
         getRecipes(),
         getArticles({ isProduct: true }),
         getArticles({ isSupply: true }),
+        getKitchens({ active: true }),
       ]);
       setRecipes(recipesData);
       setProducts(productsData);
       setArticles(articlesData);
+      setKitchens(kitchensData);
       setError('');
     } catch {
       setError('No se pudo cargar la información de recetas.');
@@ -78,6 +83,7 @@ function AdminRecipes() {
       setEditingId(fullRecipe.id);
       setForm({
         productId: fullRecipe.product_id,
+        kitchenId: fullRecipe.kitchen_id,
         notes: fullRecipe.notes || '',
         active: fullRecipe.active === 1 || fullRecipe.active === true,
         items: (fullRecipe.items || []).map((item) => ({
@@ -122,6 +128,7 @@ function AdminRecipes() {
 
       const payload = {
         productId: Number(form.productId),
+        kitchenId: Number(form.kitchenId),
         notes: form.notes,
         active: Boolean(form.active),
         items: form.items
@@ -181,6 +188,7 @@ function AdminRecipes() {
           columns={[
             { key: 'id', label: 'ID', accessor: (row) => row.id, sortable: true },
             { key: 'product', label: 'Producto', accessor: (row) => row.article_name || productMap[Number(row.product_id)] || '-', sortable: true },
+            { key: 'kitchen', label: 'Cocina', accessor: (row) => row.kitchen_name || '-', sortable: true },
             { key: 'itemsCount', label: 'Artículos', accessor: (row) => row.items_count || row.items?.length || 0, sortable: true },
             { key: 'status', label: 'Estado', accessor: (row) => ((row.active === 1 || row.active === true) ? 'Activa' : 'Inactiva') },
             {
@@ -204,6 +212,13 @@ function AdminRecipes() {
                 <option value="">Seleccionar producto</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>{product.name}</option>
+                ))}
+              </select>
+
+              <select value={form.kitchenId} onChange={(e) => setForm((prev) => ({ ...prev, kitchenId: e.target.value }))} required>
+                <option value="">Seleccionar cocina</option>
+                {kitchens.map((kitchen) => (
+                  <option key={kitchen.id} value={kitchen.id}>{kitchen.name}</option>
                 ))}
               </select>
 

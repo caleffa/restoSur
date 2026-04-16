@@ -4,22 +4,25 @@ const { query } = require('../../repositories/baseRepository');
 async function list() {
   return query(
     `SELECT r.*, p.name AS article_name,
+            k.name AS kitchen_name,
             COUNT(ri.id) AS items_count,
             ROUND(COALESCE(SUM(ri.quantity * a.cost), 0), 2) AS estimated_cost
      FROM recipes r
      JOIN articles p ON p.id = r.product_id
+     JOIN kitchens k ON k.id = r.kitchen_id
      LEFT JOIN recipe_items ri ON ri.recipe_id = r.id
      LEFT JOIN articles a ON a.id = ri.article_id
-     GROUP BY r.id, p.name
+     GROUP BY r.id, p.name, k.name
      ORDER BY r.id DESC`
   );
 }
 
 async function findById(id) {
   const recipes = await query(
-    `SELECT r.*, p.name AS article_name
+    `SELECT r.*, p.name AS article_name, k.name AS kitchen_name
      FROM recipes r
      JOIN articles p ON p.id = r.product_id
+     JOIN kitchens k ON k.id = r.kitchen_id
      WHERE r.id = ?
      LIMIT 1`,
     [id]
@@ -46,6 +49,18 @@ async function findById(id) {
 async function findByProductId(productId) {
   const rows = await query('SELECT * FROM recipes WHERE product_id = ? LIMIT 1', [productId]);
   return rows[0] || null;
+}
+
+async function findByProductIds(productIds, conn) {
+  if (!productIds.length) return [];
+  const placeholders = productIds.map(() => '?').join(',');
+  return query(
+    `SELECT id, product_id, kitchen_id
+     FROM recipes
+     WHERE product_id IN (${placeholders})`,
+    productIds,
+    conn
+  );
 }
 
 async function findActiveItemsByProductIds(productIds, conn) {
@@ -84,8 +99,8 @@ async function create(data) {
     await conn.beginTransaction();
 
     const result = await query(
-      'INSERT INTO recipes (product_id, notes, active) VALUES (?, ?, ?)',
-      [data.productId, data.notes, data.active ? 1 : 0],
+      'INSERT INTO recipes (product_id, kitchen_id, notes, active) VALUES (?, ?, ?, ?)',
+      [data.productId, data.kitchenId, data.notes, data.active ? 1 : 0],
       conn
     );
 
@@ -113,8 +128,8 @@ async function update(id, data) {
     await conn.beginTransaction();
 
     await query(
-      'UPDATE recipes SET product_id = ?, notes = ?, active = ? WHERE id = ?',
-      [data.productId, data.notes, data.active ? 1 : 0, id],
+      'UPDATE recipes SET product_id = ?, kitchen_id = ?, notes = ?, active = ? WHERE id = ?',
+      [data.productId, data.kitchenId, data.notes, data.active ? 1 : 0, id],
       conn
     );
 
@@ -145,6 +160,7 @@ module.exports = {
   list,
   findById,
   findByProductId,
+  findByProductIds,
   findActiveItemsByProductIds,
   findArticlesByIds,
   create,
