@@ -242,7 +242,7 @@ function Comandas() {
                   <ul className="dashboard-list kitchen-items-list">
                     {selectedSale.items.map((item) => (
                       <li key={item.id} className="list-row-split">
-                        <span>{item.product_name || item.name}</span>
+                        <span>{item.article_name || item.name}</span>
                         <strong>x{item.quantity}</strong>
                       </li>
                     ))}
