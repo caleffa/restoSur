@@ -222,11 +222,6 @@ function POS() {
     return { subtotal, total: subtotal };
   }, [sale]);
 
-  const pendingKitchenCount = useMemo(
-    () => Object.values(pendingKitchenByItem).reduce((acc, qty) => acc + Number(qty || 0), 0),
-    [pendingKitchenByItem],
-  );
-
   const sendKitchenOrder = useCallback(async (pendingItems) => {
     const quantity = pendingItems.reduce((acc, entry) => acc + Number(entry.quantity || 0), 0);
     const articleName = pendingItems
