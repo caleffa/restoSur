@@ -54,7 +54,7 @@ function KitchenOrderModal({
             <ul className="dashboard-list kitchen-items-list">
               {saleDetail.items.map((item) => (
                 <li key={item.id} className="list-row-split">
-                  <span>{item.productName || item.product_name || item.name}</span>
+                  <span>{item.articleName || item.article_name || item.name}</span>
                   <span className="text-muted">x{Number(item.quantity || 0)}</span>
                 </li>
               ))}

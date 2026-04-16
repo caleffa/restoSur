@@ -74,7 +74,7 @@ function OrderTable({
 
                 return (
                   <tr key={item.id}>
-                    <td className="fw-semibold">{item.productName}</td>
+                    <td className="fw-semibold">{item.articleName}</td>
                     <td>{formatCurrency(item.unitPrice)}</td>
                     <td style={{ maxWidth: 140 }}>
                       {isEditing ? (

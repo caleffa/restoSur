@@ -38,7 +38,7 @@ const createOrder = asyncHandler(async (req, res) => {
     data: {
       ...created,
       productId: req.body.productId,
-      productName: req.body.productName,
+      articleName: req.body.articleName,
       quantity: Number(req.body.quantity || 0),
       timestamp: req.body.timestamp || created.createdAt,
     },
