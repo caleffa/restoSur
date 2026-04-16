@@ -6,7 +6,16 @@ async function createKitchenOrder({ saleId, branchId }, conn) {
 }
 
 async function updateSaleItemsAsSent(saleId, conn) {
-  await query('UPDATE sale_items SET kitchen_status="ENVIADO" WHERE sale_id = ? AND kitchen_status = "PENDIENTE"', [saleId], conn);
+  await query(
+    `UPDATE sale_items si
+     JOIN articles a ON a.id = si.article_id
+     SET si.kitchen_status = "ENVIADO"
+     WHERE si.sale_id = ?
+       AND si.kitchen_status = "PENDIENTE"
+       AND a.is_product = 1`,
+    [saleId],
+    conn
+  );
 }
 
 async function listPending(branchId) {
@@ -63,9 +72,11 @@ async function syncSaleItemsKitchenStatusByOrderId(orderId, kitchenOrderStatus, 
   await query(
     `UPDATE sale_items si
      JOIN kitchen_orders ko ON ko.sale_id = si.sale_id
+     JOIN articles a ON a.id = si.article_id
      SET si.kitchen_status = ?
      WHERE ko.id = ?
-       AND si.kitchen_status <> "LISTO"`,
+       AND si.kitchen_status <> "LISTO"
+       AND a.is_product = 1`,
     [saleItemsStatus, orderId],
     conn
   );

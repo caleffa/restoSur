@@ -36,14 +36,18 @@ function buildMockSale(tableId) {
 }
 
 function normalizeItem(item) {
+  const isProduct = item.isProduct === true || item.is_product === 1 || item.is_product === true;
+  const rawKitchenStatus = item.kitchenStatus ?? item.kitchen_status;
+
   return {
     id: item.id,
     articleId: item.articleId ?? item.article_id,
     articleName: item.articleName ?? item.article_name ?? item.name,
     categoryId: Number(item.categoryId ?? item.category_id ?? 0),
+    isProduct,
     unitPrice: Number(item.unitPrice ?? item.unit_price ?? item.price ?? 0),
     quantity: Number(item.quantity ?? 0),
-    kitchenStatus: item.kitchenStatus ?? item.kitchen_status ?? 'SIN_COMANDA',
+    kitchenStatus: isProduct ? (rawKitchenStatus || 'PENDIENTE') : 'SIN_COMANDA',
   };
 }
 

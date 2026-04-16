@@ -24,7 +24,9 @@ function ProductSelector({ products, onAdd, disabled = false }) {
       const categoryId = String(product.category_id ?? product.categoryId ?? '');
       const matchesCategory = !categoryFilter || categoryFilter === categoryId;
       const matchesSearch = !normalized || product.name.toLowerCase().includes(normalized);
-      return matchesCategory && matchesSearch && (product.active === 1 || product.active === true);
+      const isActive = product.active === 1 || product.active === true;
+      const isForSale = product.for_sale === 1 || product.for_sale === true || product.forSale === true;
+      return matchesCategory && matchesSearch && isActive && isForSale;
     });
   }, [products, search, categoryFilter]);
 
