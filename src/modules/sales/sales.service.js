@@ -62,7 +62,12 @@ async function addItem(saleId, { productId, articleId, quantity, notes }) {
 
     const selectedArticleId = Number(articleId ?? productId);
     const product = await productRepo.findById(selectedArticleId, conn);
-    if (!product || !(product.active === 1 || product.active === true) || !(product.for_sale === 1 || product.for_sale === true)) {
+    if (
+      !product
+      || !(product.active === 1 || product.active === true)
+      || !(product.for_sale === 1 || product.for_sale === true)
+      || !(product.is_product === 1 || product.is_product === true)
+    ) {
       throw new AppError('Artículo inválido o no disponible para la venta', 400);
     }
 

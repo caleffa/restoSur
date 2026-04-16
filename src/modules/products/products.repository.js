@@ -30,6 +30,7 @@ async function listSaleProducts() {
      FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
      WHERE a.for_sale = 1
+       AND a.is_product = 1
        AND a.active = 1
      ORDER BY a.name ASC`
   );
