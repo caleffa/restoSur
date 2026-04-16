@@ -159,7 +159,7 @@ function SalesManagement() {
       authorizationType: invoiceData?.authorization_type || invoiceData?.authorizationType,
       authorizationCode,
     });
-console.table(saleData);
+    // console.table(saleData);
     const itemsHtml = (saleData?.items || [])
       .map((item) => `
         <tr>

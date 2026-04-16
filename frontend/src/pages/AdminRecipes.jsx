@@ -180,7 +180,7 @@ function AdminRecipes() {
           rows={recipes}
           columns={[
             { key: 'id', label: 'ID', accessor: (row) => row.id, sortable: true },
-            { key: 'product', label: 'Producto', accessor: (row) => row.product_name || productMap[Number(row.product_id)] || '-', sortable: true },
+            { key: 'product', label: 'Producto', accessor: (row) => row.article_name || productMap[Number(row.product_id)] || '-', sortable: true },
             { key: 'itemsCount', label: 'Artículos', accessor: (row) => row.items_count || row.items?.length || 0, sortable: true },
             { key: 'status', label: 'Estado', accessor: (row) => ((row.active === 1 || row.active === true) ? 'Activa' : 'Inactiva') },
             {

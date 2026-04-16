@@ -18,7 +18,7 @@ function KitchenOrders({ orders }) {
               {orders.map((order) => (
                 <li key={order.id} className="list-group-item d-flex justify-content-between align-items-center gap-2">
                   <div>
-                    <p className="mb-1 fw-semibold">{order.productName}</p>
+                    <p className="mb-1 fw-semibold">{order.articleName}</p>
                     <small className="text-muted">Cant: {order.quantity} · {new Date(order.createdAt || order.timestamp).toLocaleTimeString()}</small>
                   </div>
                   <span className={`badge ${badgeClass[order.status] || 'text-bg-secondary'}`}>{order.status}</span>

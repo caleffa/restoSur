@@ -3,7 +3,7 @@ const { query } = require('../../repositories/baseRepository');
 
 async function list() {
   return query(
-    `SELECT r.*, p.name AS product_name,
+    `SELECT r.*, p.name AS article_name,
             COUNT(ri.id) AS items_count,
             ROUND(COALESCE(SUM(ri.quantity * a.cost), 0), 2) AS estimated_cost
      FROM recipes r
@@ -17,7 +17,7 @@ async function list() {
 
 async function findById(id) {
   const recipes = await query(
-    `SELECT r.*, p.name AS product_name
+    `SELECT r.*, p.name AS article_name
      FROM recipes r
      JOIN articles p ON p.id = r.product_id
      WHERE r.id = ?

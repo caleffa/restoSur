@@ -95,7 +95,7 @@ function Navbar() {
                   e.target.style.display = 'none';
                 }}
                 onLoad={() => {
-                  console.log('Logo loaded successfully in navbar');
+                  // console.log('Logo loaded successfully in navbar');
                   setLogoError(false);
                 }}
               />

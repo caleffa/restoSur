@@ -222,6 +222,33 @@ function POS() {
     return { subtotal, total: subtotal };
   }, [sale]);
 
+  const pendingKitchenCount = useMemo(
+    () => Object.values(pendingKitchenByItem).reduce((acc, qty) => acc + Number(qty || 0), 0),
+    [pendingKitchenByItem],
+  );
+
+  const sendKitchenOrder = useCallback(async (pendingItems) => {
+    const quantity = pendingItems.reduce((acc, entry) => acc + Number(entry.quantity || 0), 0);
+    const articleName = pendingItems
+      .map((entry) => `${entry.articleName} x${entry.quantity}`)
+      .join(' · ');
+
+    const order = await createKitchenOrder({
+      tableId: Number(tableId),
+      articleName,
+      quantity,
+      timestamp: new Date().toISOString(),
+      status: 'PENDIENTE',
+    });
+
+    setKitchenOrders((prev) => [order, ...prev]);
+    playKitchenSound();
+
+    if (import.meta.env.VITE_AUTO_PRINT_KITCHEN === 'true') {
+      window.print();
+    }
+  }, [tableId]);
+
   const upsertSaleAndPersist = useCallback((updater) => {
     setSale((previous) => {
       const next = updater(previous);
@@ -264,7 +291,7 @@ function POS() {
       const newItem = {
         id: createdItem?.id ?? `tmp-${Date.now()}`,
         articleId: createdItem?.articleId ?? product.id,
-        productName: createdItem?.articleName ?? product.name,
+        articleName: createdItem?.articleName ?? product.name,
         categoryId: Number(createdItem?.categoryId ?? product.category_id ?? product.categoryId ?? 0),
         isProduct: createdItem?.isProduct ?? (product.is_product === 1 || product.is_product === true || product.isProduct === true),
         unitPrice: Number(createdItem?.unitPrice ?? product.price),
@@ -295,7 +322,7 @@ function POS() {
 
       setError('');
     } catch {
-      setError('No se pudo agregar el producto.');
+      setError(' No se pudo agregar el producto.');
     } finally {
       setSaving(false);
     }
@@ -395,7 +422,7 @@ function POS() {
 
     const itemsHtml = (saleData?.items || [])
       .map((item) => {
-        const articleName = item.articleName || item.article_name || item.productName || item.name || 'Producto';
+        const articleName = item.articleName || item.article_name || item.articleName || item.name || 'Producto';
         const quantity = Number(item.quantity || 0);
         const unitPrice = Number(item.unitPrice ?? item.unit_price ?? 0);
         return `

@@ -26,8 +26,8 @@ function ProductSelector({ products, onAdd, disabled = false }) {
       const matchesSearch = !normalized || product.name.toLowerCase().includes(normalized);
       const isActive = product.active === 1 || product.active === true;
       const isForSale = product.for_sale === 1 || product.for_sale === true || product.forSale === true;
-      const isProduct = product.is_product === 1 || product.is_product === true || product.isProduct === true;
-      return matchesCategory && matchesSearch && isActive && isForSale && isProduct;
+      // const isProduct = product.is_product === 1 || product.is_product === true || product.isProduct === true;
+      return matchesCategory && matchesSearch && isActive && isForSale; // && isProduct;
     });
   }, [products, search, categoryFilter]);
 
