@@ -30,7 +30,6 @@ import {
 } from '../services/posService';
 import { formatCurrency } from '../utils/formatters';
 
-const KITCHEN_CATEGORIES = new Set([4, 5, 6, 7, 8]);
 const AFIP_QR_VERIFY_URL = 'https://www.afip.gob.ar/fe/qr/';
 
 const INVOICE_TYPE_TO_AFIP_CODE = {
@@ -298,9 +297,12 @@ function POS() {
         productId: product.id,
         productName: product.name,
         categoryId: Number(product.category_id ?? product.categoryId ?? 0),
+        isProduct: product.is_product === 1 || product.is_product === true || product.isProduct === true,
         unitPrice: Number(product.price),
         quantity: parsedQty,
-        kitchenStatus: 'SIN_COMANDA',
+        kitchenStatus: product.is_product === 1 || product.is_product === true || product.isProduct === true
+          ? 'PENDIENTE'
+          : 'SIN_COMANDA',
       };
 
       upsertSaleAndPersist((current) => ({
@@ -308,7 +310,7 @@ function POS() {
         items: [...(current?.items || []), newItem],
       }));
 
-      if (KITCHEN_CATEGORIES.has(newItem.categoryId)) {
+      if (newItem.isProduct) {
         setPendingKitchenByItem((current) => ({
           ...current,
           [newItem.id]: Number(current[newItem.id] || 0) + parsedQty,
@@ -338,15 +340,15 @@ function POS() {
             ? {
               ...row,
               quantity: normalized,
-              kitchenStatus: KITCHEN_CATEGORIES.has(Number(item.categoryId)) && diff > 0
-                ? 'SIN_COMANDA'
+              kitchenStatus: item.isProduct && diff > 0
+                ? 'PENDIENTE'
                 : row.kitchenStatus,
             }
             : row
         )),
       }));
 
-      if (KITCHEN_CATEGORIES.has(item.categoryId)) {
+      if (item.isProduct) {
         setPendingKitchenByItem((current) => {
           const next = { ...current };
           const currentPending = Number(next[item.id] || 0);
@@ -400,7 +402,7 @@ function POS() {
     if (!sale || saving || !canEdit) return;
 
     const pendingItems = (sale?.items || [])
-      .filter((item) => KITCHEN_CATEGORIES.has(Number(item.categoryId)))
+      .filter((item) => item.isProduct)
       .map((item) => ({
         ...item,
         quantity: Number(pendingKitchenByItem[item.id] || 0),

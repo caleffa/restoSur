@@ -98,7 +98,19 @@ async function addSaleItem({ saleId, articleId, quantity, unitPrice, notes }, co
 
 async function listItemsBySale(saleId, conn) {
   return query(
-    `SELECT si.*, p.name AS article_name, p.manages_stock AS has_stock
+    `SELECT
+      si.id,
+      si.sale_id,
+      si.article_id,
+      si.quantity,
+      si.unit_price,
+      si.notes,
+      si.created_at,
+      p.name AS article_name,
+      p.manages_stock AS has_stock,
+      p.is_product,
+      p.category_id,
+      CASE WHEN p.is_product = 1 THEN si.kitchen_status ELSE 'SIN_COMANDA' END AS kitchen_status
      FROM sale_items si
      JOIN articles p ON p.id = si.article_id
      WHERE si.sale_id = ?`,
