@@ -26,7 +26,6 @@ import { canAccessPOS, canCreateSale, ROLES } from '../utils/roles';
 import { useAuth } from '../context/AuthContext';
 import {
   getKitchenOrders,
-  getSaleDetail,
   updateKitchenOrderStatus,
 } from '../services/kitchenService';
 
@@ -44,7 +43,6 @@ function Dashboard() {
   const [pendingTable, setPendingTable] = useState(null);
   const [kitchenOrders, setKitchenOrders] = useState([]);
   const [selectedKitchenOrder, setSelectedKitchenOrder] = useState(null);
-  const [selectedSaleDetail, setSelectedSaleDetail] = useState(null);
   const [kitchenModalLoading, setKitchenModalLoading] = useState(false);
   const [kitchenStatusLoading, setKitchenStatusLoading] = useState(false);
   const [error, setError] = useState('');
@@ -167,21 +165,7 @@ function Dashboard() {
   const handleKitchenOrderSelect = async (order) => {
     if (!order) return;
     setSelectedKitchenOrder(order);
-    setKitchenModalLoading(true);
-
-    try {
-      const detail = await getSaleDetail(order.saleId);
-      setSelectedSaleDetail({
-        ...detail,
-        tableName: detail?.tableName || detail?.table?.name,
-      });
-      setError('');
-    } catch (err) {
-      setSelectedSaleDetail(null);
-      setError(err?.response?.data?.message || 'No se pudo cargar el detalle de la comanda.');
-    } finally {
-      setKitchenModalLoading(false);
-    }
+    setKitchenModalLoading(false);
   };
 
   const handleKitchenStatusChange = async (status) => {
@@ -335,7 +319,6 @@ function Dashboard() {
         {selectedKitchenOrder ? (
           <KitchenOrderModal
             order={selectedKitchenOrder}
-            saleDetail={selectedSaleDetail}
             loading={kitchenModalLoading}
             statusUpdating={kitchenStatusLoading}
             onClose={() => {

@@ -59,6 +59,26 @@ async function ensureCashSchema() {
     'table_number'
   );
   await ensureColumn('tables_restaurant', 'capacity', 'INT NOT NULL DEFAULT 4', 'table_number');
+  await ensureColumn('kitchen_orders', 'sale_item_id', 'INT NULL', 'sale_id');
+  await ensureColumn('kitchen_orders', 'quantity', 'DECIMAL(12,3) NOT NULL DEFAULT 1', 'branch_id');
+
+  await query(
+    `UPDATE kitchen_orders ko
+     JOIN sale_items si ON si.sale_id = ko.sale_id
+     SET ko.sale_item_id = si.id, ko.quantity = si.quantity
+     WHERE ko.sale_item_id IS NULL`
+  ).catch(() => {});
+
+  await query('ALTER TABLE kitchen_orders MODIFY sale_item_id INT NOT NULL').catch(() => {});
+
+  if (!(await foreignKeyExists('kitchen_orders', 'sale_item_id'))) {
+    await query(
+      `ALTER TABLE kitchen_orders
+       ADD CONSTRAINT fk_kitchen_orders_sale_item
+       FOREIGN KEY (sale_item_id) REFERENCES sale_items(id)`
+    ).catch(() => {});
+  }
+
   await query(
     `CREATE TABLE IF NOT EXISTS cash_registers (
       id INT AUTO_INCREMENT PRIMARY KEY,

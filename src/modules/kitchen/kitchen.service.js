@@ -18,8 +18,18 @@ async function sendToKitchen(saleId) {
     await conn.beginTransaction();
     const sale = await salesRepo.findSaleById(saleId, conn);
     if (!sale) throw new AppError('Venta no encontrada', 404);
-    await repo.createKitchenOrder({ saleId, branchId: sale.branch_id }, conn);
-    await repo.updateSaleItemsAsSent(saleId, conn);
+    const items = await salesRepo.listItemsBySale(saleId, conn);
+    const pendingItems = items.filter((item) => item.is_product && item.kitchen_status === 'PENDIENTE');
+
+    for (const item of pendingItems) {
+      await repo.createKitchenOrder({
+        saleId,
+        saleItemId: item.id,
+        branchId: sale.branch_id,
+        quantity: item.quantity,
+      }, conn);
+      await repo.updateSaleItemAsSent(item.id, conn);
+    }
     await conn.commit();
     return { saleId, status: 'ENVIADO_A_COCINA', wsReady: true };
   } catch (e) {
@@ -37,8 +47,11 @@ module.exports = {
     return rows.map((row) => ({
       id: row.id,
       saleId: row.sale_id,
+      saleItemId: row.sale_item_id,
       branchId: row.branch_id,
       tableId: row.table_id,
+      articleName: row.article_name,
+      quantity: Number(row.quantity),
       status: row.status,
       createdAt: row.sent_at,
       updatedAt: row.updated_at,
@@ -72,18 +85,31 @@ module.exports = {
     return rows.map((row) => ({
       id: row.id,
       saleId: row.sale_id,
+      saleItemId: row.sale_item_id,
       branchId: row.branch_id,
       tableId: row.table_id,
+      articleName: row.article_name,
+      quantity: Number(row.quantity),
       status: row.status,
       createdAt: row.sent_at,
       updatedAt: row.updated_at,
     }));
   },
-  createByTable: async ({ tableId, branchId, status = 'PENDIENTE' }) => {
+  createByTable: async ({ tableId, branchId, saleItemId, quantity, status = 'PENDIENTE' }) => {
     const sale = await salesRepo.findOpenSaleByTable(tableId);
     if (!sale) throw new AppError('Venta abierta no encontrada para la mesa', 404);
+    const items = await salesRepo.listItemsBySale(sale.id);
+    const targetItem = items.find((item) => Number(item.id) === Number(saleItemId));
+    if (!targetItem || !targetItem.is_product) throw new AppError('Item de venta inválido para cocina', 400);
+    if (targetItem.kitchen_status !== 'PENDIENTE') throw new AppError('El item ya fue enviado a cocina', 400);
 
-    const created = await repo.createKitchenOrder({ saleId: sale.id, branchId: sale.branch_id || branchId });
+    const created = await repo.createKitchenOrder({
+      saleId: sale.id,
+      saleItemId: targetItem.id,
+      branchId: sale.branch_id || branchId,
+      quantity: Number(quantity) > 0 ? quantity : targetItem.quantity,
+    });
+    await repo.updateSaleItemAsSent(targetItem.id);
     if (status && status !== 'PENDIENTE') {
       await repo.updateKitchenStatus(created.id, status);
     }
@@ -92,8 +118,11 @@ module.exports = {
     return {
       id: order.id,
       saleId: order.sale_id,
+      saleItemId: order.sale_item_id,
       branchId: order.branch_id,
       tableId: order.table_id,
+      articleName: order.article_name,
+      quantity: Number(order.quantity),
       status: status || order.status,
       createdAt: order.sent_at,
       updatedAt: order.updated_at,

@@ -4,7 +4,6 @@ const STATUS_OPTIONS = ['PENDIENTE', 'PREPARANDO', 'LISTO'];
 
 function KitchenOrderModal({
   order,
-  saleDetail,
   loading,
   statusUpdating,
   onClose,
@@ -30,7 +29,7 @@ function KitchenOrderModal({
         <div className="kitchen-modal-content">
           <div className="kitchen-modal-header">
             <p><strong>Venta:</strong> #{order.saleId}</p>
-            <p><strong>Mesa:</strong> {saleDetail?.tableName || `Mesa ${saleDetail?.tableId || '-'}`}</p>
+            <p><strong>Mesa:</strong> {`Mesa ${order.tableId || '-'}`}</p>
           </div>
 
           <div className="kitchen-status-actions">
@@ -48,16 +47,14 @@ function KitchenOrderModal({
           </div>
 
           <h4 className="section-title mb-2">Detalle</h4>
-          {!saleDetail?.items?.length ? (
+          {!order?.articleName ? (
             <p className="text-muted mb-0">No se encontraron items para esta comanda.</p>
           ) : (
             <ul className="dashboard-list kitchen-items-list">
-              {saleDetail.items.map((item) => (
-                <li key={item.id} className="list-row-split">
-                  <span>{item.articleName || item.article_name || item.name}</span>
-                  <span className="text-muted">x{Number(item.quantity || 0)}</span>
-                </li>
-              ))}
+              <li className="list-row-split">
+                <span>{order.articleName}</span>
+                <span className="text-muted">x{Number(order.quantity || 0)}</span>
+              </li>
             </ul>
           )}
         </div>
