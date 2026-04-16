@@ -142,6 +142,7 @@ function POS() {
   const [waiters, setWaiters] = useState([]);
   const [showWaiterModal, setShowWaiterModal] = useState(false);
   const [selectedWaiterId, setSelectedWaiterId] = useState(null);
+  const [pendingKitchenByItem, setPendingKitchenByItem] = useState({});
 
   const canEditWhenBillRequested = user?.role === 'ADMIN';
   const canEmitFiscalTicket = user?.role === 'ADMIN' || user?.role === 'CAJERO';
@@ -161,6 +162,7 @@ function POS() {
       setSale(saleData);
       setProducts(productsData);
       setKitchenOrders(kitchenData);
+      setPendingKitchenByItem({});
       setError('');
     } catch {
       setError('No se pudo cargar la información del POS.');
@@ -223,11 +225,20 @@ function POS() {
     return { subtotal, total: subtotal };
   }, [sale]);
 
-  const sendKitchenOrder = useCallback(async (item, quantity) => {
+  const pendingKitchenCount = useMemo(
+    () => Object.values(pendingKitchenByItem).reduce((acc, qty) => acc + Number(qty || 0), 0),
+    [pendingKitchenByItem],
+  );
+
+  const sendKitchenOrder = useCallback(async (pendingItems) => {
+    const quantity = pendingItems.reduce((acc, entry) => acc + Number(entry.quantity || 0), 0);
+    const productName = pendingItems
+      .map((entry) => `${entry.productName} x${entry.quantity}`)
+      .join(' · ');
+
     const order = await createKitchenOrder({
       tableId: Number(tableId),
-      productId: item.productId,
-      productName: item.productName,
+      productName,
       quantity,
       timestamp: new Date().toISOString(),
       status: 'PENDIENTE',
@@ -289,7 +300,7 @@ function POS() {
         categoryId: Number(product.category_id ?? product.categoryId ?? 0),
         unitPrice: Number(product.price),
         quantity: parsedQty,
-        kitchenStatus: KITCHEN_CATEGORIES.has(Number(product.category_id ?? product.categoryId)) ? 'PENDIENTE' : 'SIN_COMANDA',
+        kitchenStatus: 'SIN_COMANDA',
       };
 
       upsertSaleAndPersist((current) => ({
@@ -298,7 +309,10 @@ function POS() {
       }));
 
       if (KITCHEN_CATEGORIES.has(newItem.categoryId)) {
-        await sendKitchenOrder(newItem, parsedQty);
+        setPendingKitchenByItem((current) => ({
+          ...current,
+          [newItem.id]: Number(current[newItem.id] || 0) + parsedQty,
+        }));
       }
     } catch {
       setError('No se pudo agregar el producto.');
@@ -320,12 +334,36 @@ function POS() {
       upsertSaleAndPersist((current) => ({
         ...current,
         items: current.items.map((row) => (
-          row.id === item.id ? { ...row, quantity: normalized } : row
+          row.id === item.id
+            ? {
+              ...row,
+              quantity: normalized,
+              kitchenStatus: KITCHEN_CATEGORIES.has(Number(item.categoryId)) && diff > 0
+                ? 'SIN_COMANDA'
+                : row.kitchenStatus,
+            }
+            : row
         )),
       }));
 
-      if (diff > 0 && KITCHEN_CATEGORIES.has(item.categoryId)) {
-        await sendKitchenOrder(item, diff);
+      if (KITCHEN_CATEGORIES.has(item.categoryId)) {
+        setPendingKitchenByItem((current) => {
+          const next = { ...current };
+          const currentPending = Number(next[item.id] || 0);
+
+          if (diff > 0) {
+            next[item.id] = currentPending + diff;
+          } else if (diff < 0) {
+            const updatedPending = Math.max(0, currentPending + diff);
+            if (updatedPending <= 0) {
+              delete next[item.id];
+            } else {
+              next[item.id] = updatedPending;
+            }
+          }
+
+          return next;
+        });
       }
     } catch {
       setError('No se pudo actualizar la cantidad.');
@@ -345,8 +383,59 @@ function POS() {
         ...current,
         items: current.items.filter((row) => row.id !== item.id),
       }));
+
+      setPendingKitchenByItem((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
     } catch {
       setError('No se pudo eliminar el item.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSendKitchenOrder = async () => {
+    if (!sale || saving || !canEdit) return;
+
+    const pendingItems = (sale?.items || [])
+      .filter((item) => KITCHEN_CATEGORIES.has(Number(item.categoryId)))
+      .map((item) => ({
+        ...item,
+        quantity: Number(pendingKitchenByItem[item.id] || 0),
+      }))
+      .filter((item) => item.quantity > 0);
+
+    if (!pendingItems.length) {
+      setError('No hay productos pendientes para enviar a cocina.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await sendKitchenOrder(pendingItems);
+
+      const sentItemIds = new Set(pendingItems.map((item) => item.id));
+      upsertSaleAndPersist((current) => ({
+        ...current,
+        items: (current?.items || []).map((item) => (
+          sentItemIds.has(item.id) ? { ...item, kitchenStatus: 'PENDIENTE' } : item
+        )),
+      }));
+
+      setPendingKitchenByItem((current) => {
+        const next = { ...current };
+        pendingItems.forEach((item) => {
+          delete next[item.id];
+        });
+        return next;
+      });
+
+      setError('');
+      setToastMessage('Comanda enviada a cocina');
+    } catch {
+      setError('No se pudo enviar la comanda.');
     } finally {
       setSaving(false);
     }
@@ -626,6 +715,9 @@ function POS() {
               items={sale?.items || []}
               onChangeQuantity={handleChangeQuantity}
               onDelete={handleDeleteItem}
+              onSendKitchenOrder={handleSendKitchenOrder}
+              pendingKitchenCount={pendingKitchenCount}
+              saving={saving}
               disabled={!canEdit}
             />
           </div>

@@ -8,7 +8,15 @@ const statusClassMap = {
   SIN_COMANDA: 'text-bg-secondary',
 };
 
-function OrderTable({ items, onChangeQuantity, onDelete, disabled = false }) {
+function OrderTable({
+  items,
+  onChangeQuantity,
+  onDelete,
+  onSendKitchenOrder,
+  pendingKitchenCount = 0,
+  disabled = false,
+  saving = false,
+}) {
   const [editingRow, setEditingRow] = useState(null);
   const [nextQty, setNextQty] = useState(1);
 
@@ -28,7 +36,17 @@ function OrderTable({ items, onChangeQuantity, onDelete, disabled = false }) {
         {disabled && <p className="text-warning mb-3">La mesa está con cuenta pedida. Edición bloqueada.</p>}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Consumos</h5>
-          <span className="fw-semibold">Total: {formatCurrency(total)}</span>
+          <div className="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={onSendKitchenOrder}
+              disabled={disabled || saving || pendingKitchenCount <= 0}
+            >
+              {saving ? 'Enviando...' : `Enviar comanda${pendingKitchenCount > 0 ? ` (${pendingKitchenCount})` : ''}`}
+            </button>
+            <span className="fw-semibold">Total: {formatCurrency(total)}</span>
+          </div>
         </div>
 
         <div className="table-responsive">
