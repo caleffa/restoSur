@@ -240,6 +240,59 @@ CREATE TABLE suppliers (
   FOREIGN KEY (vat_type_id) REFERENCES vat_types(id)
 );
 
+
+
+CREATE TABLE purchase_orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL,
+  supplier_id INT NOT NULL,
+  status ENUM('EMITIDA','RECEPCION_PARCIAL','RECIBIDA_TOTAL','CERRADA_CON_DIFERENCIAS','CANCELADA') NOT NULL DEFAULT 'EMITIDA',
+  notes VARCHAR(255) NULL,
+  closed_reason VARCHAR(255) NULL,
+  closed_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+);
+
+CREATE TABLE purchase_order_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  purchase_order_id INT NOT NULL,
+  article_id INT NOT NULL,
+  quantity_ordered DECIMAL(12,3) NOT NULL,
+  quantity_received DECIMAL(12,3) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_purchase_order_item (purchase_order_id, article_id),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (article_id) REFERENCES articles(id)
+);
+
+CREATE TABLE purchase_order_receipts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  purchase_order_id INT NOT NULL,
+  branch_id INT NOT NULL,
+  user_id INT NOT NULL,
+  notes VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE purchase_order_receipt_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  purchase_order_receipt_id INT NOT NULL,
+  purchase_order_item_id INT NOT NULL,
+  article_id INT NOT NULL,
+  quantity_received DECIMAL(12,3) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (purchase_order_receipt_id) REFERENCES purchase_order_receipts(id) ON DELETE CASCADE,
+  FOREIGN KEY (purchase_order_item_id) REFERENCES purchase_order_items(id),
+  FOREIGN KEY (article_id) REFERENCES articles(id)
+);
+
 CREATE TABLE customers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL,

@@ -23,6 +23,7 @@ const cashReasonsRoutes = require('../modules/cashReasons/cashReasons.routes');
 const vatTypesRoutes = require('../modules/vatTypes/vatTypes.routes');
 const suppliersRoutes = require('../modules/suppliers/suppliers.routes');
 const customersRoutes = require('../modules/customers/customers.routes');
+const purchaseOrdersRoutes = require('../modules/purchaseOrders/purchaseOrders.routes');
 
 const router = express.Router();
 
@@ -52,5 +53,6 @@ router.use('/', cashReasonsRoutes);
 router.use('/', vatTypesRoutes);
 router.use('/', suppliersRoutes);
 router.use('/', customersRoutes);
+router.use('/', purchaseOrdersRoutes);
 
 module.exports = router;
