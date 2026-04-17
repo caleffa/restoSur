@@ -28,8 +28,16 @@ export const MENU_BY_ROLE = {
       ],
     },
     { label: 'Stock', path: '/admin/management/stock' },
-    { label: 'Proveedores', path: '/admin/management/suppliers' },
-    { label: 'Clientes', path: '/admin/management/customers' },
+    {
+      label: 'Maestros',
+      path: '/admin/management/customers',
+      children: [
+        { label: 'Clientes', path: '/admin/management/customers' },
+        { label: 'Proveedores', path: '/admin/management/suppliers' },
+        { label: 'Motivos de caja', path: '/admin/management/cash-reasons' },
+        { label: 'Tipos de IVA', path: '/admin/management/vat-types' },
+      ],
+    },
     {
       label: 'Productos',
       path: '/admin/management/products',
