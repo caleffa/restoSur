@@ -54,13 +54,14 @@ CREATE TABLE cash_shifts (
 
 CREATE TABLE cash_movement_reasons (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  description VARCHAR(255) NOT NULL,
+  description VARCHAR(100) NOT NULL,
   type ENUM('INGRESO','EGRESO') NOT NULL,
   active TINYINT(1) DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_cash_reason_description_type (description, type)
+  UNIQUE KEY uq_cash_reason_desc (description, type)
 );
+
 
 CREATE TABLE cash_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -211,7 +212,7 @@ CREATE TABLE vat_types (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(120) NOT NULL UNIQUE,
   code VARCHAR(20) NOT NULL UNIQUE,
-  description VARCHAR(255) NULL,
+  description VARCHAR(100) NULL,
   active TINYINT(1) DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -380,4 +381,14 @@ CREATE TABLE invoices (
   FOREIGN KEY (branch_id) REFERENCES branches(id),
   FOREIGN KEY (caea_id) REFERENCES afip_caea(id),
   FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+
+CREATE TABLE system_events (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  entity VARCHAR(50),
+  entity_id INT,
+  event_type VARCHAR(50),
+  payload JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

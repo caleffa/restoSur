@@ -28,6 +28,8 @@ export const MENU_BY_ROLE = {
       ],
     },
     { label: 'Stock', path: '/admin/management/stock' },
+    { label: 'Proveedores', path: '/admin/management/suppliers' },
+    { label: 'Clientes', path: '/admin/management/customers' },
     {
       label: 'Productos',
       path: '/admin/management/products',
