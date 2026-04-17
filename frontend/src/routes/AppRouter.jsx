@@ -24,6 +24,10 @@ import AdminInvoices from '../pages/AdminInvoices';
 import AdminRecipes from '../pages/AdminRecipes';
 import AdminKitchenTypes from '../pages/AdminKitchenTypes';
 import AdminKitchens from '../pages/AdminKitchens';
+import AdminCashReasons from '../pages/AdminCashReasons';
+import AdminVatTypes from '../pages/AdminVatTypes';
+import AdminSuppliers from '../pages/AdminSuppliers';
+import AdminCustomers from '../pages/AdminCustomers';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -167,6 +171,43 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <AdminArticles />
+          </ProtectedRoute>
+        )}
+      />
+
+
+      <Route
+        path="/admin/management/cash-reasons"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminCashReasons />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/vat-types"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminVatTypes />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/suppliers"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminSuppliers />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/customers"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminCustomers />
           </ProtectedRoute>
         )}
       />

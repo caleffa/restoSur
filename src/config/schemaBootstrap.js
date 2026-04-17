@@ -52,6 +52,7 @@ async function ensureCashSchema() {
   await ensureAreasSchema();
   await ensureArticlesSchema();
   await ensureStockSchema();
+  await ensureCommerceSchema();
   await ensureColumn(
     'tables_restaurant',
     'table_type',
@@ -140,6 +141,18 @@ async function ensureCashSchema() {
   );
 
   await query(
+    `CREATE TABLE IF NOT EXISTS cash_movement_reasons (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      description VARCHAR(255) NOT NULL,
+      type ENUM('INGRESO','EGRESO') NOT NULL,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_cash_reason_description_type (description, type)
+    )`
+  );
+
+  await query(
     `CREATE TABLE IF NOT EXISTS cash_movements (
       id INT AUTO_INCREMENT PRIMARY KEY,
       shift_id INT NOT NULL,
@@ -152,13 +165,15 @@ async function ensureCashSchema() {
       reference VARCHAR(60) NULL,
       amount DECIMAL(12,2) NOT NULL,
       reason VARCHAR(255) NULL,
+      reason_id INT NULL,
       observation VARCHAR(255) NULL,
       affects_balance TINYINT(1) DEFAULT 1,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (shift_id) REFERENCES cash_shifts(id),
       FOREIGN KEY (register_id) REFERENCES cash_registers(id),
       FOREIGN KEY (branch_id) REFERENCES branches(id),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id)
     )`
   );
 
@@ -168,6 +183,7 @@ async function ensureCashSchema() {
   await ensureColumn('cash_movements', 'payment_method', 'VARCHAR(30) NULL', 'type');
   await ensureColumn('cash_movements', 'reference', 'VARCHAR(60) NULL', 'payment_method');
   await ensureColumn('cash_movements', 'reason', 'VARCHAR(255) NULL', 'amount');
+  await ensureColumn('cash_movements', 'reason_id', 'INT NULL', 'reason');
   await ensureColumn('cash_movements', 'observation', 'VARCHAR(255) NULL', 'reason');
   await ensureColumn('cash_movements', 'affects_balance', 'TINYINT(1) DEFAULT 1', 'observation');
 
@@ -193,6 +209,14 @@ async function ensureCashSchema() {
        ADD CONSTRAINT fk_cash_movements_branch
        FOREIGN KEY (branch_id) REFERENCES branches(id)`
     );
+  }
+
+  if (!(await foreignKeyExists('cash_movements', 'reason_id'))) {
+    await query(
+      `ALTER TABLE cash_movements
+       ADD CONSTRAINT fk_cash_movements_reason
+       FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id)`
+    ).catch(() => {});
   }
 }
 
@@ -343,6 +367,69 @@ async function ensureArticlesSchema() {
       UNIQUE KEY uq_recipe_item (recipe_id, article_id),
       FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
       FOREIGN KEY (article_id) REFERENCES articles(id)
+    )`
+  );
+}
+
+async function ensureCommerceSchema() {
+  await query(
+    `CREATE TABLE IF NOT EXISTS vat_types (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL UNIQUE,
+      code VARCHAR(20) NOT NULL UNIQUE,
+      description VARCHAR(255) NULL,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS suppliers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL,
+      business_name VARCHAR(150) NOT NULL,
+      fantasy_name VARCHAR(150) NULL,
+      cuit VARCHAR(20) NULL,
+      vat_type_id INT NULL,
+      gross_income_number VARCHAR(40) NULL,
+      email VARCHAR(120) NULL,
+      phone VARCHAR(50) NULL,
+      address VARCHAR(255) NULL,
+      city VARCHAR(120) NULL,
+      province VARCHAR(120) NULL,
+      postal_code VARCHAR(20) NULL,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_suppliers_branch_cuit (branch_id, cuit),
+      FOREIGN KEY (branch_id) REFERENCES branches(id),
+      FOREIGN KEY (vat_type_id) REFERENCES vat_types(id)
+    )`
+  );
+
+  await query(
+    `CREATE TABLE IF NOT EXISTS customers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      branch_id INT NOT NULL,
+      first_name VARCHAR(120) NOT NULL,
+      last_name VARCHAR(120) NOT NULL,
+      document_type VARCHAR(15) NOT NULL DEFAULT 'DNI',
+      document_number VARCHAR(20) NULL,
+      cuit VARCHAR(20) NULL,
+      vat_type_id INT NULL,
+      email VARCHAR(120) NULL,
+      phone VARCHAR(50) NULL,
+      address VARCHAR(255) NULL,
+      city VARCHAR(120) NULL,
+      province VARCHAR(120) NULL,
+      postal_code VARCHAR(20) NULL,
+      active TINYINT(1) DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_customers_branch_document (branch_id, document_number),
+      FOREIGN KEY (branch_id) REFERENCES branches(id),
+      FOREIGN KEY (vat_type_id) REFERENCES vat_types(id)
     )`
   );
 }

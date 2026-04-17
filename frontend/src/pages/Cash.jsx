@@ -153,7 +153,7 @@ function Cash() {
                     <td>{m.type}</td>
                     <td>{formatCurrency(m.amount)}</td>
                     <td>{m.payment_method || '-'}</td>
-                    <td>{m.reason || '-'}</td>
+                    <td>{m.reason_description || m.reason || '-'}</td>
                     <td>{m.user_name || '-'}</td>
                   </tr>
                 ))) : (

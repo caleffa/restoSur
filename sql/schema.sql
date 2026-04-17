@@ -52,6 +52,16 @@ CREATE TABLE cash_shifts (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE cash_movement_reasons (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  description VARCHAR(255) NOT NULL,
+  type ENUM('INGRESO','EGRESO') NOT NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_cash_reason_description_type (description, type)
+);
+
 CREATE TABLE cash_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   shift_id INT NOT NULL,
@@ -64,13 +74,15 @@ CREATE TABLE cash_movements (
   reference VARCHAR(60) NULL,
   amount DECIMAL(12,2) NOT NULL,
   reason VARCHAR(255) NULL,
+  reason_id INT NULL,
   observation VARCHAR(255) NULL,
   affects_balance TINYINT(1) DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (shift_id) REFERENCES cash_shifts(id),
   FOREIGN KEY (register_id) REFERENCES cash_registers(id),
   FOREIGN KEY (branch_id) REFERENCES branches(id),
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id)
 );
 
 CREATE TABLE categories (
@@ -192,6 +204,62 @@ CREATE TABLE stock_movements (
   FOREIGN KEY (branch_id) REFERENCES branches(id),
   FOREIGN KEY (article_id) REFERENCES articles(id),
   FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+
+CREATE TABLE vat_types (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  code VARCHAR(20) NOT NULL UNIQUE,
+  description VARCHAR(255) NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE suppliers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL,
+  business_name VARCHAR(150) NOT NULL,
+  fantasy_name VARCHAR(150) NULL,
+  cuit VARCHAR(20) NULL,
+  vat_type_id INT NULL,
+  gross_income_number VARCHAR(40) NULL,
+  email VARCHAR(120) NULL,
+  phone VARCHAR(50) NULL,
+  address VARCHAR(255) NULL,
+  city VARCHAR(120) NULL,
+  province VARCHAR(120) NULL,
+  postal_code VARCHAR(20) NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_suppliers_branch_cuit (branch_id, cuit),
+  FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (vat_type_id) REFERENCES vat_types(id)
+);
+
+CREATE TABLE customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  branch_id INT NOT NULL,
+  first_name VARCHAR(120) NOT NULL,
+  last_name VARCHAR(120) NOT NULL,
+  document_type VARCHAR(15) NOT NULL DEFAULT 'DNI',
+  document_number VARCHAR(20) NULL,
+  cuit VARCHAR(20) NULL,
+  vat_type_id INT NULL,
+  email VARCHAR(120) NULL,
+  phone VARCHAR(50) NULL,
+  address VARCHAR(255) NULL,
+  city VARCHAR(120) NULL,
+  province VARCHAR(120) NULL,
+  postal_code VARCHAR(20) NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_customers_branch_document (branch_id, document_number),
+  FOREIGN KEY (branch_id) REFERENCES branches(id),
+  FOREIGN KEY (vat_type_id) REFERENCES vat_types(id)
 );
 
 CREATE TABLE dining_areas (

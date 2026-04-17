@@ -95,8 +95,8 @@ async function updateShiftClose(data, conn) {
 async function insertMovement(data, conn = null) {
   const result = await query(
     `INSERT INTO cash_movements
-      (shift_id, register_id, branch_id, user_id, type, payment_method, sale_id, reference, amount, reason, observation, affects_balance)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (shift_id, register_id, branch_id, user_id, type, payment_method, sale_id, reference, amount, reason, reason_id, observation, affects_balance)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.shiftId,
       data.registerId,
@@ -108,6 +108,7 @@ async function insertMovement(data, conn = null) {
       data.reference || null,
       data.amount,
       data.reason || null,
+      data.reasonId || null,
       data.observation || null,
       mapBoolean(data.affectsBalance),
     ],
@@ -116,11 +117,18 @@ async function insertMovement(data, conn = null) {
   return { id: result.insertId };
 }
 
+
+async function findCashReasonById(id) {
+  const rows = await query('SELECT * FROM cash_movement_reasons WHERE id=? LIMIT 1', [id]);
+  return rows[0] || null;
+}
+
 async function getShiftMovements(shiftId) {
   return query(
-    `SELECT m.*, u.name AS user_name
+    `SELECT m.*, u.name AS user_name, r.description AS reason_description
      FROM cash_movements m
      INNER JOIN users u ON u.id = m.user_id
+     LEFT JOIN cash_movement_reasons r ON r.id = m.reason_id
      WHERE m.shift_id=?
      ORDER BY m.id DESC`,
     [shiftId]
@@ -155,10 +163,11 @@ async function getMovements(filters = {}) {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   return query(
-    `SELECT m.*, r.name AS register_name, u.name AS user_name
+    `SELECT m.*, r.name AS register_name, u.name AS user_name, cmr.description AS reason_description
      FROM cash_movements m
      INNER JOIN cash_registers r ON r.id = m.register_id
      INNER JOIN users u ON u.id = m.user_id
+     LEFT JOIN cash_movement_reasons cmr ON cmr.id = m.reason_id
      ${where}
      ORDER BY m.id DESC`,
     params
@@ -226,6 +235,7 @@ module.exports = {
   createShift,
   updateShiftClose,
   insertMovement,
+  findCashReasonById,
   getShiftMovements,
   getMovements,
   getShiftById,

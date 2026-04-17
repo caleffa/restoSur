@@ -61,6 +61,26 @@ const ADMIN_MODULES = [
   },
 
   {
+    title: 'Motivos de caja',
+    description: 'Alta, edición y baja de motivos para ingresos y egresos de caja.',
+    path: '/admin/management/cash-reasons',
+  },
+  {
+    title: 'Tipos de IVA',
+    description: 'Administración de condiciones impositivas de IVA.',
+    path: '/admin/management/vat-types',
+  },
+  {
+    title: 'Proveedores',
+    description: 'Gestión de proveedores con CUIT y condición de IVA.',
+    path: '/admin/management/suppliers',
+  },
+  {
+    title: 'Clientes',
+    description: 'Gestión de clientes con documento y condición de IVA.',
+    path: '/admin/management/customers',
+  },
+  {
     title: 'Stock',
     description: 'Control de existencias y carga de movimientos de inventario.',
     path: '/admin/management/stock',
