@@ -399,6 +399,9 @@ CREATE TABLE afip_configs (
   cert_path VARCHAR(255) NULL,
   key_path VARCHAR(255) NULL,
   service_tax_id VARCHAR(20) NULL,
+  ticket_logo_path VARCHAR(255) NULL,
+  cash_identification_threshold DECIMAL(12,2) NOT NULL DEFAULT 191000.00,
+  non_cash_identification_threshold DECIMAL(12,2) NOT NULL DEFAULT 344000.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (branch_id) REFERENCES branches(id)
@@ -427,6 +430,8 @@ CREATE TABLE invoices (
   cae_expiration DATE NULL,
   caea_id INT NULL,
   afip_response JSON NULL,
+  receiver_document_type VARCHAR(10) NULL,
+  receiver_document_number VARCHAR(20) NULL,
   total DECIMAL(12,2) NOT NULL,
   created_by INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -26,6 +26,19 @@ async function findSaleById(id, conn) {
   return rows[0] || null;
 }
 
+async function findSalePaymentMethod(saleId, conn) {
+  const rows = await query(
+    `SELECT payment_method
+     FROM cash_movements
+     WHERE sale_id = ? AND type = 'VENTA'
+     ORDER BY id DESC
+     LIMIT 1`,
+    [saleId],
+    conn
+  );
+  return rows[0]?.payment_method || null;
+}
+
 async function findOpenSaleByTable(tableId, conn) {
   const rows = await query(
     `SELECT
@@ -366,6 +379,7 @@ async function getVatSalesBookByBranch(branchId, filters = {}) {
 module.exports = {
   createSale,
   findSaleById,
+  findSalePaymentMethod,
   findOpenSaleByTable,
   listOpenSalesByBranch,
   addSaleItem,

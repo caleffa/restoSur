@@ -326,7 +326,7 @@ function getCondicionIvaReceptor({ invoiceType, docTipo, docNro }) {
   return CONDICION_IVA_RECEPTOR.RESPONSABLE_INSCRIPTO;
 }
 
-async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
+async function requestCaeForInvoice({ config, invoiceType, total, docTipo = 99, docNro = 0, timeoutMs }) {
   try {
     const cbteTipo = INVOICE_TYPE_TO_CBTE[invoiceType];
     if (!cbteTipo) throw new AppError(`Tipo de factura no soportado: ${invoiceType}`, 400);
@@ -343,8 +343,6 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
       throw new AppError(`Total inválido para AFIP: ${total}`, 400);
     }
 
-    const docTipo = 99;
-    const docNro = 0;
     const condicionIvaReceptorId = getCondicionIvaReceptor({ invoiceType, docTipo, docNro });
     const taxData = buildTaxData(amount, invoiceType);
 
