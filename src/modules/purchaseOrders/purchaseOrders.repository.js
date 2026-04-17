@@ -64,9 +64,9 @@ async function listItems(orderId, conn, { forUpdate = false } = {}) {
     FROM purchase_order_items poi
     JOIN articles a ON a.id = poi.article_id
     LEFT JOIN measurement_units mu ON mu.id = a.measurement_unit_id
-    WHERE poi.purchase_order_id = ?
+    WHERE poi.purchase_order_id = ? 
     ${forUpdate ? 'FOR UPDATE' : ''}
-    ORDER BY a.name ASC`,
+    -- ORDER BY a.name ASC`,
     [orderId],
     conn
   );
