@@ -358,3 +358,29 @@ export async function deleteCustomer(customerId) {
   const { data } = await http.delete(`/customers/${customerId}`);
   return unwrap(data);
 }
+
+// Órdenes de compra
+export async function getPurchaseOrders(params = {}) {
+  const { data } = await http.get('/purchase-orders', { params });
+  return unwrap(data) || [];
+}
+
+export async function getPurchaseOrderById(orderId, params = {}) {
+  const { data } = await http.get(`/purchase-orders/${orderId}`, { params });
+  return unwrap(data);
+}
+
+export async function createPurchaseOrder(payload) {
+  const { data } = await http.post('/purchase-orders', payload);
+  return unwrap(data);
+}
+
+export async function receivePurchaseOrder(orderId, payload) {
+  const { data } = await http.post(`/purchase-orders/${orderId}/receipts`, payload);
+  return unwrap(data);
+}
+
+export async function closePurchaseOrder(orderId, payload) {
+  const { data } = await http.post(`/purchase-orders/${orderId}/close`, payload);
+  return unwrap(data);
+}

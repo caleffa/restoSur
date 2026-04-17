@@ -28,6 +28,8 @@ import AdminCashReasons from '../pages/AdminCashReasons';
 import AdminVatTypes from '../pages/AdminVatTypes';
 import AdminSuppliers from '../pages/AdminSuppliers';
 import AdminCustomers from '../pages/AdminCustomers';
+import AdminPurchaseOrders from '../pages/AdminPurchaseOrders';
+import PurchaseOrderReception from '../pages/PurchaseOrderReception';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -211,6 +213,25 @@ function AppRouter() {
           </ProtectedRoute>
         )}
       />
+
+      <Route
+        path="/admin/management/purchase-orders"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminPurchaseOrders />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/management/purchase-orders/reception"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <PurchaseOrderReception />
+          </ProtectedRoute>
+        )}
+      />
+
 
       <Route
         path="/admin/management/stock"

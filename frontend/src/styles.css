@@ -1197,3 +1197,30 @@ body {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.75);
   pointer-events: none;
 }
+
+.purchase-order-form {
+  grid-template-columns: 1fr;
+}
+
+.purchase-order-items-block,
+.purchase-order-receive-grid {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.purchase-order-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.purchase-order-item-row p {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .purchase-order-item-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -85,6 +85,17 @@ const ADMIN_MODULES = [
     description: 'Control de existencias y carga de movimientos de inventario.',
     path: '/admin/management/stock',
   },
+
+  {
+    title: 'Órdenes de compra',
+    description: 'Creación y control de órdenes de compra por proveedor.',
+    path: '/admin/management/purchase-orders',
+  },
+  {
+    title: 'Recepción de OC',
+    description: 'Recepción parcial o total de artículos y cierre con diferencias.',
+    path: '/admin/management/purchase-orders/reception',
+  },
   {
     title: 'Ventas',
     description: 'Reportes de ventas con filtros por fecha, estado y método de pago.',
