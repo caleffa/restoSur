@@ -274,3 +274,87 @@ export async function deleteArticle(articleId) {
   const { data } = await http.delete(`/articles/${articleId}`);
   return unwrap(data);
 }
+
+// Motivos de caja
+export async function getCashReasons(params = {}) {
+  const { data } = await http.get('/cash-reasons', { params });
+  return unwrap(data) || [];
+}
+
+export async function createCashReason(payload) {
+  const { data } = await http.post('/cash-reasons', payload);
+  return unwrap(data);
+}
+
+export async function updateCashReason(reasonId, payload) {
+  const { data } = await http.put(`/cash-reasons/${reasonId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteCashReason(reasonId) {
+  const { data } = await http.delete(`/cash-reasons/${reasonId}`);
+  return unwrap(data);
+}
+
+// Tipos de IVA
+export async function getVatTypes() {
+  const { data } = await http.get('/vat-types');
+  return unwrap(data) || [];
+}
+
+export async function createVatType(payload) {
+  const { data } = await http.post('/vat-types', payload);
+  return unwrap(data);
+}
+
+export async function updateVatType(vatTypeId, payload) {
+  const { data } = await http.put(`/vat-types/${vatTypeId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteVatType(vatTypeId) {
+  const { data } = await http.delete(`/vat-types/${vatTypeId}`);
+  return unwrap(data);
+}
+
+// Proveedores
+export async function getSuppliers(params = {}) {
+  const { data } = await http.get('/suppliers', { params });
+  return unwrap(data) || [];
+}
+
+export async function createSupplier(payload) {
+  const { data } = await http.post('/suppliers', payload);
+  return unwrap(data);
+}
+
+export async function updateSupplier(supplierId, payload) {
+  const { data } = await http.put(`/suppliers/${supplierId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteSupplier(supplierId) {
+  const { data } = await http.delete(`/suppliers/${supplierId}`);
+  return unwrap(data);
+}
+
+// Clientes
+export async function getCustomers(params = {}) {
+  const { data } = await http.get('/customers', { params });
+  return unwrap(data) || [];
+}
+
+export async function createCustomer(payload) {
+  const { data } = await http.post('/customers', payload);
+  return unwrap(data);
+}
+
+export async function updateCustomer(customerId, payload) {
+  const { data } = await http.put(`/customers/${customerId}`, payload);
+  return unwrap(data);
+}
+
+export async function deleteCustomer(customerId) {
+  const { data } = await http.delete(`/customers/${customerId}`);
+  return unwrap(data);
+}

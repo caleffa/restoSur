@@ -19,6 +19,10 @@ const articlesRoutes = require('../modules/articles/articles.routes');
 const recipesRoutes = require('../modules/recipes/recipes.routes');
 const kitchenTypesRoutes = require('../modules/kitchenTypes/kitchenTypes.routes');
 const kitchensRoutes = require('../modules/kitchens/kitchens.routes');
+const cashReasonsRoutes = require('../modules/cashReasons/cashReasons.routes');
+const vatTypesRoutes = require('../modules/vatTypes/vatTypes.routes');
+const suppliersRoutes = require('../modules/suppliers/suppliers.routes');
+const customersRoutes = require('../modules/customers/customers.routes');
 
 const router = express.Router();
 
@@ -44,5 +48,9 @@ router.use('/', articlesRoutes);
 router.use('/', recipesRoutes);
 router.use('/', kitchenTypesRoutes);
 router.use('/', kitchensRoutes);
+router.use('/', cashReasonsRoutes);
+router.use('/', vatTypesRoutes);
+router.use('/', suppliersRoutes);
+router.use('/', customersRoutes);
 
 module.exports = router;

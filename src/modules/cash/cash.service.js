@@ -126,6 +126,19 @@ async function openCash(data, user) {
   }
 }
 
+
+async function resolveReasonForMovement(type, reasonId) {
+  if (!reasonId) return null;
+  const parsedId = Number(reasonId);
+  if (!parsedId) throw new AppError('Motivo inválido', 400);
+
+  const reason = await repo.findCashReasonById(parsedId);
+  if (!reason) throw new AppError('Motivo no encontrado', 404);
+  if (Number(reason.active) !== 1) throw new AppError('El motivo seleccionado está inactivo', 400);
+  if (reason.type !== type) throw new AppError('El motivo no corresponde al tipo de movimiento', 400);
+  return reason;
+}
+
 async function addManualMovement(type, data, user) {
   const conn = await pool.getConnection();
   try {
@@ -135,6 +148,7 @@ async function addManualMovement(type, data, user) {
     if (!shift) throw new AppError('No hay caja abierta', 400);
 
     const amount = toAmount(data.amount);
+    const reason = await resolveReasonForMovement(type, data.reasonId);
 
     await repo.insertMovement(
       {
@@ -145,7 +159,8 @@ async function addManualMovement(type, data, user) {
         type,
         amount,
         affectsBalance: true,
-        reason: data.reason || (type === 'INGRESO' ? 'Ingreso manual' : 'Egreso manual'),
+        reason: data.reason || reason?.description || (type === 'INGRESO' ? 'Ingreso manual' : 'Egreso manual'),
+        reasonId: reason?.id || null,
         observation: data.observation,
       },
       conn

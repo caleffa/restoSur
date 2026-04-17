@@ -159,3 +159,12 @@ export async function getCashShifts(params = {}) {
     return readMock().shifts || [];
   }
 }
+
+export async function getCashReasonsByType(type) {
+  try {
+    const { data } = await http.get('/cash-reasons', { params: { type } });
+    return unwrap(data) || [];
+  } catch {
+    return [];
+  }
+}
