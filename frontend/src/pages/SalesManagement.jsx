@@ -27,6 +27,7 @@ function formatDate(value) {
 
 const AFIP_QR_VERIFY_URL = 'https://www.afip.gob.ar/fe/qr/';
 const INVOICE_TYPE_TO_AFIP_CODE = { A: 1, B: 6, C: 11 };
+const RECEIVER_DOCUMENT_TYPE_TO_AFIP_CODE = { DNI: 96, CUIT: 80 };
 
 function sanitizeCuit(rawValue) {
   return String(rawValue || '').replace(/\D/g, '');
@@ -43,7 +44,22 @@ function resolveTaxBreakdown(invoiceType, total) {
   return [{ label: 'IVA 21.00%', net, iva: ivaAmount }];
 }
 
-function buildAfipQrData({ issueDate, cuit, pointOfSale, invoiceType, voucherNumber, total, authorizationType, authorizationCode }) {
+function buildAfipQrData({
+  issueDate,
+  cuit,
+  pointOfSale,
+  invoiceType,
+  voucherNumber,
+  total,
+  authorizationType,
+  authorizationCode,
+  receiverDocumentType,
+  receiverDocumentNumber,
+}) {
+  const normalizedDocumentType = String(receiverDocumentType || '').toUpperCase().trim();
+  const normalizedDocumentNumber = Number(String(receiverDocumentNumber || '').replace(/\D/g, '')) || 0;
+  const tipoDocRec = RECEIVER_DOCUMENT_TYPE_TO_AFIP_CODE[normalizedDocumentType] || 99;
+  const nroDocRec = normalizedDocumentNumber || 0;
   const payload = {
     ver: 1,
     fecha: issueDate,
@@ -54,8 +70,8 @@ function buildAfipQrData({ issueDate, cuit, pointOfSale, invoiceType, voucherNum
     importe: Number(total.toFixed(2)),
     moneda: 'PES',
     ctz: 1,
-    tipoDocRec: 99,
-    nroDocRec: 0,
+    tipoDocRec,
+    nroDocRec,
     tipoCodAut: authorizationType === 'CAEA' ? 'A' : 'E',
     codAut: Number(String(authorizationCode || '').replace(/\D/g, '')) || 0,
   };
@@ -78,6 +94,8 @@ function SalesManagement() {
   const [afipConfig, setAfipConfig] = useState(null);
   const [invoiceModalSale, setInvoiceModalSale] = useState(null);
   const [selectedInvoiceType, setSelectedInvoiceType] = useState('B');
+  const [receiverDocumentType, setReceiverDocumentType] = useState('DNI');
+  const [receiverDocumentNumber, setReceiverDocumentNumber] = useState('');
   const [invoicedSaleIds, setInvoicedSaleIds] = useState(new Set());
   const [invoicesBySaleId, setInvoicesBySaleId] = useState(new Map());
   const [loading, setLoading] = useState(false);
@@ -131,6 +149,17 @@ function SalesManagement() {
     return Array.from(methods).sort().map((value) => ({ value, label: value }));
   }, [report.rows]);
 
+  const shouldRequireReceiverDocument = useCallback((sale) => {
+    if (!sale) return false;
+    const paymentMethod = String(sale.paymentMethod || '').toUpperCase().trim();
+    const total = Number(sale.total || 0);
+    const cashThreshold = Number(afipConfig?.cash_identification_threshold ?? 191000);
+    const nonCashThreshold = Number(afipConfig?.non_cash_identification_threshold ?? 344000);
+    if (paymentMethod === 'EFECTIVO') return total > cashThreshold;
+    if (paymentMethod === 'TARJETA' || paymentMethod === 'TRANSFERENCIA') return total > nonCashThreshold;
+    return false;
+  }, [afipConfig?.cash_identification_threshold, afipConfig?.non_cash_identification_threshold]);
+
   const printFiscalTicket = useCallback(({ saleData, invoiceData, paymentMethod }) => {
     const issueDateDate = new Date(invoiceData?.created_at || new Date());
     const issueDate = issueDateDate.toLocaleString('es-AR');
@@ -158,6 +187,8 @@ function SalesManagement() {
       total: ticketTotal,
       authorizationType: invoiceData?.authorization_type || invoiceData?.authorizationType,
       authorizationCode,
+      receiverDocumentType: invoiceData?.receiver_document_type || invoiceData?.receiverDocumentType,
+      receiverDocumentNumber: invoiceData?.receiver_document_number || invoiceData?.receiverDocumentNumber,
     });
     // console.table(saleData);
     const itemsHtml = (saleData?.items || [])
@@ -257,6 +288,12 @@ function SalesManagement() {
 
   const handleCreateInvoice = useCallback(async () => {
     if (!invoiceModalSale || loading) return;
+    const needsReceiverDocument = shouldRequireReceiverDocument(invoiceModalSale);
+    const normalizedReceiverDocumentNumber = String(receiverDocumentNumber || '').replace(/\D/g, '');
+    if (needsReceiverDocument && !normalizedReceiverDocumentNumber) {
+      setError('Para este monto y medio de pago debe ingresar DNI o CUIT antes de facturar.');
+      return;
+    }
     try {
       setLoading(true);
       setError('');
@@ -264,17 +301,21 @@ function SalesManagement() {
         saleId: Number(invoiceModalSale.id),
         invoiceType: selectedInvoiceType,
         authorizationType: 'CAE',
+        receiverDocumentType: needsReceiverDocument ? receiverDocumentType : undefined,
+        receiverDocumentNumber: needsReceiverDocument ? normalizedReceiverDocumentNumber : undefined,
       });
 
       await loadSaleAndPrint(invoiceModalSale.id, invoice, invoiceModalSale.paymentMethod);
       setInvoiceModalSale(null);
+      setReceiverDocumentType('DNI');
+      setReceiverDocumentNumber('');
       await load();
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'No se pudo facturar la venta.');
     } finally {
       setLoading(false);
     }
-  }, [invoiceModalSale, load, loadSaleAndPrint, loading, selectedInvoiceType]);
+  }, [invoiceModalSale, load, loadSaleAndPrint, loading, receiverDocumentNumber, receiverDocumentType, selectedInvoiceType, shouldRequireReceiverDocument]);
 
   const handleReprint = useCallback(async (row) => {
     const invoice = invoicesBySaleId.get(Number(row.id));
@@ -515,6 +556,8 @@ function SalesManagement() {
                         className="touch-btn btn-primary"
                         onClick={() => {
                           setSelectedInvoiceType('B');
+                          setReceiverDocumentType('DNI');
+                          setReceiverDocumentNumber('');
                           setInvoiceModalSale(row);
                         }}
                       >
@@ -654,6 +697,30 @@ function SalesManagement() {
                   <option value="C">Factura C</option>
                 </select>
               </div>
+              {shouldRequireReceiverDocument(invoiceModalSale) && (
+                <>
+                  <div className="alert alert-warning mb-0 py-2" role="alert">
+                    Por monto y medio de pago, debe nominar la venta con DNI o CUIT.
+                  </div>
+                  <div>
+                    <label className="form-label mb-1">Tipo de documento</label>
+                    <select className="form-select" value={receiverDocumentType} onChange={(event) => setReceiverDocumentType(event.target.value)}>
+                      <option value="DNI">DNI</option>
+                      <option value="CUIT">CUIT</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="form-label mb-1">Número de documento</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={receiverDocumentNumber}
+                      onChange={(event) => setReceiverDocumentNumber(event.target.value.replace(/\D/g, ''))}
+                      placeholder="Ingrese DNI o CUIT"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </Modal>
         )}
