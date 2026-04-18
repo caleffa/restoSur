@@ -3,8 +3,8 @@ const { query } = require('../../repositories/baseRepository');
 async function createInvoice(data) {
   const result = await query(
     `INSERT INTO invoices
-      (sale_id, branch_id, invoice_type, authorization_type, authorization_code, voucher_number, cae_expiration, caea_id, afip_response, receiver_document_type, receiver_document_number, total, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (sale_id, branch_id, invoice_type, authorization_type, authorization_code, voucher_number, cae_expiration, caea_id, afip_response, total, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.saleId,
       data.branchId,
@@ -15,8 +15,6 @@ async function createInvoice(data) {
       data.caeExpiration || null,
       data.caeaId || null,
       data.afipResponse ? JSON.stringify(data.afipResponse) : null,
-      data.receiverDocumentType || null,
-      data.receiverDocumentNumber || null,
       data.total,
       data.createdBy,
     ]

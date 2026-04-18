@@ -23,8 +23,6 @@ const INITIAL_AFIP_CONFIG = {
   keyPath: '',
   serviceTaxId: '',
   ticketLogoPath: '',
-  cashIdentificationThreshold: 191000,
-  nonCashIdentificationThreshold: 344000,
 };
 
 const INITIAL_INVOICE_FORM = {
@@ -78,8 +76,6 @@ function AdminInvoices() {
           keyPath: config.key_path || '',
           serviceTaxId: config.service_tax_id || '',
           ticketLogoPath: config.ticket_logo_path || '',
-          cashIdentificationThreshold: Number(config.cash_identification_threshold ?? 191000),
-          nonCashIdentificationThreshold: Number(config.non_cash_identification_threshold ?? 344000),
         });
         
         // Solo resetear la previsualización si no estamos guardando
@@ -135,8 +131,6 @@ function AdminInvoices() {
         certPath: configForm.certPath,
         keyPath: configForm.keyPath,
         serviceTaxId: configForm.serviceTaxId,
-        cashIdentificationThreshold: Number(configForm.cashIdentificationThreshold),
-        nonCashIdentificationThreshold: Number(configForm.nonCashIdentificationThreshold),
         removeTicketLogo,
       };
       
@@ -326,24 +320,6 @@ function AdminInvoices() {
               placeholder="CUIT servicio (opcional)" 
               value={configForm.serviceTaxId} 
               onChange={(e) => setConfigForm((prev) => ({ ...prev, serviceTaxId: e.target.value }))} 
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Monto mínimo efectivo para pedir DNI/CUIT"
-              value={configForm.cashIdentificationThreshold}
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, cashIdentificationThreshold: e.target.value }))}
-              required
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Monto mínimo tarjeta/transferencia para pedir DNI/CUIT"
-              value={configForm.nonCashIdentificationThreshold}
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, nonCashIdentificationThreshold: e.target.value }))}
-              required
             />
             
             <label htmlFor="ticketLogoUpload">Logo para ticket (57mm, opcional)</label>
