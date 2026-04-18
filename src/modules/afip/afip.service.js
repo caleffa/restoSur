@@ -56,14 +56,6 @@ async function saveImageFromDataUrl(imageFile) {
 function normalizeConfigPayload(data = {}, branchId) {
   if (!data.pointOfSale) throw new AppError('pointOfSale es requerido', 400);
   if (!data.environment) throw new AppError('environment es requerido', 400);
-  const cashIdentificationThreshold = Number(data.cashIdentificationThreshold ?? 191000);
-  const nonCashIdentificationThreshold = Number(data.nonCashIdentificationThreshold ?? 344000);
-  if (!Number.isFinite(cashIdentificationThreshold) || cashIdentificationThreshold < 0) {
-    throw new AppError('cashIdentificationThreshold inválido', 400);
-  }
-  if (!Number.isFinite(nonCashIdentificationThreshold) || nonCashIdentificationThreshold < 0) {
-    throw new AppError('nonCashIdentificationThreshold inválido', 400);
-  }
 
   return {
     branchId,
@@ -77,8 +69,6 @@ function normalizeConfigPayload(data = {}, branchId) {
     keyPath: data.keyPath || null,
     serviceTaxId: data.serviceTaxId || null,
     ticketLogoPath: data.ticketLogoPath || null,
-    cashIdentificationThreshold,
-    nonCashIdentificationThreshold,
   };
 }
 

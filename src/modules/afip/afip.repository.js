@@ -33,8 +33,8 @@ async function getConfig(branchId) {
 async function upsertConfig(data) {
   await query(
     `INSERT INTO afip_configs
-      (branch_id, cuit, issuer_name, issuer_address, point_of_sale, environment, ws_mode, cert_path, key_path, service_tax_id, ticket_logo_path, cash_identification_threshold, non_cash_identification_threshold)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (branch_id, cuit, issuer_name, issuer_address, point_of_sale, environment, ws_mode, cert_path, key_path, service_tax_id, ticket_logo_path)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
       cuit = VALUES(cuit),
       issuer_name = VALUES(issuer_name),
@@ -45,9 +45,7 @@ async function upsertConfig(data) {
       cert_path = VALUES(cert_path),
       key_path = VALUES(key_path),
       service_tax_id = VALUES(service_tax_id),
-      ticket_logo_path = VALUES(ticket_logo_path),
-      cash_identification_threshold = VALUES(cash_identification_threshold),
-      non_cash_identification_threshold = VALUES(non_cash_identification_threshold)`,
+      ticket_logo_path = VALUES(ticket_logo_path)`,
     [
       data.branchId,
       data.cuit,
@@ -60,8 +58,6 @@ async function upsertConfig(data) {
       data.keyPath,
       data.serviceTaxId,
       data.ticketLogoPath,
-      data.cashIdentificationThreshold,
-      data.nonCashIdentificationThreshold,
     ]
   );
   return getConfig(data.branchId);

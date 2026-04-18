@@ -477,8 +477,6 @@ async function ensureAfipSchema() {
       key_path VARCHAR(255) NULL,
       service_tax_id VARCHAR(20) NULL,
       ticket_logo_path VARCHAR(255) NULL,
-      cash_identification_threshold DECIMAL(12,2) NOT NULL DEFAULT 191000.00,
-      non_cash_identification_threshold DECIMAL(12,2) NOT NULL DEFAULT 344000.00,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (branch_id) REFERENCES branches(id)
@@ -491,10 +489,6 @@ async function ensureAfipSchema() {
   await ensureColumn('afip_configs', 'issuer_name', 'VARCHAR(120) NULL', 'cuit');
   await ensureColumn('afip_configs', 'issuer_address', 'VARCHAR(255) NULL', 'issuer_name');
   await ensureColumn('afip_configs', 'ticket_logo_path', 'VARCHAR(255) NULL', 'service_tax_id');
-  await ensureColumn('afip_configs', 'cash_identification_threshold', 'DECIMAL(12,2) NOT NULL DEFAULT 191000.00', 'ticket_logo_path');
-  await ensureColumn('afip_configs', 'non_cash_identification_threshold', 'DECIMAL(12,2) NOT NULL DEFAULT 344000.00', 'cash_identification_threshold');
-  await ensureColumn('invoices', 'receiver_document_type', 'VARCHAR(10) NULL', 'total');
-  await ensureColumn('invoices', 'receiver_document_number', 'VARCHAR(20) NULL', 'receiver_document_type');
 
   const wsModeColumnType = await getColumnType('afip_configs', 'ws_mode');
   if (wsModeColumnType && !wsModeColumnType.includes("'AFIP'")) {
