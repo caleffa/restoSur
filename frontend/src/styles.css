@@ -1224,3 +1224,7 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+.nav-btn.active{
+  background:#4CAF50;
+}
