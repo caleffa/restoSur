@@ -28,6 +28,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+
+  const requestUrl = new URL(event.request.url);
+  if (!['http:', 'https:'].includes(requestUrl.protocol)) {
+    return;
+  }
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(OFFLINE_URL)),
