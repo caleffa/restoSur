@@ -60,11 +60,11 @@ function extractTag(xml, tagName) {
 
 function buildSoapEnvelope(body) {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <soapenv:Body>
     ${body}
-  </soap:Body>
-</soap:Envelope>`;
+  </soapenv:Body>
+</soapenv:Envelope>`;
 }
 
 function formatDateYYYYMMDD(date = new Date()) {
@@ -177,43 +177,57 @@ function buildTraXml(service = 'wsfe') {
 
 async function callSoap(url, action, body, timeoutMs = 10000) {
   const maxAttempts = 2;
+  const soapActionValues = Array.from(new Set([`"${action}"`, action].filter(Boolean)));
   let lastError = null;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          SOAPAction: action,
-        },
-        body: buildSoapEnvelope(body),
-        signal: controller.signal,
-      });
+  for (const soapAction of soapActionValues) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/xml; charset=utf-8',
+            SOAPAction: soapAction,
+          },
+          body: buildSoapEnvelope(body),
+          signal: controller.signal,
+        });
 
-      const text = await response.text();
-
-      if (!response.ok) {
-        throw new AppError(`Error SOAP AFIP (${response.status}): ${text.slice(0, 250)}`, 502);
-      }
-
-      return text;
-    } catch (error) {
-      lastError = error;
-      const isTimeout = error?.name === 'AbortError';
-      if (!isTimeout || attempt === maxAttempts) {
-        if (isTimeout) {
-          throw new AppError(
-            `Timeout llamando a AFIP (${timeoutMs}ms). Reintentá o incrementá AFIP_WS_TIMEOUT_MS`,
-            504
-          );
+        const text = await response.text();
+        const soapFaultMessage = extractTag(text, 'faultstring') || extractTag(text, 'faultcode');
+        if (soapFaultMessage) {
+          throw new AppError(`AFIP SOAP Fault: ${soapFaultMessage}`, 502);
         }
-        throw error;
+
+        if (!response.ok) {
+          throw new AppError(`Error SOAP AFIP (${response.status}): ${text.slice(0, 500)}`, 502);
+        }
+
+        return text;
+      } catch (error) {
+        lastError = error;
+        const isTimeout = error?.name === 'AbortError';
+        if (!isTimeout || attempt === maxAttempts) {
+          if (isTimeout) {
+            throw new AppError(
+              `Timeout llamando a AFIP (${timeoutMs}ms). Reintentá o incrementá AFIP_WS_TIMEOUT_MS`,
+              504
+            );
+          }
+
+          // El SOAPAction puede variar entre implementaciones.
+          // Si falla con un formato, se reintenta con el alternativo.
+          if (soapAction !== soapActionValues[soapActionValues.length - 1]) {
+            break;
+          }
+
+          throw error;
+        }
+      } finally {
+        clearTimeout(timer);
       }
-    } finally {
-      clearTimeout(timer);
     }
   }
 
