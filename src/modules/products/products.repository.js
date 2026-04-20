@@ -14,7 +14,7 @@ async function findById(id, conn) {
 
 async function listProducts() {
   return query(
-    `SELECT a.id, a.name, a.category_id, c.name AS category_name,
+    `SELECT a.id, a.name, a.category_id, c.name AS category_name, c.image AS category_image,
             a.sale_price AS price, a.manages_stock AS has_stock, a.active, a.for_sale, a.is_product
      FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
@@ -25,7 +25,7 @@ async function listProducts() {
 
 async function listSaleProducts() {
   return query(
-    `SELECT a.id, a.name, a.category_id, c.name AS category_name,
+    `SELECT a.id, a.name, a.category_id, c.name AS category_name, c.image AS category_image,
             a.sale_price AS price, a.manages_stock AS has_stock, a.active, a.for_sale, a.is_product
      FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
