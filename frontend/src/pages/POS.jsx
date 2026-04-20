@@ -441,7 +441,7 @@ function POS() {
             table{width:100%; border-collapse:collapse; font-size:8px;}
             th,td{padding:2px 0;}
             th{text-align:left; border-bottom:1px dashed #333;}
-            .line{border-top:1px dashed #333; margin:6px 0;}
+            .line{border-top:1px dashed #000; margin:5px 0;}
             .right{text-align:right;}
             .qr-wrap{text-align:center; margin-top:6px;}
             .logo-wrap{text-align:center; margin-bottom:6px;}
@@ -476,7 +476,7 @@ function POS() {
           <div class="line"></div>
           <p>Referencia electrónica del comprobante.</p>
           <div class="qr-wrap">
-            <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
+            <img src="${qrImageUrl}" alt="QR AFIP" width="120" height="120" />
           </div>
           <p>${authorizationLabel}: ${authorizationCode} | Vto ${authorizationLabel}: ${caeExpiration}</p>
           <p>Gracias por su compra.</p>

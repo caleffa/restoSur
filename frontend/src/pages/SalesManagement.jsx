@@ -185,7 +185,7 @@ function SalesManagement() {
             table{width:100%; border-collapse:collapse; font-size:8px;}
             th,td{padding:2px 0;}
             th{text-align:left; border-bottom:1px dashed #333;}
-            .line{border-top:1px dashed #333; margin:6px 0;}
+            .line{border-top:1px dashed #000; margin:5px 0;}
             .right{text-align:right;}
             .qr-wrap{text-align:center; margin-top:6px;}
             .logo-wrap{text-align:center; margin-bottom:6px;}
@@ -214,13 +214,13 @@ function SalesManagement() {
           ${taxBreakdown.map((line) => `<p>${line.label} | Neto: ${formatCurrency(line.net)} | Impuesto: ${formatCurrency(line.iva)}</p>`).join('')}
           <p class="right"><strong>TOTAL: ${formatCurrency(ticketTotal)}</strong></p>
           <div class="line"></div>
-          <p>Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)</p>
-          <p> IVA contenido: ${taxBreakdown.map((line) => `${formatCurrency(line.iva)}`).join('')}</p>
-          <p>Otros Impuestos Nacionales Indirectos: $ 0,00</p>
+          <p class="small">Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)</p>
+          <p class="small"> IVA contenido: ${taxBreakdown.map((line) => `${formatCurrency(line.iva)}`).join('')}</p>
+          <p class="small">Otros Impuestos Nacionales Indirectos: $ 0,00</p>
           <div class="line"></div>
           <p>Referencia electrónica del comprobante.</p>
           <div class="qr-wrap">
-            <img src="${qrImageUrl}" alt="QR AFIP" width="140" height="140" />
+            <img src="${qrImageUrl}" alt="QR AFIP" width="120" height="120" />
           </div>
           <p>${authorizationLabel}: ${authorizationCode} | Vto ${authorizationLabel}: ${caeExpiration}</p>          
           <p>Gracias por su compra.</p>
