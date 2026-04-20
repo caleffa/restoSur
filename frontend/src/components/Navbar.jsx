@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MENU_BY_ROLE } from '../utils/roles';
 import { getAfipConfig } from '../services/adminService';
-import  {  FaAngleLeft,FaArrowAltCircleLeft,FaPowerOff,FaReply }  from  "react-icons/fa" ;
+import  {  FaAngleLeft,FaArrowAltCircleLeft,FaPowerOff,FaReply,FaUser }  from  "react-icons/fa" ;
 
 
 function Navbar() {
@@ -103,7 +103,7 @@ function Navbar() {
               />
             </div>
           )}
-          <div className="navbar-brand-text">RestoSur POS</div> 
+          <div className="navbar-brand-text">RestoPOS</div> 
         </div>
         <button
           type="button"
@@ -125,7 +125,8 @@ function Navbar() {
             <FaReply />
           </button>
         )}
-        {visibleMenuItems.map((item) => (
+        {visibleMenuItems.map((item) => 
+          (
           item.children ? (
             <button
               key={item.path}
@@ -133,7 +134,7 @@ function Navbar() {
               className={`btn-label-2 touch-btn-2 ${activeParentPath === item.path ? 'active' : ''}`}
               onClick={() => handleParentMenuClick(item)}
             >
-              {item.label}
+              <span>{item.label}</span>
             </button>
           ) : (
             <Link
@@ -141,7 +142,7 @@ function Navbar() {
               to={item.path}
               className={`btn-label-2 touch-btn-2 ${location.pathname === item.path ? 'active' : ''}`}
             >
-              {item.label}
+              <span>{item.label}</span>
             </Link>
           )
         ))}

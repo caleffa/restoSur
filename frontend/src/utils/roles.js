@@ -8,7 +8,7 @@ export const ROLES = {
 export const MENU_BY_ROLE = {
   [ROLES.ADMIN]: [
     { label: 'Dashboard', path: '/dashboard', icon: 'FaBeer' },
-    { label: 'Usuarios', path: '/admin/management/users' },
+    { label: 'Usuarios', path: '/admin/management/users', icon: 'FaUser' },
     {
       label: 'Mesas',
       path: '/admin/tables',
