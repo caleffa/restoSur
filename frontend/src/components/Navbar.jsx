@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MENU_BY_ROLE } from '../utils/roles';
 import { getAfipConfig } from '../services/adminService';
+import  {  FaAngleLeft,FaArrowAltCircleLeft,FaPowerOff,FaReply }  from  "react-icons/fa" ;
+
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -101,7 +103,7 @@ function Navbar() {
               />
             </div>
           )}
-          <div className="navbar-brand-text">RestoSur POS</div>
+          <div className="navbar-brand-text">RestoSur POS</div> 
         </div>
         <button
           type="button"
@@ -117,10 +119,10 @@ function Navbar() {
         {activeParentPath && (
           <button
             type="button"
-            className="touch-btn"
+            className="btn-label-2 touch-btn-back-2"
             onClick={() => setActiveParentPath(null)}
           >
-            ← Volver
+            <FaReply />
           </button>
         )}
         {visibleMenuItems.map((item) => (
@@ -128,7 +130,7 @@ function Navbar() {
             <button
               key={item.path}
               type="button"
-              className={`touch-btn ${activeParentPath === item.path ? 'active' : ''}`}
+              className={`btn-label-2 touch-btn-2 ${activeParentPath === item.path ? 'active' : ''}`}
               onClick={() => handleParentMenuClick(item)}
             >
               {item.label}
@@ -137,14 +139,14 @@ function Navbar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`touch-btn ${location.pathname === item.path ? 'active' : ''}`}
+              className={`btn-label-2 touch-btn-2 ${location.pathname === item.path ? 'active' : ''}`}
             >
               {item.label}
             </Link>
           )
         ))}
-        <button type="button" className="touch-btn btn-danger" onClick={logout}>
-          Salir
+        <button type="button" className="btn-label-2 touch-btn-danger-2" onClick={logout}>
+          < FaPowerOff />
         </button>
       </nav>
     </header>

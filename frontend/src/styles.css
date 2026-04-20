@@ -984,9 +984,9 @@ body {
 }
 
 .navbar-brand-text {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: bold;
-  color: #333;
+  color: #ebebeb;
 }
 
 /* Ajuste para móviles */
@@ -1225,6 +1225,80 @@ body {
   }
 }
 
-.nav-btn.active{
-  background:#4CAF50;
+.touch-btn-2{
+  width:80px;
+  height:80px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border:none;
+  border-radius:12px;
+  background:#cecece;
+  color:#000000;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.touch-btn-danger-2{
+  width:80px;
+  height:80px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border:none;
+  border-radius:12px;
+  background:#c02d2d;
+  color:#ffffff;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.touch-btn-danger-2:hover{
+  background:#6d0d0d;
+  transform:scale(1.05);
+}
+
+.touch-btn-2:hover{
+  background:#3c5e9e;
+  transform:scale(1.05);
+}
+
+.touch-btn-2.active{
+  background:#4c87af;
+}
+
+.touch-btn-2-icon{
+  font-size:40px;
+}
+
+.btn-label-2{
+  font-size:12px;
+  text-align:center;
+  line-height:1.1;
+}
+
+
+.touch-btn-back-2{
+  width:80px;
+  height:80px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border:none;
+  border-radius:12px;
+  background:#2dc0a0;
+  color:#000000;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.touch-btn-back-2:hover{
+  background:#0d6d12;
+  transform:scale(1.05);
 }
