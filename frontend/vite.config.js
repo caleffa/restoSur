@@ -9,5 +9,9 @@ export default defineConfig({
     strictPort: true,  // Si el puerto está ocupado, no intenta con otro
     // Opcional: Configurar CORS para desarrollo
     cors: true,
+    hmr: {
+      protocol: 'ws',
+      clientPort: 5173,
+    },
   },
 });
