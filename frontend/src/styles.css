@@ -1219,6 +1219,24 @@ body {
   margin: 0;
 }
 
+.purchase-order-detail-modal {
+  display: grid;
+  gap: 0.8rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.purchase-order-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.4rem 0.8rem;
+}
+
+.purchase-order-detail-grid p {
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .purchase-order-item-row {
     grid-template-columns: 1fr;
