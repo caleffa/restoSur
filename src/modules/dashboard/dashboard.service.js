@@ -31,4 +31,37 @@ async function getSalesByHour(branchId) {
   }));
 }
 
-module.exports = { getSummary, getSalesByHour };
+async function getWaiterDashboard(branchId, userId) {
+  validateBranchId(branchId);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new AppError('Usuario inválido', 400);
+  }
+
+  const rows = await repo.getWaiterOpenTables(branchId, userId);
+  const tables = rows.map((row) => ({
+    saleId: Number(row.saleId),
+    saleStatus: row.saleStatus,
+    tableId: Number(row.tableId),
+    tableNumber: row.tableNumber,
+    tableStatus: row.tableStatus,
+    openedAt: row.openedAt,
+    total: Number(row.total || 0),
+    canRequestBill: row.tableStatus !== 'CUENTA_PEDIDA',
+    canCharge: false,
+  }));
+
+  return {
+    profile: 'MOZO',
+    permissions: {
+      canCharge: false,
+      canRequestBill: true,
+    },
+    metrics: {
+      openTables: tables.length,
+      pendingBillRequests: tables.filter((table) => table.tableStatus === 'CUENTA_PEDIDA').length,
+    },
+    tables,
+  };
+}
+
+module.exports = { getSummary, getSalesByHour, getWaiterDashboard };

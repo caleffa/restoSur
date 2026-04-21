@@ -36,4 +36,26 @@ function getSalesByHour(branchId) {
   );
 }
 
-module.exports = { getSummaryByBranch, countOccupiedTables, getSalesByHour };
+function getWaiterOpenTables(branchId, userId) {
+  return query(
+    `SELECT
+      s.id AS saleId,
+      s.status AS saleStatus,
+      s.opened_at AS openedAt,
+      tr.id AS tableId,
+      tr.table_number AS tableNumber,
+      tr.status AS tableStatus,
+      COALESCE(SUM(si.quantity * si.unit_price), 0) AS total
+    FROM sales s
+    JOIN tables_restaurant tr ON tr.id = s.table_id
+    LEFT JOIN sale_items si ON si.sale_id = s.id
+    WHERE s.branch_id = ?
+      AND s.user_id = ?
+      AND s.status = 'ABIERTA'
+    GROUP BY s.id, s.status, s.opened_at, tr.id, tr.table_number, tr.status
+    ORDER BY s.opened_at DESC`,
+    [branchId, userId]
+  );
+}
+
+module.exports = { getSummaryByBranch, countOccupiedTables, getSalesByHour, getWaiterOpenTables };

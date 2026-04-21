@@ -7,5 +7,6 @@ router.use(authMiddleware);
 
 router.get('/summary', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.getSummary);
 router.get('/sales-by-hour', roleMiddleware('ADMIN', 'MOZO', 'CAJERO', 'COCINA'), controller.getSalesByHour);
+router.get('/waiter', roleMiddleware('MOZO'), controller.getWaiterDashboard);
 
 module.exports = router;
