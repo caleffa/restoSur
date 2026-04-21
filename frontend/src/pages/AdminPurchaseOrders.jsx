@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
+import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
 import {
   createPurchaseOrder,
   getArticles,
+  getPurchaseOrderById,
   getPurchaseOrders,
   getSuppliers,
 } from '../services/adminService';
@@ -34,6 +36,9 @@ function AdminPurchaseOrders() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [detailOrder, setDetailOrder] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
 
   const loadData = useCallback(async () => {
     try {
@@ -110,6 +115,26 @@ function AdminPurchaseOrders() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDetailModal = async (orderId) => {
+    try {
+      setDetailLoading(true);
+      setDetailError('');
+      setDetailOrder(null);
+      const orderDetail = await getPurchaseOrderById(orderId);
+      setDetailOrder(orderDetail);
+    } catch {
+      setDetailError('No se pudo cargar el detalle de la orden.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetailModal = () => {
+    setDetailOrder(null);
+    setDetailError('');
+    setDetailLoading(false);
   };
 
   return (
@@ -222,8 +247,113 @@ function AdminPurchaseOrders() {
               accessor: (row) => `$ ${formatNumber(row.total_cost || 0, 2)}`,
               sortable: true,
             },
+            {
+              key: 'actions',
+              label: 'Acciones',
+              accessor: () => '',
+              render: (row) => (
+                <button type="button" className="touch-btn" onClick={() => openDetailModal(row.id)}>
+                  Ver detalle
+                </button>
+              ),
+            },
           ]}
         />
+
+        {(detailLoading || detailOrder || detailError) && (
+          <Modal title={detailOrder ? `Orden #${detailOrder.id}` : 'Detalle de orden'} onClose={closeDetailModal}>
+            {detailLoading && <p>Cargando detalle...</p>}
+
+            {detailError && <p className="error-text">{detailError}</p>}
+
+            {detailOrder && (
+              <div className="purchase-order-detail-modal">
+                <div className="purchase-order-detail-grid">
+                  <p><strong>Proveedor:</strong> {detailOrder.supplier_name || '-'}</p>
+                  <p><strong>Estado:</strong> {statusLabel(detailOrder.status)}</p>
+                  <p><strong>Creada:</strong> {new Date(detailOrder.created_at).toLocaleString()}</p>
+                  <p><strong>Actualizada:</strong> {new Date(detailOrder.updated_at).toLocaleString()}</p>
+                  <p><strong>Cerrada:</strong> {detailOrder.closed_at ? new Date(detailOrder.closed_at).toLocaleString() : '-'}</p>
+                  <p><strong>Motivo cierre:</strong> {detailOrder.closed_reason || '-'}</p>
+                  <p><strong>Observaciones:</strong> {detailOrder.notes || '-'}</p>
+                  <p><strong>Costo total:</strong> $ {formatNumber(detailOrder.total_cost || 0, 2)}</p>
+                </div>
+
+                <h4>Artículos</h4>
+                <div className="admin-table-wrap">
+                  <table className="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Artículo</th>
+                        <th>SKU</th>
+                        <th>Unidad</th>
+                        <th>Pedida</th>
+                        <th>Recibida</th>
+                        <th>Pendiente</th>
+                        <th>Costo unit.</th>
+                        <th>Total línea</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailOrder.items?.length ? (
+                        detailOrder.items.map((item) => (
+                          <tr key={item.id}>
+                            <td>{item.article_name}</td>
+                            <td>{item.article_sku || '-'}</td>
+                            <td>{item.measurement_unit_code || '-'}</td>
+                            <td>{formatNumber(item.quantity_ordered || 0, 3)}</td>
+                            <td>{formatNumber(item.quantity_received || 0, 3)}</td>
+                            <td>{formatNumber(item.quantity_pending || 0, 3)}</td>
+                            <td>$ {formatNumber(item.unit_cost || 0, 2)}</td>
+                            <td>$ {formatNumber(item.line_total || 0, 2)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="text-center py-3">Sin artículos</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h4>Recepciones</h4>
+                <div className="admin-table-wrap">
+                  <table className="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Comprobante</th>
+                        <th>Notas</th>
+                        <th>Total recibido</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailOrder.receipts?.length ? (
+                        detailOrder.receipts.map((receipt) => (
+                          <tr key={receipt.id}>
+                            <td>{receipt.id}</td>
+                            <td>{new Date(receipt.created_at).toLocaleString()}</td>
+                            <td>{receipt.user_name || '-'}</td>
+                            <td>{receipt.supplier_document_number || '-'}</td>
+                            <td>{receipt.notes || '-'}</td>
+                            <td>{formatNumber(receipt.total_received || 0, 3)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="text-center py-3">Sin recepciones registradas</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </Modal>
+        )}
       </main>
     </div>
   );
