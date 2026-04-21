@@ -116,7 +116,7 @@ function AppRouter() {
       <Route
         path="/admin/management/recipes"
         element={(
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.COCINA]}>
             <AdminRecipes />
           </ProtectedRoute>
         )}
@@ -143,7 +143,7 @@ function AppRouter() {
       <Route
         path="/admin/management/products"
         element={(
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.COCINA]}>
             <AdminProducts />
           </ProtectedRoute>
         )}
