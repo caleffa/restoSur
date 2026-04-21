@@ -153,6 +153,70 @@ function printKitchenTicket({ saleData, tableId, orders }) {
   printWindow.print();
 }
 
+function printSaleSummaryTicket({ saleData, tableId, total }) {
+  const issuedAt = new Date().toLocaleString('es-AR');
+  const saleId = saleData?.id || '-';
+  const tableLabel = saleData?.tableId || saleData?.table_id || tableId || '-';
+  const waiterLabel = saleData?.waiterName || 'Sin asignar';
+  const items = Array.isArray(saleData?.items) ? saleData.items : [];
+
+  const itemsHtml = items
+    .map((item) => {
+      const articleName = escapeHtml(item.articleName || item.article_name || item.name || 'Producto');
+      const quantity = Number(item.quantity || 0);
+      const unitPrice = Number(item.unitPrice ?? item.unit_price ?? 0);
+      const subtotal = quantity * unitPrice;
+      return `
+        <tr>
+          <td class="qty">${quantity}</td>
+          <td class="name">${articleName}</td>
+          <td class="right">${formatCurrency(subtotal)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const html = `
+    <html>
+      <head>
+        <title>Resumen de venta</title>
+        <style>
+          @page { size: 57mm auto; margin: 2mm; }
+          body { font-family: monospace; width: 57mm; margin: 0; padding: 0; font-size: 10px; }
+          h1 { margin: 0; text-align: center; font-size: 12px; }
+          p { margin: 2px 0; }
+          .line { border-top: 1px dashed #000; margin: 4px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 1px 0; vertical-align: top; }
+          .qty { width: 8mm; font-weight: bold; }
+          .name { width: 33mm; }
+          .right { text-align: right; width: 16mm; }
+          .total { font-size: 11px; font-weight: bold; text-align: right; margin-top: 4px; }
+        </style>
+      </head>
+      <body>
+        <h1>RESUMEN DE VENTA</h1>
+        <p><strong>Mesa:</strong> ${escapeHtml(tableLabel)}</p>
+        <p><strong>Venta:</strong> #${escapeHtml(saleId)}</p>
+        <p><strong>Mozo:</strong> ${escapeHtml(waiterLabel)}</p>
+        <p><strong>Emitida:</strong> ${escapeHtml(issuedAt)}</p>
+        <div class="line"></div>
+        <table>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="line"></div>
+        <p class="total">TOTAL: ${formatCurrency(Number(total || 0))}</p>
+      </body>
+    </html>`;
+
+  const printWindow = window.open('', '_blank', 'width=360,height=640');
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 function playKitchenSound() {
   try {
     const context = new window.AudioContext();
@@ -337,6 +401,11 @@ function POS() {
     try {
       setSaving(true);
       await updateTableStatus(sale.tableId, "CUENTA_PEDIDA");
+      printSaleSummaryTicket({
+        saleData: sale,
+        tableId: Number(tableId),
+        total: totals.total,
+      });
       playBillRequestedSound();
       upsertSaleAndPersist((current) => ({
         ...current,
