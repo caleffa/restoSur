@@ -30,8 +30,6 @@ function roleMiddleware(...roles) {
 
   return (req, _res, next) => {
 
-    console.log('PATH:', req.originalUrl);
-    console.log('ROLES PERMITIDOS:', allowedRoles);
     const userRole = normalizeRole(req.user?.role);
 
     if (!userRole || !allowedRoles.includes(userRole)) {
