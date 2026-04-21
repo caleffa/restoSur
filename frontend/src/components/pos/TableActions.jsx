@@ -3,6 +3,7 @@ function TableActions({
   hasItems,
   loading,
   canEdit,
+  canCharge,
   onRequestBill,
   onOpenPayment,
   onCancelTable,
@@ -22,14 +23,16 @@ function TableActions({
         🧾 Pedir cuenta
       </button>
 
-      <button
-        type="button"
-        className="btn btn-primary btn-lg"
-        onClick={onOpenPayment}
-        disabled={loading || !hasItems}
-      >
-        💳 Cobrar
-      </button>
+      {canCharge && (
+        <button
+          type="button"
+          className="btn btn-primary btn-lg"
+          onClick={onOpenPayment}
+          disabled={loading || !hasItems}
+        >
+          💳 Cobrar
+        </button>
+      )}
 
       <button
         type="button"
