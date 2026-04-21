@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const AppError = require('../../utils/appError');
+const { logInfo, logError } = require('../../utils/logger');
 
 const execFileAsync = promisify(execFile);
 
@@ -34,6 +35,16 @@ const CONDICION_IVA_RECEPTOR = {
   PEQUENIO_CONTRIBUYENTE_EVENTUAL: 16,
 };
 
+const TA_CACHE_PATH = process.env.AFIP_TA_CACHE_FILE || path.join(process.cwd(), 'uploads', 'afip', 'ta-cache.json');
+const TA_RENEWAL_SKEW_MS = Number(process.env.AFIP_TA_RENEWAL_SKEW_MS || 60 * 1000);
+const TA_REQUEST_COOLDOWN_MS = {
+  PRODUCCION: Number(process.env.AFIP_TA_COOLDOWN_PRODUCCION_MS || 2 * 60 * 1000),
+  HOMOLOGACION: Number(process.env.AFIP_TA_COOLDOWN_HOMOLOGACION_MS || 10 * 60 * 1000),
+};
+const taCache = new Map();
+const taInFlightRequests = new Map();
+let taStoreLoaded = false;
+
 function xmlEscape(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -56,6 +67,56 @@ function extractTag(xml, tagName) {
   const regex = new RegExp(`<${tagName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagName}>`, 'i');
   const match = xml.match(regex);
   return match ? match[1].trim() : null;
+}
+
+function getTaCacheKey({ cuit, environment, service = 'wsfe' }) {
+  return `${environment || 'UNKNOWN'}:${cuit || 'NO_CUIT'}:${service}`;
+}
+
+function parseExpirationTime(rawValue) {
+  if (!rawValue) return null;
+  const expirationDate = new Date(rawValue);
+  return Number.isNaN(expirationDate.getTime()) ? null : expirationDate.toISOString();
+}
+
+function isTaUsable(credentials) {
+  if (!credentials?.token || !credentials?.sign || !credentials?.expirationTime) return false;
+  const expirationMs = new Date(credentials.expirationTime).getTime();
+  if (Number.isNaN(expirationMs)) return false;
+  return Date.now() + TA_RENEWAL_SKEW_MS < expirationMs;
+}
+
+async function loadTaStoreIfNeeded() {
+  if (taStoreLoaded) return;
+  taStoreLoaded = true;
+
+  try {
+    const raw = await fs.promises.readFile(TA_CACHE_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    Object.entries(parsed || {}).forEach(([key, value]) => {
+      if (value && typeof value === 'object') {
+        taCache.set(key, value);
+      }
+    });
+    logInfo('AFIP TA cache cargado desde archivo', { path: TA_CACHE_PATH, entries: taCache.size });
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      logError('No se pudo cargar el cache de TA desde archivo; se continuará solo en memoria', {
+        path: TA_CACHE_PATH,
+        error: error.message,
+      });
+    }
+  }
+}
+
+async function persistTaStore() {
+  const payload = Object.fromEntries(taCache.entries());
+  await fs.promises.mkdir(path.dirname(TA_CACHE_PATH), { recursive: true });
+  await fs.promises.writeFile(TA_CACHE_PATH, JSON.stringify(payload, null, 2), 'utf8');
+}
+
+function getTaRequestCooldownMs(environment) {
+  return TA_REQUEST_COOLDOWN_MS[environment] || TA_REQUEST_COOLDOWN_MS.HOMOLOGACION;
 }
 
 function buildSoapEnvelope(body) {
@@ -272,30 +333,116 @@ async function getWsaaCredentials(config, timeoutMs) {
   const wsaaUrl = WSAA_URLS[config.environment];
   if (!wsaaUrl) throw new AppError(`Ambiente AFIP no soportado: ${config.environment}`, 400);
 
-  const traXml = buildTraXml('wsfe');
-  const cmsBase64 = await signCms({
-    certPath: config.cert_path,
-    keyPath: config.key_path,
-    traXml,
-  });
+  await loadTaStoreIfNeeded();
+  const cacheKey = getTaCacheKey({ cuit: config.cuit, environment: config.environment, service: 'wsfe' });
+  const cached = taCache.get(cacheKey);
 
-  const body = `<loginCms xmlns="http://wsaa.view.sua.dvadac.desein.afip.gov"><in0>${xmlEscape(cmsBase64)}</in0></loginCms>`;
-  const soap = await callSoap(wsaaUrl, 'loginCms', body, timeoutMs);
-
-  const loginCmsReturnEscaped = extractTag(soap, 'loginCmsReturn');
-  if (!loginCmsReturnEscaped) {
-    throw new AppError('WSAA no devolvió loginCmsReturn', 502);
+  if (isTaUsable(cached)) {
+    logInfo('AFIP TA cache hit', {
+      key: cacheKey,
+      expirationTime: cached.expirationTime,
+    });
+    return {
+      token: cached.token,
+      sign: cached.sign,
+      expirationTime: cached.expirationTime,
+    };
   }
 
-  const ticketXml = xmlUnescape(loginCmsReturnEscaped);
-  const token = extractTag(ticketXml, 'token');
-  const sign = extractTag(ticketXml, 'sign');
-
-  if (!token || !sign) {
-    throw new AppError('No se pudieron obtener token/sign desde WSAA', 502);
+  if (taInFlightRequests.has(cacheKey)) {
+    logInfo('AFIP TA request en curso, esperando resultado compartido', { key: cacheKey });
+    return taInFlightRequests.get(cacheKey);
   }
 
-  return { token, sign };
+  const requestPromise = (async () => {
+    const lastRequestedAtMs = Number(cached?.lastRequestedAtMs || 0);
+    const cooldownMs = getTaRequestCooldownMs(config.environment);
+    const elapsedMs = Date.now() - lastRequestedAtMs;
+    if (lastRequestedAtMs > 0 && elapsedMs < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - elapsedMs) / 1000);
+      throw new AppError(
+        `Cooldown WSAA activo. Reintentá en ~${remainingSeconds}s para evitar alreadyAuthenticated.`,
+        429
+      );
+    }
+
+    logInfo('Solicitando nuevo TA a WSAA', { key: cacheKey, environment: config.environment });
+    const traXml = buildTraXml('wsfe');
+    const cmsBase64 = await signCms({
+      certPath: config.cert_path,
+      keyPath: config.key_path,
+      traXml,
+    });
+
+    const body = `<loginCms xmlns="http://wsaa.view.sua.dvadac.desein.afip.gov"><in0>${xmlEscape(cmsBase64)}</in0></loginCms>`;
+    const soap = await callSoap(wsaaUrl, 'loginCms', body, timeoutMs);
+
+    const loginCmsReturnEscaped = extractTag(soap, 'loginCmsReturn');
+    if (!loginCmsReturnEscaped) {
+      throw new AppError('WSAA no devolvió loginCmsReturn', 502);
+    }
+
+    const ticketXml = xmlUnescape(loginCmsReturnEscaped);
+    const token = extractTag(ticketXml, 'token');
+    const sign = extractTag(ticketXml, 'sign');
+    const expirationTime = parseExpirationTime(extractTag(ticketXml, 'expirationTime'));
+
+    if (!token || !sign || !expirationTime) {
+      throw new AppError('No se pudieron obtener token/sign/expirationTime desde WSAA', 502);
+    }
+
+    const nextCredentials = {
+      token,
+      sign,
+      expirationTime,
+      lastRequestedAtMs: Date.now(),
+      environment: config.environment,
+      cuit: config.cuit,
+      service: 'wsfe',
+    };
+
+    taCache.set(cacheKey, nextCredentials);
+    await persistTaStore();
+    logInfo('Nuevo TA de AFIP obtenido y persistido', {
+      key: cacheKey,
+      expirationTime,
+    });
+
+    return {
+      token,
+      sign,
+      expirationTime,
+    };
+  })();
+
+  taInFlightRequests.set(cacheKey, requestPromise);
+  try {
+    return await requestPromise;
+  } catch (error) {
+    const cachedBeforeError = taCache.get(cacheKey);
+    const faultAlreadyAuthenticated =
+      typeof error?.message === 'string' &&
+      error.message.toLowerCase().includes('alreadyauthenticated') &&
+      cachedBeforeError &&
+      cachedBeforeError.token &&
+      cachedBeforeError.sign;
+
+    if (faultAlreadyAuthenticated) {
+      logInfo('WSAA respondió alreadyAuthenticated; se reutiliza TA cacheado localmente', {
+        key: cacheKey,
+        expirationTime: cachedBeforeError.expirationTime,
+      });
+      return {
+        token: cachedBeforeError.token,
+        sign: cachedBeforeError.sign,
+        expirationTime: cachedBeforeError.expirationTime,
+      };
+    }
+
+    throw error;
+  } finally {
+    taInFlightRequests.delete(cacheKey);
+  }
 }
 
 async function getLastAuthorizedVoucher({ config, credentials, cbteTipo, timeoutMs }) {
@@ -430,5 +577,6 @@ async function requestCaeForInvoice({ config, invoiceType, total, timeoutMs }) {
 }
 
 module.exports = {
+  getTA: getWsaaCredentials,
   requestCaeForInvoice,
 };
