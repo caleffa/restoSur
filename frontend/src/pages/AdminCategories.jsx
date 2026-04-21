@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
+import SimpleDataTable from '../components/SimpleDataTable';
 import { createCategory, deleteCategory, getCategories, updateCategory } from '../services/adminService';
 
 const initialCategory = { name: '', imageFile: null, imagePreview: '' };

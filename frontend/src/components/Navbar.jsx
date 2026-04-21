@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MENU_BY_ROLE } from '../utils/roles';
 import { getAfipConfig } from '../services/adminService';
-import  {  FaAngleLeft,FaArrowAltCircleLeft,FaPowerOff,FaReply,FaUser }  from  "react-icons/fa" ;
+import  {  FaAngleLeft,FaArrowAltCircleLeft, FaPowerOff, FaReply, FaUser, FaDolly }  from  "react-icons/fa" ;
 
 
 function Navbar() {

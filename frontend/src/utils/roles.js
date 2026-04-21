@@ -31,6 +31,7 @@ export const MENU_BY_ROLE = {
     {
       label: 'Compras',
       path: '/admin/management/purchase-orders',
+      icon: 'FaDolly',
       children: [
         { label: 'Órdenes de compra', path: '/admin/management/purchase-orders' },
         { label: 'Recepciones', path: '/admin/management/purchase-orders/reception' },
@@ -51,6 +52,7 @@ export const MENU_BY_ROLE = {
       path: '/admin/management/products',
       children: [
         { label: 'Productos', path: '/admin/management/products' },
+        { label: 'Categorias', path: '/admin/management/categories' },
         { label: 'Recetas', path: '/admin/management/recipes' },
       ],
     },
