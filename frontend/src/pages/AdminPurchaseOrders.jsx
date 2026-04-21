@@ -12,7 +12,7 @@ import { formatNumber } from '../utils/formatters';
 const INITIAL_FORM = {
   supplierId: '',
   notes: '',
-  items: [{ articleId: '', quantity: '' }],
+  items: [{ articleId: '', quantity: '', unitCost: '' }],
 };
 
 function statusLabel(status) {
@@ -64,7 +64,7 @@ function AdminPurchaseOrders() {
   );
 
   const addItemRow = () => {
-    setForm((prev) => ({ ...prev, items: [...prev.items, { articleId: '', quantity: '' }] }));
+    setForm((prev) => ({ ...prev, items: [...prev.items, { articleId: '', quantity: '', unitCost: '' }] }));
   };
 
   const removeItemRow = (index) => {
@@ -96,6 +96,7 @@ function AdminPurchaseOrders() {
         items: form.items.map((item) => ({
           articleId: Number(item.articleId),
           quantity: Number(item.quantity),
+          unitCost: Number(item.unitCost),
         })),
       };
 
@@ -160,6 +161,15 @@ function AdminPurchaseOrders() {
                     onChange={(event) => updateItemRow(index, { quantity: event.target.value })}
                     required
                   />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Costo unitario"
+                    value={item.unitCost}
+                    onChange={(event) => updateItemRow(index, { unitCost: event.target.value })}
+                    required
+                  />
                   <button
                     type="button"
                     className="touch-btn btn-danger"
@@ -204,6 +214,12 @@ function AdminPurchaseOrders() {
               key: 'created_at',
               label: 'Fecha',
               accessor: (row) => new Date(row.created_at).toLocaleString(),
+              sortable: true,
+            },
+            {
+              key: 'total_cost',
+              label: 'Costo total',
+              accessor: (row) => `$ ${formatNumber(row.total_cost || 0, 2)}`,
               sortable: true,
             },
           ]}
