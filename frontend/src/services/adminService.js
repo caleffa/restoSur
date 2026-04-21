@@ -275,6 +275,18 @@ export async function deleteArticle(articleId) {
   return unwrap(data);
 }
 
+export async function importArticlesCsv(csv) {
+  const { data } = await http.post('/articles/import', { csv });
+  return unwrap(data);
+}
+
+export async function downloadArticlesImportTemplate() {
+  const response = await http.get('/articles/import/template', {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
 // Motivos de caja
 export async function getCashReasons(params = {}) {
   const { data } = await http.get('/cash-reasons', { params });
