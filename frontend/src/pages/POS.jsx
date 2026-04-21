@@ -789,6 +789,7 @@ function POS() {
               hasItems={(sale?.items || []).length > 0}
               loading={saving}
               canEdit={canEdit}
+              canCharge={canEmitFiscalTicket}
               onRequestBill={handleRequestBill}
               onOpenPayment={() => setShowPaymentModal(true)}
               onCancelTable={handleOpenCancelModal}
