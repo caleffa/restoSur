@@ -77,6 +77,82 @@ function buildAfipQrData({ issueDate, cuit, pointOfSale, invoiceType, voucherNum
   return { qrVerificationUrl, qrImageUrl };
 }
 
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function printKitchenTicket({ saleData, tableId, orders }) {
+  if (!Array.isArray(orders) || orders.length === 0) return;
+
+  const issuedAt = new Date().toLocaleString('es-AR');
+  const saleId = saleData?.id || '-';
+  const tableLabel = saleData?.tableId || saleData?.table_id || tableId || '-';
+  const waiterLabel = saleData?.waiterName || 'Sin asignar';
+
+  const rowsHtml = orders
+    .map((order) => {
+      const quantity = Number(order.quantity || 0);
+      const articleName = escapeHtml(order.articleName || order.article_name || 'Producto');
+      const kitchenName = escapeHtml(order.kitchenName || order.kitchen_name || '-');
+      return `
+        <tr>
+          <td class="qty">${quantity}</td>
+          <td>${articleName}</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="meta">Cocina: ${kitchenName}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const html = `
+    <html>
+      <head>
+        <title>Comanda</title>
+        <style>
+          @page { size: 57mm auto; margin: 2mm; }
+          body { font-family: monospace; width: 57mm; margin: 0; padding: 0; font-size: 10px; }
+          h1 { margin: 0; text-align: center; font-size: 13px; }
+          p { margin: 2px 0; }
+          .line { border-top: 1px dashed #000; margin: 4px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 1px 0; vertical-align: top; }
+          .qty { width: 14mm; font-weight: bold; }
+          .meta { font-size: 9px; color: #333; }
+          .footer { text-align: center; margin-top: 4px; font-size: 9px; }
+        </style>
+      </head>
+      <body>
+        <h1>COMANDA</h1>
+        <p><strong>Mesa:</strong> ${escapeHtml(tableLabel)}</p>
+        <p><strong>Venta:</strong> #${escapeHtml(saleId)}</p>
+        <p><strong>Mozo:</strong> ${escapeHtml(waiterLabel)}</p>
+        <p><strong>Emitida:</strong> ${escapeHtml(issuedAt)}</p>
+        <div class="line"></div>
+        <table>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="line"></div>
+        <p class="footer">Enviada a cocina automáticamente</p>
+      </body>
+    </html>`;
+
+  const printWindow = window.open('', '_blank', 'width=360,height=640');
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 function playKitchenSound() {
   try {
     const context = new window.AudioContext();
@@ -236,10 +312,12 @@ function POS() {
     setKitchenOrders((prev) => [...createdOrders, ...prev]);
     playKitchenSound();
 
-    if (import.meta.env.VITE_AUTO_PRINT_KITCHEN === 'true') {
-      window.print();
-    }
-  }, [tableId]);
+    printKitchenTicket({
+      saleData: sale,
+      tableId: Number(tableId),
+      orders: createdOrders,
+    });
+  }, [sale, tableId]);
 
   const upsertSaleAndPersist = useCallback((updater) => {
     setSale((previous) => {
@@ -305,6 +383,11 @@ function POS() {
         });
         setKitchenOrders((prev) => [order, ...prev]);
         playKitchenSound();
+        printKitchenTicket({
+          saleData: sale,
+          tableId: Number(tableId),
+          orders: [order],
+        });
       }
 
       upsertSaleAndPersist((current) => ({
@@ -355,6 +438,11 @@ function POS() {
         });
         setKitchenOrders((prev) => [order, ...prev]);
         playKitchenSound();
+        printKitchenTicket({
+          saleData: sale,
+          tableId: Number(tableId),
+          orders: [order],
+        });
       }
 
       setError('');
