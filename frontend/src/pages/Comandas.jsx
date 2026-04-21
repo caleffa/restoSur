@@ -19,6 +19,71 @@ function formatDateTime(value) {
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('es-AR');
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function printKitchenOrder(order) {
+  if (!order) return;
+
+  const issuedAt = new Date().toLocaleString('es-AR');
+  const tableLabel = order.tableId ? `Mesa ${order.tableId}` : 'Mesa -';
+  const quantity = Number(order.quantity || 0);
+  const articleName = escapeHtml(order.articleName || 'Producto');
+  const kitchenName = escapeHtml(order.kitchenName || '-');
+
+  const html = `
+    <html>
+      <head>
+        <title>Comanda #${escapeHtml(order.id)}</title>
+        <style>
+          @page { size: 57mm auto; margin: 2mm; }
+          body { font-family: monospace; width: 57mm; margin: 0; padding: 0; font-size: 10px; }
+          h1 { margin: 0; text-align: center; font-size: 13px; }
+          p { margin: 2px 0; }
+          .line { border-top: 1px dashed #000; margin: 4px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 1px 0; vertical-align: top; }
+          .qty { width: 14mm; font-weight: bold; }
+          .meta { font-size: 9px; color: #333; }
+        </style>
+      </head>
+      <body>
+        <h1>COMANDA</h1>
+        <p><strong># Comanda:</strong> ${escapeHtml(order.id)}</p>
+        <p><strong># Venta:</strong> ${escapeHtml(order.saleId)}</p>
+        <p><strong>${escapeHtml(tableLabel)}</strong></p>
+        <p><strong>Emitida:</strong> ${escapeHtml(issuedAt)}</p>
+        <div class="line"></div>
+        <table>
+          <tbody>
+            <tr>
+              <td class="qty">${escapeHtml(quantity)}</td>
+              <td>${articleName}</td>
+            </tr>
+            <tr>
+              <td></td>
+              <td class="meta">Cocina: ${kitchenName}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="line"></div>
+      </body>
+    </html>`;
+
+  const printWindow = window.open('', '_blank', 'width=360,height=640');
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 function Comandas() {
   const { user } = useAuth();
 
@@ -29,6 +94,7 @@ function Comandas() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [printingOrderId, setPrintingOrderId] = useState(null);
   const [error, setError] = useState('');
 
   const canUpdateStatus = [ROLES.ADMIN, ROLES.COCINA].includes(user?.role);
@@ -86,6 +152,19 @@ function Comandas() {
       setError(err?.response?.data?.message || 'No se pudo actualizar el estado de la comanda.');
     } finally {
       setStatusSaving(false);
+    }
+  };
+
+  const handleReprintOrder = (order) => {
+    if (!order || printingOrderId) return;
+
+    setPrintingOrderId(order.id);
+    try {
+      printKitchenOrder(order);
+    } catch {
+      setError('No se pudo reimprimir la comanda.');
+    } finally {
+      setPrintingOrderId(null);
     }
   };
 
@@ -170,9 +249,19 @@ function Comandas() {
                       </td>
                       <td>{order.kitchenName || '-'}</td>
                       <td>
-                        <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => openOrderDetail(order)}>
-                          Ver detalle
-                        </button>
+                        <div className="d-flex gap-2 flex-wrap">
+                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => openOrderDetail(order)}>
+                            Ver detalle
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled={printingOrderId === order.id}
+                            onClick={() => handleReprintOrder(order)}
+                          >
+                            {printingOrderId === order.id ? 'Imprimiendo...' : 'Imprimir comanda'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -187,7 +276,19 @@ function Comandas() {
         <Modal
           title={`Comanda #${selectedOrder.id}`}
           onClose={() => setSelectedOrder(null)}
-          actions={<button type="button" className="touch-btn" onClick={() => setSelectedOrder(null)}>Cerrar</button>}
+          actions={(
+            <div className="d-flex gap-2">
+              <button
+                type="button"
+                className="touch-btn"
+                disabled={printingOrderId === selectedOrder.id}
+                onClick={() => handleReprintOrder(selectedOrder)}
+              >
+                {printingOrderId === selectedOrder.id ? 'Imprimiendo...' : 'Imprimir comanda'}
+              </button>
+              <button type="button" className="touch-btn" onClick={() => setSelectedOrder(null)}>Cerrar</button>
+            </div>
+          )}
         >
           {detailLoading ? (
             <div className="d-flex align-items-center gap-2 text-muted">
