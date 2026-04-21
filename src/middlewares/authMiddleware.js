@@ -2,6 +2,12 @@ const jwt = require('jsonwebtoken');
 const { jwt: jwtConfig } = require('../config/env');
 const AppError = require('../utils/appError');
 
+function normalizeRole(role) {
+  return String(role ?? '')
+    .trim()
+    .toUpperCase();
+}
+
 function authMiddleware(req, _res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return next(new AppError('Token requerido', 401));
@@ -11,7 +17,7 @@ function authMiddleware(req, _res, next) {
 
   try {
     const payload = jwt.verify(token, jwtConfig.secret);
-    req.user = payload;
+    req.user = { ...payload, role: normalizeRole(payload.role) };
     return next();
   } catch (_e) {
     return next(new AppError('Token inválido o expirado', 401));
@@ -19,10 +25,15 @@ function authMiddleware(req, _res, next) {
 }
 
 function roleMiddleware(...roles) {
+  const allowedRoles = roles.map(normalizeRole);
+
   return (req, _res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    const userRole = normalizeRole(req.user?.role);
+
+    if (!userRole || !allowedRoles.includes(userRole)) {
       return next(new AppError('No autorizado para este recurso', 403));
     }
+
     return next();
   };
 }
