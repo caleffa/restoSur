@@ -6,9 +6,9 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(roleMiddleware('ADMIN'));
 
-router.get('/users', controller.listUsers);
-router.post('/users', controller.createUser);
-router.put('/users/:id', controller.updateUser);
-router.delete('/users/:id', controller.deleteUser);
+router.get('', controller.listUsers);
+router.post('', controller.createUser);
+router.put('/:id', controller.updateUser);
+router.delete('/:id', controller.deleteUser);
 
 module.exports = router;

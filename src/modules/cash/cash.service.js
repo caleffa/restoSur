@@ -322,10 +322,6 @@ async function reports(filters) {
 }
 
 module.exports = {
-  listRegisters: (branchId) => repo.listRegisters(branchId),
-  createRegister,
-  updateRegister,
-  deleteRegister,
   openCash,
   closeCash,
   addIncome: (data, user) => addManualMovement('INGRESO', data, user),

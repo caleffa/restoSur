@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { jwt: jwtConfig } = require('../config/env');
 const AppError = require('../utils/appError');
+//const { PiColumnsPlusLeftDuotone } = require('react-icons/pi');
 
 function normalizeRole(role) {
   return String(role ?? '')
@@ -28,10 +29,16 @@ function roleMiddleware(...roles) {
   const allowedRoles = roles.map(normalizeRole);
 
   return (req, _res, next) => {
+
+    console.log('PATH:', req.originalUrl);
+    console.log('ROLES PERMITIDOS:', allowedRoles);
     const userRole = normalizeRole(req.user?.role);
 
     if (!userRole || !allowedRoles.includes(userRole)) {
-      return next(new AppError('No autorizado para este recurso', 403));
+      return next(new AppError(
+        `Rol requerido: (${allowedRoles.join(', ')}) | Usuario: (${userRole})`,
+        403
+      ));
     }
 
     return next();

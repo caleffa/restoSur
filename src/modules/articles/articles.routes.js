@@ -5,12 +5,12 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/articles', controller.listArticles);
-router.get('/articles/import/template', roleMiddleware('ADMIN'), controller.downloadImportTemplate);
-router.get('/articles/:id', controller.getArticleById);
-router.post('/articles', roleMiddleware('ADMIN'), controller.createArticle);
-router.post('/articles/import', roleMiddleware('ADMIN'), controller.importArticlesFromCsv);
-router.put('/articles/:id', roleMiddleware('ADMIN'), controller.updateArticle);
-router.delete('/articles/:id', roleMiddleware('ADMIN'), controller.deleteArticle);
+router.get('', controller.listArticles);
+router.get('/import/template', roleMiddleware('ADMIN'), controller.downloadImportTemplate);
+router.get('/:id', controller.getArticleById);
+router.post('', roleMiddleware('ADMIN'), controller.createArticle);
+router.post('/import', roleMiddleware('ADMIN'), controller.importArticlesFromCsv);
+router.put('/:id', roleMiddleware('ADMIN'), controller.updateArticle);
+router.delete('/:id', roleMiddleware('ADMIN'), controller.deleteArticle);
 
 module.exports = router;

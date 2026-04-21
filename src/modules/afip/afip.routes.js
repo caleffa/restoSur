@@ -5,11 +5,11 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/afip/config', roleMiddleware('ADMIN', 'CAJERO'), controller.getConfig);
-router.put('/afip/config', roleMiddleware('ADMIN'), controller.upsertConfig);
+router.get('/config', roleMiddleware('ADMIN', 'CAJERO'), controller.getConfig);
+router.put('/config', roleMiddleware('ADMIN'), controller.upsertConfig);
 
-router.get('/afip/caea', roleMiddleware('ADMIN', 'CAJERO'), controller.list);
-router.post('/afip/caea', roleMiddleware('ADMIN', 'CAJERO'), controller.create);
-router.post('/afip/caea/request', roleMiddleware('ADMIN', 'CAJERO'), controller.request);
+router.get('/caea', roleMiddleware('ADMIN', 'CAJERO'), controller.list);
+router.post('/caea', roleMiddleware('ADMIN', 'CAJERO'), controller.create);
+router.post('/caea/request', roleMiddleware('ADMIN', 'CAJERO'), controller.request);
 
 module.exports = router;

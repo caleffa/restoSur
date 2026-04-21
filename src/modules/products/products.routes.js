@@ -5,11 +5,11 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/products', controller.listProducts);
-router.get('/products/top', controller.listTopProducts);
-router.get('/products/:id', controller.getProductById);
-router.post('/products', roleMiddleware('ADMIN'), controller.createProduct);
-router.put('/products/:id', roleMiddleware('ADMIN'), controller.updateProduct);
-router.delete('/products/:id', roleMiddleware('ADMIN'), controller.deleteProduct);
+router.get('', controller.listProducts);
+router.get('/top', controller.listTopProducts);
+router.get('/:id', controller.getProductById);
+router.post('', roleMiddleware('ADMIN'), controller.createProduct);
+router.put('/:id', roleMiddleware('ADMIN'), controller.updateProduct);
+router.delete('/:id', roleMiddleware('ADMIN'), controller.deleteProduct);
 
 module.exports = router;

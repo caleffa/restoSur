@@ -5,9 +5,9 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/areas', controller.listAreas);
-router.post('/areas', roleMiddleware('ADMIN'), controller.createArea);
-router.put('/areas/:id', roleMiddleware('ADMIN'), controller.updateArea);
-router.delete('/areas/:id', roleMiddleware('ADMIN'), controller.deleteArea);
+router.get('', controller.listAreas);
+router.post('', roleMiddleware('ADMIN'), controller.createArea);
+router.put('/:id', roleMiddleware('ADMIN'), controller.updateArea);
+router.delete('/:id', roleMiddleware('ADMIN'), controller.deleteArea);
 
 module.exports = router;

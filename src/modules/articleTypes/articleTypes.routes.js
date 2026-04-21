@@ -5,9 +5,9 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/article-types', controller.listArticleTypes);
-router.post('/article-types', roleMiddleware('ADMIN'), controller.createArticleType);
-router.put('/article-types/:id', roleMiddleware('ADMIN'), controller.updateArticleType);
-router.delete('/article-types/:id', roleMiddleware('ADMIN'), controller.deleteArticleType);
+router.get('', controller.listArticleTypes);
+router.post('', roleMiddleware('ADMIN'), controller.createArticleType);
+router.put('/:id', roleMiddleware('ADMIN'), controller.updateArticleType);
+router.delete('/:id', roleMiddleware('ADMIN'), controller.deleteArticleType);
 
 module.exports = router;

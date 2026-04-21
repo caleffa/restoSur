@@ -5,9 +5,9 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/vat-types', controller.listVatTypes);
-router.post('/vat-types', roleMiddleware('ADMIN'), controller.createVatType);
-router.put('/vat-types/:id', roleMiddleware('ADMIN'), controller.updateVatType);
-router.delete('/vat-types/:id', roleMiddleware('ADMIN'), controller.deleteVatType);
+router.get('', controller.listVatTypes);
+router.post('', roleMiddleware('ADMIN'), controller.createVatType);
+router.put('/:id', roleMiddleware('ADMIN'), controller.updateVatType);
+router.delete('/:id', roleMiddleware('ADMIN'), controller.deleteVatType);
 
 module.exports = router;

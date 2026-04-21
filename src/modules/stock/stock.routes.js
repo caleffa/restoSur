@@ -5,8 +5,8 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/stock', controller.list);
-router.get('/stock/movements', controller.listMovements);
-router.post('/stock/movement', roleMiddleware('ADMIN', 'CAJERO'), controller.movement);
+router.get('', controller.list);
+router.get('/movements', controller.listMovements);
+router.post('/movement', roleMiddleware('ADMIN', 'CAJERO'), controller.movement);
 
 module.exports = router;

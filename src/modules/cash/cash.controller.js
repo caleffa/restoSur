@@ -1,14 +1,6 @@
 const asyncHandler = require('../../middlewares/asyncHandler');
 const service = require('./cash.service');
 
-const listRegisters = asyncHandler(async (req, res) => {
-  const branchId = Number(req.query.branchId || req.user.branchId);
-  res.json({ ok: true, data: await service.listRegisters(branchId) });
-});
-const createRegister = asyncHandler(async (req, res) => res.status(201).json({ ok: true, data: await service.createRegister(req.body, req.user) }));
-const updateRegister = asyncHandler(async (req, res) => res.json({ ok: true, data: await service.updateRegister(Number(req.params.id), req.body, req.user) }));
-const deleteRegister = asyncHandler(async (req, res) => res.json({ ok: true, data: await service.deleteRegister(Number(req.params.id)) }));
-
 const open = asyncHandler(async (req, res) => res.status(201).json({ ok: true, data: await service.openCash(req.body, req.user) }));
 const close = asyncHandler(async (req, res) => res.json({ ok: true, data: await service.closeCash(req.body, req.user) }));
 const current = asyncHandler(async (req, res) => {
@@ -51,10 +43,6 @@ const reports = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  listRegisters,
-  createRegister,
-  updateRegister,
-  deleteRegister,
   open,
   close,
   current,

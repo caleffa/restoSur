@@ -4,12 +4,12 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 
 const router = express.Router();
 router.use(authMiddleware);
-router.use(roleMiddleware('ADMIN', 'CAJERO', 'COCINA'));
+router.use(roleMiddleware('COCINA', 'ADMIN', 'CAJERO'));
 
-router.get('/comandas', controller.listComandas);
-router.get('/comandas/:id', controller.getComandaById);
-router.post('/comandas', controller.createComanda);
-router.patch('/comandas/:id/status', controller.updateComandaStatus);
-router.delete('/comandas/:id', controller.deleteComanda);
+router.get('', controller.listComandas);
+router.get('/:id', controller.getComandaById);
+router.post('', controller.createComanda);
+router.patch('/:id/status', controller.updateComandaStatus);
+router.delete('/:id', controller.deleteComanda);
 
 module.exports = router;
