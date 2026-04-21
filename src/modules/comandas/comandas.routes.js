@@ -4,7 +4,7 @@ const { authMiddleware, roleMiddleware } = require('../../middlewares/authMiddle
 
 const router = express.Router();
 router.use(authMiddleware);
-router.use(roleMiddleware('ADMIN', 'COCINA'));
+router.use(roleMiddleware('ADMIN', 'CAJERO', 'COCINA'));
 
 router.get('/comandas', controller.listComandas);
 router.get('/comandas/:id', controller.getComandaById);

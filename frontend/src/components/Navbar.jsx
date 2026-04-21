@@ -55,6 +55,9 @@ function Navbar() {
 
   // Cargar la configuración AFIP para obtener el logo
   useEffect(() => {
+    const canLoadAfipConfig = ['ADMIN', 'CAJERO'].includes(user?.role);
+    if (!canLoadAfipConfig) return;
+
     const loadLogo = async () => {
       try {
         const config = await getAfipConfig();
@@ -67,9 +70,9 @@ function Navbar() {
         setLogoError(true);
       }
     };
-    
+
     loadLogo();
-  }, []);
+  }, [user?.role]);
 
   const visibleMenuItems = activeParentPath
     ? menuItems.find((item) => item.path === activeParentPath)?.children || []
