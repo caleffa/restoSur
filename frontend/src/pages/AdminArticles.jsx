@@ -5,10 +5,12 @@ import SimpleDataTable from '../components/SimpleDataTable';
 import {
   createArticle,
   deleteArticle,
+  downloadArticlesImportTemplate,
   getArticleTypes,
   getArticles,
   getCategories,
   getMeasurementUnits,
+  importArticlesCsv,
   updateArticle,
 } from '../services/adminService';
 import { formatCurrency } from '../utils/formatters';
@@ -40,6 +42,8 @@ function AdminArticles() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -159,18 +163,86 @@ function AdminArticles() {
 
   const normalizeFlag = (value) => (value === 1 || value === true ? 'true' : 'false');
 
+  const handleImportCsv = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || importing) return;
+
+    try {
+      setImporting(true);
+      setError('');
+      setImportResult(null);
+      const csvContent = await file.text();
+      const result = await importArticlesCsv(csvContent);
+      setImportResult(result);
+      await loadData();
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || 'No se pudo importar el archivo CSV.');
+    } finally {
+      setImporting(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      setError('');
+      const blob = await downloadArticlesImportTemplate();
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'articulos-import-template.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || 'No se pudo descargar el CSV de ejemplo.');
+    }
+  };
+
   return (
     <div className="app-layout">
       <Navbar />
       <main className="content admin-management-screen">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2>Administración de artículos</h2>
-          <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
-            Nuevo artículo
-          </button>
+          <div className="admin-actions-row">
+            <button type="button" className="touch-btn" onClick={handleDownloadTemplate}>
+              Descargar CSV modelo
+            </button>
+            <label className="touch-btn" style={{ marginBottom: 0, cursor: 'pointer' }}>
+              {importing ? 'Importando...' : 'Importar CSV'}
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleImportCsv}
+                disabled={importing}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+              Nuevo artículo
+            </button>
+          </div>
         </div>
 
         {error && <p className="error-text">{error}</p>}
+        {importResult && (
+          <div className="table-card" style={{ marginBottom: '1rem' }}>
+            <strong>Resultado de importación:</strong>{' '}
+            {importResult.imported} importados / {importResult.errorsCount} con error (de {importResult.totalRows} filas).
+            {importResult.errorsCount > 0 && (
+              <ul style={{ marginTop: '0.5rem' }}>
+                {importResult.errors.slice(0, 10).map((item) => (
+                  <li key={`${item.line}-${item.sku || 'sin-sku'}`}>
+                    Línea {item.line}: {item.message}
+                  </li>
+                ))}
+                {importResult.errorsCount > 10 && <li>... y {importResult.errorsCount - 10} errores más.</li>}
+              </ul>
+            )}
+          </div>
+        )}
 
         <SimpleDataTable
           title="Artículos"
