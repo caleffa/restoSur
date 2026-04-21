@@ -15,7 +15,8 @@ async function list(branchId, conn) {
       s.business_name AS supplier_name,
       COUNT(poi.id) AS item_count,
       COALESCE(SUM(poi.quantity_ordered), 0) AS total_quantity_ordered,
-      COALESCE(SUM(poi.quantity_received), 0) AS total_quantity_received
+      COALESCE(SUM(poi.quantity_received), 0) AS total_quantity_received,
+      COALESCE(SUM(poi.quantity_ordered * poi.unit_cost), 0) AS total_cost
     FROM purchase_orders po
     JOIN suppliers s ON s.id = po.supplier_id
     LEFT JOIN purchase_order_items poi ON poi.purchase_order_id = po.id
@@ -58,6 +59,8 @@ async function listItems(orderId, conn, { forUpdate = false } = {}) {
       poi.article_id,
       poi.quantity_ordered,
       poi.quantity_received,
+      poi.unit_cost,
+      (poi.quantity_ordered * poi.unit_cost) AS line_total,
       a.name AS article_name,
       a.sku AS article_sku,
       mu.code AS measurement_unit_code
@@ -86,9 +89,9 @@ async function insertOrderItems(orderId, items, conn) {
   for (const item of items) {
     await query(
       `INSERT INTO purchase_order_items
-        (purchase_order_id, article_id, quantity_ordered, quantity_received)
-       VALUES (?, ?, ?, 0)`,
-      [orderId, item.articleId, item.quantity],
+        (purchase_order_id, article_id, quantity_ordered, quantity_received, unit_cost)
+       VALUES (?, ?, ?, 0, ?)`,
+      [orderId, item.articleId, item.quantity, item.unitCost],
       conn
     );
   }
@@ -96,10 +99,16 @@ async function insertOrderItems(orderId, items, conn) {
 
 async function insertReceipt(data, conn) {
   const result = await query(
-    `INSERT INTO purchase_order_receipts
-      (purchase_order_id, branch_id, user_id, notes)
-     VALUES (?, ?, ?, ?)`,
-    [data.purchaseOrderId, data.branchId, data.userId, data.notes || null],
+      `INSERT INTO purchase_order_receipts
+      (purchase_order_id, branch_id, user_id, supplier_document_number, notes)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      data.purchaseOrderId,
+      data.branchId,
+      data.userId,
+      data.supplierDocumentNumber || null,
+      data.notes || null,
+    ],
     conn
   );
   return result.insertId;
@@ -150,6 +159,17 @@ async function upsertStock(branchId, articleId, delta, conn) {
   );
 }
 
+async function updateArticleCost(articleId, unitCost, conn) {
+  await query(
+    `UPDATE articles
+     SET cost = ?,
+         updated_at = NOW()
+     WHERE id = ?`,
+    [unitCost, articleId],
+    conn
+  );
+}
+
 async function insertStockMovement(data, conn) {
   await query(
     `INSERT INTO stock_movements (branch_id, article_id, user_id, type, quantity, reason)
@@ -166,6 +186,7 @@ async function listReceipts(purchaseOrderId, conn) {
       r.purchase_order_id,
       r.branch_id,
       r.user_id,
+      r.supplier_document_number,
       r.notes,
       r.created_at,
       u.name AS user_name,
@@ -192,6 +213,7 @@ module.exports = {
   updateOrderItemReceived,
   updateOrderStatus,
   upsertStock,
+  updateArticleCost,
   insertStockMovement,
   listReceipts,
 };

@@ -25,8 +25,10 @@ function PurchaseOrderReception() {
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [orderDetail, setOrderDetail] = useState(null);
   const [receiptNotes, setReceiptNotes] = useState('');
+  const [supplierDocumentNumber, setSupplierDocumentNumber] = useState('');
   const [closeReason, setCloseReason] = useState('');
   const [receiveQtyByArticle, setReceiveQtyByArticle] = useState({});
+  const [unitCostByArticle, setUnitCostByArticle] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,11 @@ function PurchaseOrderReception() {
           ]),
         ),
       );
+      setUnitCostByArticle(
+        Object.fromEntries(
+          (detail.items || []).map((item) => [Number(item.article_id), String(item.unit_cost ?? '')]),
+        ),
+      );
       setError('');
     } catch (detailError) {
       setError(detailError?.response?.data?.message || 'No se pudo cargar el detalle de la orden.');
@@ -93,6 +100,7 @@ function PurchaseOrderReception() {
         .map((item) => ({
           articleId: Number(item.article_id),
           quantityReceived: Number(receiveQtyByArticle[Number(item.article_id)] || 0),
+          unitCost: Number(unitCostByArticle[Number(item.article_id)] || 0),
         }))
         .filter((item) => item.quantityReceived > 0);
 
@@ -103,10 +111,12 @@ function PurchaseOrderReception() {
 
       await receivePurchaseOrder(selectedOrderId, {
         notes: receiptNotes,
+        supplierDocumentNumber,
         items,
       });
 
       setReceiptNotes('');
+      setSupplierDocumentNumber('');
       setSuccess('Recepción registrada y stock actualizado correctamente.');
       await Promise.all([loadOrders(), loadOrderDetail(selectedOrderId)]);
     } catch (receiveError) {
@@ -160,6 +170,9 @@ function PurchaseOrderReception() {
               <p className="muted-text">
                 Estado actual: <strong>{statusLabel(orderDetail.status)}</strong>
               </p>
+              <p className="muted-text">
+                Costo total OC: <strong>$ {formatNumber(orderDetail.total_cost || 0, 2)}</strong>
+              </p>
 
               <form className="admin-table-form" onSubmit={onReceive}>
                 <div className="purchase-order-receive-grid">
@@ -185,9 +198,26 @@ function PurchaseOrderReception() {
                           setReceiveQtyByArticle((prev) => ({ ...prev, [Number(item.article_id)]: value }));
                         }}
                       />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={unitCostByArticle[Number(item.article_id)] || ''}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setUnitCostByArticle((prev) => ({ ...prev, [Number(item.article_id)]: value }));
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
+
+                <input
+                  type="text"
+                  placeholder="N° remito o factura proveedor (opcional)"
+                  value={supplierDocumentNumber}
+                  onChange={(event) => setSupplierDocumentNumber(event.target.value)}
+                />
 
                 <input
                   type="text"

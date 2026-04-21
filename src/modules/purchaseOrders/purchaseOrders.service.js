@@ -21,6 +21,14 @@ function normalizePositiveNumber(value, label) {
   return num;
 }
 
+function normalizeNonNegativeNumber(value, label) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) {
+    throw new AppError(`${label} inválido`, 400);
+  }
+  return num;
+}
+
 function normalizeCreatePayload(data, user) {
   const branchId = normalizePositiveInt(data.branchId || user.branchId, 'Sucursal');
   const supplierId = normalizePositiveInt(data.supplierId, 'Proveedor');
@@ -33,11 +41,12 @@ function normalizeCreatePayload(data, user) {
   for (const item of rawItems) {
     const articleId = normalizePositiveInt(item.articleId, 'Artículo');
     const quantity = normalizePositiveNumber(item.quantity, 'Cantidad');
+    const unitCost = normalizeNonNegativeNumber(item.unitCost, 'Costo unitario');
 
     if (dedup.has(articleId)) {
       throw new AppError('No se puede repetir el mismo artículo en la orden de compra', 400);
     }
-    dedup.set(articleId, { articleId, quantity });
+    dedup.set(articleId, { articleId, quantity, unitCost });
   }
 
   return {
@@ -50,6 +59,9 @@ function normalizeCreatePayload(data, user) {
 
 function normalizeReceiptPayload(data) {
   const notes = String(data.notes || '').trim() || null;
+  const supplierDocumentNumber = String(
+    data.supplierDocumentNumber || data.receiptNumber || data.invoiceNumber || ''
+  ).trim() || null;
   const rawItems = Array.isArray(data.items) ? data.items : [];
   if (!rawItems.length) {
     throw new AppError('Debe indicar al menos un artículo para recepcionar', 400);
@@ -59,15 +71,20 @@ function normalizeReceiptPayload(data) {
   for (const item of rawItems) {
     const articleId = normalizePositiveInt(item.articleId, 'Artículo');
     const quantity = normalizePositiveNumber(item.quantityReceived ?? item.quantity, 'Cantidad a recepcionar');
+    const unitCostRaw = item.unitCost;
+    const unitCost = unitCostRaw === undefined || unitCostRaw === null || unitCostRaw === ''
+      ? null
+      : normalizeNonNegativeNumber(unitCostRaw, 'Costo unitario');
 
     if (normalized.has(articleId)) {
       throw new AppError('No se puede repetir el mismo artículo en una recepción', 400);
     }
-    normalized.set(articleId, { articleId, quantityReceived: quantity });
+    normalized.set(articleId, { articleId, quantityReceived: quantity, unitCost });
   }
 
   return {
     notes,
+    supplierDocumentNumber,
     items: Array.from(normalized.values()),
   };
 }
@@ -76,19 +93,25 @@ function summarizeOrder(order, items, receipts) {
   const hydratedItems = items.map((item) => {
     const ordered = Number(item.quantity_ordered);
     const received = Number(item.quantity_received);
+    const unitCost = Number(item.unit_cost || 0);
     const pending = Math.max(0, ordered - received);
     return {
       ...item,
       quantity_ordered: ordered,
       quantity_received: received,
       quantity_pending: pending,
+      unit_cost: unitCost,
+      line_total: ordered * unitCost,
     };
   });
+
+  const totalCost = hydratedItems.reduce((acc, item) => acc + Number(item.line_total || 0), 0);
 
   return {
     ...order,
     items: hydratedItems,
     receipts,
+    total_cost: totalCost,
   };
 }
 
@@ -182,6 +205,7 @@ async function receive(orderId, data, user) {
         purchaseOrderItemId: Number(orderItem.id),
         articleId: item.articleId,
         quantityReceived: item.quantityReceived,
+        unitCost: item.unitCost === null ? Number(orderItem.unit_cost || 0) : item.unitCost,
       };
     });
 
@@ -191,6 +215,7 @@ async function receive(orderId, data, user) {
         branchId,
         userId: user.id,
         notes: payload.notes,
+        supplierDocumentNumber: payload.supplierDocumentNumber,
       },
       conn
     );
@@ -200,6 +225,7 @@ async function receive(orderId, data, user) {
     for (const item of normalizedReceiptItems) {
       await repo.updateOrderItemReceived(item.purchaseOrderItemId, item.quantityReceived, conn);
       await repo.upsertStock(branchId, item.articleId, item.quantityReceived, conn);
+      await repo.updateArticleCost(item.articleId, item.unitCost, conn);
       await repo.insertStockMovement(
         {
           branchId,
