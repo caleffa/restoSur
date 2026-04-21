@@ -196,6 +196,7 @@ function printSaleSummaryTicket({ saleData, tableId, total }) {
       </head>
       <body>
         <h1>RESUMEN DE VENTA</h1>
+        <p>Comprobante no válido como factura.</p>
         <p><strong>Mesa:</strong> ${escapeHtml(tableLabel)}</p>
         <p><strong>Venta:</strong> #${escapeHtml(saleId)}</p>
         <p><strong>Mozo:</strong> ${escapeHtml(waiterLabel)}</p>
