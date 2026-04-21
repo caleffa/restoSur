@@ -491,7 +491,7 @@ function POS() {
     printWindow.print();
   }, [afipConfig]);
 
-  const handleCloseSale = useCallback(async ({ paymentMethod, emitFiscalTicket, invoiceType, authorizationType, caeaId }) => {
+  const handleCloseSale = useCallback(async ({ paymentMethod, paymentSplits, emitFiscalTicket, invoiceType, authorizationType, caeaId }) => {
     if (!sale || saving) return;
     if (!sale?.items?.length) {
       setError('No se puede cobrar una venta sin productos.');
@@ -505,7 +505,7 @@ function POS() {
 
     try {
       setSaving(true);
-      await paySale(sale.id, { paymentMethod });
+      await paySale(sale.id, { paymentMethod, paymentSplits });
       await closeSale(sale.id);
 
       let ticketMessage = 'Pago realizado correctamente';
@@ -523,7 +523,7 @@ function POS() {
             total: totals.total,
           },
           invoiceData: invoice,
-          paymentMethod,
+          paymentMethod: 'TRANSFERENCIA',
         });
         ticketMessage = `Pago realizado y ticket ${invoice.authorizationType} emitido`;
       }

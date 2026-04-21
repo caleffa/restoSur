@@ -13,6 +13,49 @@ function validateSaleId(saleId) {
   }
 }
 
+const ALLOWED_PAYMENT_METHODS = new Set(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA']);
+
+function roundMoney(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+function normalizePaymentSplits(total, paymentData = {}) {
+  const rawSplits = Array.isArray(paymentData.paymentSplits) ? paymentData.paymentSplits : [];
+
+  if (!rawSplits.length) {
+    const paymentMethod = String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase();
+    if (!ALLOWED_PAYMENT_METHODS.has(paymentMethod)) {
+      throw new AppError('Método de pago inválido', 400);
+    }
+    return [{ paymentMethod, amount: roundMoney(total) }];
+  }
+
+  const normalizedSplits = rawSplits.map((entry) => ({
+    paymentMethod: String(entry?.paymentMethod || '').toUpperCase(),
+    amount: roundMoney(entry?.amount),
+  }));
+
+  if (!normalizedSplits.length) {
+    throw new AppError('Debe seleccionar al menos un medio de pago', 400);
+  }
+
+  for (const split of normalizedSplits) {
+    if (!ALLOWED_PAYMENT_METHODS.has(split.paymentMethod)) {
+      throw new AppError('Método de pago inválido en división', 400);
+    }
+    if (!Number.isFinite(split.amount) || split.amount <= 0) {
+      throw new AppError('Los montos de la división deben ser mayores a 0', 400);
+    }
+  }
+
+  const splitSum = roundMoney(normalizedSplits.reduce((acc, item) => acc + Number(item.amount || 0), 0));
+  if (splitSum !== roundMoney(total)) {
+    throw new AppError('La suma de subtotales debe ser igual al total', 400);
+  }
+
+  return normalizedSplits;
+}
+
 async function createSale(data, user) {
   const hasExplicitWaiter = data.waiterId !== undefined && data.waiterId !== null && `${data.waiterId}`.trim() !== '';
   const requestedWaiterId = hasExplicitWaiter ? Number(data.waiterId) : null;
@@ -278,30 +321,32 @@ async function paySale(saleId, user, paymentData = {}) {
       );
     }
 
-    const paymentMethod = String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase();
+    const paymentSplits = normalizePaymentSplits(total, paymentData);
 
-    await cashRepo.insertMovement(
-      {
-        shiftId: shift.id,
-        registerId: shift.register_id,
-        branchId: sale.branch_id,
-        saleId,
-        userId: user.id,
-        type: 'VENTA',
-        amount: total,
-        paymentMethod,
-        reference: `sale-${saleId}`,
-        reason: `Cobro venta ${saleId}`,
-        affectsBalance: paymentMethod === 'EFECTIVO',
-      },
-      conn
-    );
+    for (const split of paymentSplits) {
+      await cashRepo.insertMovement(
+        {
+          shiftId: shift.id,
+          registerId: shift.register_id,
+          branchId: sale.branch_id,
+          saleId,
+          userId: user.id,
+          type: 'VENTA',
+          amount: split.amount,
+          paymentMethod: split.paymentMethod,
+          reference: `sale-${saleId}`,
+          reason: `Cobro venta ${saleId}`,
+          affectsBalance: split.paymentMethod === 'EFECTIVO',
+        },
+        conn
+      );
+    }
 
     await salesRepo.updateSaleTotalsAndStatus(saleId, total, 'PAGADA', conn);
     await salesRepo.markTableOccupied(sale.table_id, 'LIBRE', conn);
 
     await conn.commit();
-    return { saleId, total, status: 'PAGADA', tableStatus: 'LIBRE' };
+    return { saleId, total, status: 'PAGADA', tableStatus: 'LIBRE', paymentSplits };
   } catch (e) {
     await conn.rollback();
     throw e;
