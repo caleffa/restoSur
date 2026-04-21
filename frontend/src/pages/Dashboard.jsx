@@ -228,6 +228,33 @@ function Dashboard() {
     [areas]
   );
 
+  const kitchenQuickActions = useMemo(
+    () => ([
+      {
+        id: 'comandas',
+        title: 'Comandas activas',
+        description: 'Monitoreá y actualizá el estado de preparación en tiempo real.',
+        cta: 'Ver comandas',
+        path: '/comandas',
+      },
+      {
+        id: 'productos',
+        title: 'Productos',
+        description: 'Administrá productos para asegurar disponibilidad en cocina.',
+        cta: 'Gestionar productos',
+        path: '/admin/management/products',
+      },
+      {
+        id: 'recetas',
+        title: 'Recetas',
+        description: 'Actualizá ingredientes, cantidades y procesos de elaboración.',
+        cta: 'Gestionar recetas',
+        path: '/admin/management/recipes',
+      },
+    ]),
+    []
+  );
+
   return (
     
     <div className="app-layout">
@@ -237,85 +264,114 @@ function Dashboard() {
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
           <div>
             <h2 className="mb-1">Dashboard Operativo</h2>
-            <p className="text-muted mb-0">Bienvenido, {user?.name}. Vista en tiempo real para piso y caja.</p>
+            <p className="text-muted mb-0">
+              Bienvenido, {user?.name}. {isKitchenRole
+                ? 'Vista enfocada en comandas y gestión de cocina.'
+                : 'Vista en tiempo real para piso y caja.'}
+            </p>
           </div>
           <span className="badge rounded-pill text-bg-light">Actualizado: {new Date().toLocaleTimeString('es-AR')}</span>
         </div>
 
         {error ? <div className="alert alert-danger py-2">{error}</div> : null}
 
-        <StatsCards summary={summary} loading={loading} />
+        {!isKitchenRole ? <StatsCards summary={summary} loading={loading} /> : null}
 
         <section className="dashboard-main-grid mt-3">
           {isKitchenRole ? (
-            <KitchenOrdersGrid
-              orders={kitchenOrders}
-              loading={loading}
-              onSelectOrder={handleKitchenOrderSelect}
-            />
-          ) : (
-            <TablesGrid
-              tables={tables}
-              loading={loading}
-              busyTableId={busyTableId}
-              onTableClick={handleTableClick}
-              areaOptions={areaOptions}
-              selectedArea={selectedArea}
-              onAreaChange={setSelectedArea}
-            />
-          )}
-
-          <div className="dashboard-side-grid">
-            <SalesList sales={openSales} loading={loading} onSaleClick={(sale) => navigate(`/pos/${sale.tableId}`)} />
-            <TopProducts products={topProducts} loading={loading} />
-          </div>
-        </section>
-
-        <section className="dashboard-bottom-grid mt-3">
-          <article className="dashboard-card shadow-sm">
-            <h3 className="section-title">Ventas por hora (hoy)</h3>
-            {loading ? (
-              <div className="d-flex align-items-center gap-2 text-muted">
-                <div className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                Cargando gráfico...
-              </div>
-            ) : (
-              <div className="sales-chart">
-                {salesByHour.map((entry) => (
-                  <div key={entry.hour} className="chart-bar-wrap">
-                    <div
-                      className="chart-bar"
-                      style={{ height: `${Math.max((entry.total / maxHourlySale) * 140, 10)}px` }}
-                      title={`${entry.hour}: ${entry.total}`}
-                    />
-                    <small className="text-muted">{entry.hour}</small>
+            <>
+              <KitchenOrdersGrid
+                orders={kitchenOrders}
+                loading={loading}
+                onSelectOrder={handleKitchenOrderSelect}
+              />
+              <div className="dashboard-side-grid">
+                <article className="dashboard-card shadow-sm">
+                  <h3 className="section-title">Acciones rápidas de cocina</h3>
+                  <div className="d-flex flex-column gap-2">
+                    {kitchenQuickActions.map((action) => (
+                      <button
+                        key={action.id}
+                        type="button"
+                        className="touch-btn text-start d-flex flex-column align-items-start"
+                        onClick={() => navigate(action.path)}
+                      >
+                        <strong>{action.title}</strong>
+                        <small className="text-muted mb-1">{action.description}</small>
+                        <span className="badge text-bg-dark">{action.cta}</span>
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </article>
               </div>
-            )}
-          </article>
+            </>
+          ) : (
+            <>
+              <TablesGrid
+                tables={tables}
+                loading={loading}
+                busyTableId={busyTableId}
+                onTableClick={handleTableClick}
+                areaOptions={areaOptions}
+                selectedArea={selectedArea}
+                onAreaChange={setSelectedArea}
+              />
 
-          <article className="dashboard-card shadow-sm">
-            <h3 className="section-title">Alertas</h3>
-            <ul className="alerts-list">
-              <li>
-                <strong>Sin stock:</strong> {alerts.outOfStockProducts.length > 0
-                  ? alerts.outOfStockProducts.map((product) => product.name).join(', ')
-                  : 'Sin alertas'}
-              </li>
-              <li>
-                <strong>Cuentas pendientes:</strong> {alerts.pendingBillTables.length > 0
-                  ? alerts.pendingBillTables.map((table) => table.name).join(', ')
-                  : 'Sin cuentas pendientes'}
-              </li>
-              <li>
-                <strong>Pedidos demorados (&gt;45 min):</strong> {alerts.delayedOrders.length > 0
-                  ? `${alerts.delayedOrders.length} mesa(s) con demora`
-                  : 'Sin demoras detectadas'}
-              </li>
-            </ul>
-          </article>
+              <div className="dashboard-side-grid">
+                <SalesList sales={openSales} loading={loading} onSaleClick={(sale) => navigate(`/pos/${sale.tableId}`)} />
+                <TopProducts products={topProducts} loading={loading} />
+              </div>
+            </>
+          )}
         </section>
+
+        {!isKitchenRole ? (
+          <section className="dashboard-bottom-grid mt-3">
+            <article className="dashboard-card shadow-sm">
+              <h3 className="section-title">Ventas por hora (hoy)</h3>
+              {loading ? (
+                <div className="d-flex align-items-center gap-2 text-muted">
+                  <div className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  Cargando gráfico...
+                </div>
+              ) : (
+                <div className="sales-chart">
+                  {salesByHour.map((entry) => (
+                    <div key={entry.hour} className="chart-bar-wrap">
+                      <div
+                        className="chart-bar"
+                        style={{ height: `${Math.max((entry.total / maxHourlySale) * 140, 10)}px` }}
+                        title={`${entry.hour}: ${entry.total}`}
+                      />
+                      <small className="text-muted">{entry.hour}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </article>
+
+            <article className="dashboard-card shadow-sm">
+              <h3 className="section-title">Alertas</h3>
+              <ul className="alerts-list">
+                <li>
+                  <strong>Sin stock:</strong> {alerts.outOfStockProducts.length > 0
+                    ? alerts.outOfStockProducts.map((product) => product.name).join(', ')
+                    : 'Sin alertas'}
+                </li>
+                <li>
+                  <strong>Cuentas pendientes:</strong> {alerts.pendingBillTables.length > 0
+                    ? alerts.pendingBillTables.map((table) => table.name).join(', ')
+                    : 'Sin cuentas pendientes'}
+                </li>
+                <li>
+                  <strong>Pedidos demorados (&gt;45 min):</strong> {alerts.delayedOrders.length > 0
+                    ? `${alerts.delayedOrders.length} mesa(s) con demora`
+                    : 'Sin demoras detectadas'}
+                </li>
+              </ul>
+            </article>
+          </section>
+        ) : null}
 
         {selectedKitchenOrder ? (
           <KitchenOrderModal
@@ -324,7 +380,6 @@ function Dashboard() {
             statusUpdating={kitchenStatusLoading}
             onClose={() => {
               setSelectedKitchenOrder(null);
-              setSelectedSaleDetail(null);
             }}
             onChangeStatus={handleKitchenStatusChange}
           />

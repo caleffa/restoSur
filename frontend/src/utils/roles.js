@@ -102,6 +102,8 @@ export const MENU_BY_ROLE = {
   [ROLES.COCINA]: [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Comandas', path: '/comandas' },
+    { label: 'Productos', path: '/admin/management/products' },
+    { label: 'Recetas', path: '/admin/management/recipes' },
   ],
 };
 
