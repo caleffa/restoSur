@@ -4,14 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0',  // Escucha en todas las interfaces de red
+    host: true,
     port: 5173,
-    strictPort: true,  // Si el puerto está ocupado, no intenta con otro
-    // Opcional: Configurar CORS para desarrollo
+    strictPort: true,
     cors: true,
-    hmr: {
-      protocol: 'ws',
-      clientPort: 5173,
-    },
   },
 });
