@@ -12,7 +12,7 @@ router.get('/movements', roleMiddleware('ADMIN', 'CAJERO'), controller.movements
 router.get('/:id/movements', roleMiddleware('ADMIN', 'CAJERO'), controller.movements);
 router.post('/income', roleMiddleware('ADMIN', 'CAJERO'), controller.income);
 router.post('/expense', roleMiddleware('ADMIN', 'CAJERO'), controller.expense);
-router.post('/register-sale', roleMiddleware('ADMIN', 'CAJERO', 'MOZO'), controller.registerSale);
+router.post('/register-sale', roleMiddleware('ADMIN', 'CAJERO'), controller.registerSale);
 
 router.get('/shifts', roleMiddleware('ADMIN', 'CAJERO'), controller.shifts);
 router.get('/shifts/:id', roleMiddleware('ADMIN', 'CAJERO'), controller.shiftById);

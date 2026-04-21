@@ -11,4 +11,9 @@ const getSalesByHour = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
-module.exports = { getSummary, getSalesByHour };
+const getWaiterDashboard = asyncHandler(async (req, res) => {
+  const data = await service.getWaiterDashboard(Number(req.user.branchId), Number(req.user.id));
+  res.json({ ok: true, data });
+});
+
+module.exports = { getSummary, getSalesByHour, getWaiterDashboard };
