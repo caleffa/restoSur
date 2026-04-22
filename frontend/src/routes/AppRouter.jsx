@@ -20,6 +20,7 @@ import Cash from '../pages/Cash';
 import CashReport from '../pages/CashReport';
 import Comandas from '../pages/Comandas';
 import SalesManagement from '../pages/SalesManagement';
+import AdminSalesReport from '../pages/AdminSalesReport';
 import AdminInvoices from '../pages/AdminInvoices';
 import AdminRecipes from '../pages/AdminRecipes';
 import AdminKitchenTypes from '../pages/AdminKitchenTypes';
@@ -294,6 +295,15 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
             <SalesManagement />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/admin/reports/sales"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <AdminSalesReport />
           </ProtectedRoute>
         )}
       />

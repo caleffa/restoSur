@@ -70,6 +70,7 @@ export const MENU_BY_ROLE = {
       path: '/sales/management',
       children: [
         { label: 'Gestión ventas', path: '/sales/management' },
+        { label: 'Reporte ventas', path: '/admin/reports/sales' },
         { label: 'Facturación', path: '/admin/management/invoices' },
       ],
     },
