@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
@@ -60,11 +60,6 @@ function AdminSuppliers() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const articleMap = useMemo(
-    () => Object.fromEntries(articles.map((item) => [Number(item.id), `${item.name} (${item.sku})`])),
-    [articles],
-  );
 
   const save = async (event) => {
     event.preventDefault();
@@ -142,11 +137,6 @@ function AdminSuppliers() {
             { key: 'business_name', label: 'Razón social', accessor: (row) => row.business_name, sortable: true },
             { key: 'cuit', label: 'CUIT', accessor: (row) => row.cuit || '-' },
             { key: 'vat_type_name', label: 'Condición IVA', accessor: (row) => row.vat_type_name || '-' },
-            { key: 'articles', label: 'Artículos', accessor: (row) => {
-              const articleIds = parseArticleIds(row.article_ids);
-              if (!articleIds.length) return '-';
-              return articleIds.slice(0, 3).map((id) => articleMap[id] || `#${id}`).join(', ') + (articleIds.length > 3 ? ` (+${articleIds.length - 3})` : '');
-            } },
             { key: 'phone', label: 'Teléfono', accessor: (row) => row.phone || '-' },
             {
               key: 'actions',
