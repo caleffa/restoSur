@@ -23,6 +23,7 @@ import {
   paySale,
   persistLocalSale,
   createInvoice,
+  triggerCashDrawerSignal,
   getWaiters,
   updateSaleWaiter,
   updateTableStatus,
@@ -688,7 +689,17 @@ function POS() {
     printWindow.print();
   }, [afipConfig]);
 
-  const handleCloseSale = useCallback(async ({ paymentMethod, paymentSplits, emitFiscalTicket, invoiceType, authorizationType, caeaId }) => {
+  const handleCloseSale = useCallback(async ({
+    paymentMethod,
+    paymentSplits,
+    emitFiscalTicket,
+    invoiceType,
+    authorizationType,
+    caeaId,
+    cashReceived,
+    changeAmount,
+    openCashDrawer,
+  }) => {
     if (!sale || saving) return;
     if (!sale?.items?.length) {
       setError('No se puede cobrar una venta sin productos.');
@@ -704,6 +715,14 @@ function POS() {
       setSaving(true);
       await paySale(sale.id, { paymentMethod, paymentSplits });
       await closeSale(sale.id);
+
+      if (openCashDrawer) {
+        await triggerCashDrawerSignal(sale.id, {
+          paymentMethod,
+          cashReceived,
+          changeAmount,
+        });
+      }
 
       let ticketMessage = 'Pago realizado correctamente';
       if (emitFiscalTicket) {

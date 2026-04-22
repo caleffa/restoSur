@@ -36,6 +36,11 @@ const closeSale = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const openDrawer = asyncHandler(async (req, res) => {
+  const data = await service.openDrawer(Number(req.params.id), req.user, req.body || {});
+  res.json({ ok: true, data });
+});
+
 const cancelSale = asyncHandler(async (req, res) => {
   const data = await service.cancelSale(Number(req.params.id));
   res.json({ ok: true, data });
@@ -110,6 +115,7 @@ module.exports = {
   requestBill,
   paySale,
   closeSale,
+  openDrawer,
   cancelSale,
   getById,
   getByTable,

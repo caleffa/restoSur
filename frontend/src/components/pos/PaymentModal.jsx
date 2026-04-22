@@ -38,6 +38,8 @@ function PaymentModal({
   const [invoiceType, setInvoiceType] = useState('B');
   const [authorizationType, setAuthorizationType] = useState('CAE');
   const [caeaId, setCaeaId] = useState('');
+  const [cashReceived, setCashReceived] = useState('');
+  const [confirmingCashPayment, setConfirmingCashPayment] = useState(false);
 
   const formattedTotal = useMemo(() => formatCurrency(total || 0), [total]);
 
@@ -57,9 +59,47 @@ function PaymentModal({
   const hasInvalidSplitAmounts = selectedSplits.some((item) => !Number.isFinite(item.amount) || item.amount <= 0);
   const hasSelectedSplit = selectedSplits.length > 0;
   const splitMatchesTotal = roundMoney(total || 0) === splitTotal;
-  const canConfirm = hasItems
+
+  const isSingleCashPayment = !splitMode && paymentMethod === 'EFECTIVO';
+  const numericCashReceived = roundMoney(cashReceived || 0);
+  const cashChange = roundMoney(numericCashReceived - Number(total || 0));
+  const hasValidCashReceived = isSingleCashPayment && Number.isFinite(numericCashReceived) && numericCashReceived >= roundMoney(total || 0);
+
+  const baseCanConfirm = hasItems
     && confirmChecked
     && (!splitMode || (hasSelectedSplit && !hasInvalidSplitAmounts && splitMatchesTotal));
+
+  const canConfirm = baseCanConfirm && (!confirmingCashPayment || hasValidCashReceived);
+
+  const paymentPayload = {
+    paymentMethod,
+    paymentSplits: splitMode ? selectedSplits : null,
+    emitFiscalTicket,
+    invoiceType,
+    authorizationType,
+    caeaId: authorizationType === 'CAEA' ? Number(caeaId) : null,
+    cashReceived: isSingleCashPayment && hasValidCashReceived ? numericCashReceived : null,
+    changeAmount: isSingleCashPayment && hasValidCashReceived ? cashChange : null,
+    openCashDrawer: isSingleCashPayment,
+  };
+
+  const handlePrimaryAction = () => {
+    if (!isSingleCashPayment) {
+      onConfirm(paymentPayload);
+      return;
+    }
+
+    if (!confirmingCashPayment) {
+      setConfirmingCashPayment(true);
+      return;
+    }
+
+    if (!hasValidCashReceived) {
+      return;
+    }
+
+    onConfirm(paymentPayload);
+  };
 
   return (
     <Modal
@@ -72,16 +112,9 @@ function PaymentModal({
             type="button"
             className="btn btn-primary"
             disabled={loading || !canConfirm}
-            onClick={() => onConfirm({
-              paymentMethod,
-              paymentSplits: splitMode ? selectedSplits : null,
-              emitFiscalTicket,
-              invoiceType,
-              authorizationType,
-              caeaId: authorizationType === 'CAEA' ? Number(caeaId) : null,
-            })}
+            onClick={handlePrimaryAction}
           >
-            Confirmar pago
+            {isSingleCashPayment && confirmingCashPayment ? 'Finalizar cobro' : 'Confirmar pago'}
           </button>
         </>
       )}
@@ -98,7 +131,11 @@ function PaymentModal({
           <button
             type="button"
             className={`btn ${splitMode ? 'btn-secondary' : 'btn-outline-secondary'}`}
-            onClick={() => setSplitMode((prev) => !prev)}
+            onClick={() => {
+              setSplitMode((prev) => !prev);
+              setConfirmingCashPayment(false);
+              setCashReceived('');
+            }}
             disabled={loading}
           >
             {splitMode ? 'Quitar división' : 'Dividir'}
@@ -107,7 +144,15 @@ function PaymentModal({
           {!splitMode && (
             <div>
               <label className="form-label">Método de pago</label>
-              <select className="form-select" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}>
+              <select
+                className="form-select"
+                value={paymentMethod}
+                onChange={(event) => {
+                  setPaymentMethod(event.target.value);
+                  setConfirmingCashPayment(false);
+                  setCashReceived('');
+                }}
+              >
                 {METHODS.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
               </select>
             </div>
@@ -147,6 +192,32 @@ function PaymentModal({
               {hasInvalidSplitAmounts && <small className="text-danger">Todos los montos deben ser mayores a 0.</small>}
               {!splitMatchesTotal && hasSelectedSplit && !hasInvalidSplitAmounts && (
                 <small className="text-danger">La suma de subtotales debe ser igual al total.</small>
+              )}
+            </div>
+          )}
+
+          {isSingleCashPayment && confirmingCashPayment && (
+            <div className="border rounded p-2 d-grid gap-2">
+              <p className="mb-0 fw-semibold">Pago en efectivo</p>
+              <div>
+                <label className="form-label mb-1">Monto recibido</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="form-control"
+                  value={cashReceived}
+                  onChange={(event) => setCashReceived(event.target.value)}
+                  placeholder="Ingresar monto"
+                />
+              </div>
+              {cashReceived !== '' && (
+                <small className={hasValidCashReceived ? 'text-success' : 'text-danger'}>
+                  Vuelto: {formatCurrency(Math.max(cashChange, 0))}
+                </small>
+              )}
+              {!hasValidCashReceived && cashReceived !== '' && (
+                <small className="text-danger">El monto recibido debe ser igual o mayor al total.</small>
               )}
             </div>
           )}
