@@ -66,7 +66,7 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
   };
 
   return (
-    <section className="admin-card">
+    <section className="admin-card simple-data-table">
       <div className="admin-table-toolbar">
         <h3>{title}</h3>
         <input
