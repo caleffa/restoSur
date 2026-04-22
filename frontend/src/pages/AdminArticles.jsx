@@ -273,6 +273,12 @@ function AdminArticles() {
               options: articleTypes.map((item) => ({ value: String(item.id), label: item.name })),
             },
             {
+              key: 'supplier',
+              label: 'Proveedor',
+              accessor: (row) => String(row.supplier_id ?? row.supplierId ?? ''),
+              options: suppliers.map((item) => ({ value: String(item.id), label: item.business_name })),
+            },
+            {
               key: 'forSale',
               label: 'Para venta',
               accessor: (row) => normalizeFlag(row.for_sale ?? row.forSale),
