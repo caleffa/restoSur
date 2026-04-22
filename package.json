@@ -10,7 +10,8 @@
     "dev:front": "npm run dev --prefix frontend",
     "start": "node src/server.js",
     "lint": "echo 'Sin linter configurado'",
-    "check": "node --check src/server.js"
+    "check": "node --check src/server.js",
+    "seed:operacion": "node scripts/generateOperationalData.js 60"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

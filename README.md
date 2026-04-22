@@ -26,6 +26,20 @@ mysql -u root -p < sql/schema.sql
 
 > Si la base ya existía de una versión anterior, al iniciar el backend se auto-crean las tablas de caja faltantes (`cash_registers`, `cash_shifts`, `cash_movements`) para evitar errores 500 por tablas inexistentes.
 
+
+## Datos demo de operación (60 días)
+Para cargar datos históricos con patrón realista (almuerzo/cena, fines de semana, ventas, compras y movimientos de caja/stock):
+
+```bash
+npm run seed:operacion
+```
+
+Opcionalmente se puede indicar cantidad de días (máximo 180):
+
+```bash
+node scripts/generateOperationalData.js 90
+```
+
 ## Levantar servidor
 ```bash
 npm run dev
