@@ -83,6 +83,12 @@ function AdminPurchaseOrders() {
       }));
   }, [articles, form.supplierId, suppliers]);
 
+  const orderTotalCost = useMemo(() => form.items.reduce((total, item) => {
+    const quantity = Number(item.quantity) || 0;
+    const unitCost = Number(item.unitCost) || 0;
+    return total + (quantity * unitCost);
+  }, 0), [form.items]);
+
   const addItemRow = () => {
     setForm((prev) => ({ ...prev, items: [...prev.items, { articleId: '', quantity: '', unitCost: '' }] }));
   };
@@ -224,6 +230,16 @@ function AdminPurchaseOrders() {
                   </button>
                 </div>
               ))}
+            </div>
+
+            <div className="purchase-order-total-row">
+              <label htmlFor="purchase-order-total">Total estimado</label>
+              <input
+                id="purchase-order-total"
+                type="text"
+                value={`$ ${formatNumber(orderTotalCost, 2)}`}
+                readOnly
+              />
             </div>
 
             <div className="admin-actions-row">
