@@ -409,6 +409,20 @@ async function ensureCommerceSchema() {
   );
 
   await query(
+    `CREATE TABLE IF NOT EXISTS supplier_articles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      supplier_id INT NOT NULL,
+      article_id INT NOT NULL,
+      is_default TINYINT(1) NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_supplier_article (supplier_id, article_id),
+      KEY idx_supplier_articles_article (article_id),
+      FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
+      FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+    )`
+  );
+
+  await query(
     `CREATE TABLE IF NOT EXISTS customers (
       id INT AUTO_INCREMENT PRIMARY KEY,
       branch_id INT NOT NULL,

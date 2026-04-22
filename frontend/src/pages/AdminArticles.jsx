@@ -10,6 +10,7 @@ import {
   getArticles,
   getCategories,
   getMeasurementUnits,
+  getSuppliers,
   importArticlesCsv,
   updateArticle,
 } from '../services/adminService';
@@ -22,6 +23,7 @@ const initialForm = {
   articleTypeId: '',
   measurementUnitId: '',
   categoryId: '',
+  supplierId: '',
   cost: '',
   salePrice: '',
   managesStock: true,
@@ -36,6 +38,7 @@ function AdminArticles() {
   const [articleTypes, setArticleTypes] = useState([]);
   const [measurementUnits, setMeasurementUnits] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -47,16 +50,18 @@ function AdminArticles() {
 
   const loadData = useCallback(async () => {
     try {
-      const [articlesData, articleTypesData, measurementUnitsData, categoriesData] = await Promise.all([
+      const [articlesData, articleTypesData, measurementUnitsData, categoriesData, suppliersData] = await Promise.all([
         getArticles(),
         getArticleTypes(),
         getMeasurementUnits(),
         getCategories(),
+        getSuppliers(),
       ]);
       setArticles(articlesData);
       setArticleTypes(articleTypesData);
       setMeasurementUnits(measurementUnitsData);
       setCategories(categoriesData);
+      setSuppliers(suppliersData.filter((item) => Number(item.active) === 1));
       setError('');
     } catch {
       setError('No se pudo cargar la información de artículos.');
@@ -94,6 +99,7 @@ function AdminArticles() {
         articleTypeId: Number(form.articleTypeId),
         measurementUnitId: Number(form.measurementUnitId),
         categoryId: form.categoryId ? Number(form.categoryId) : null,
+        supplierId: form.supplierId ? Number(form.supplierId) : null,
         cost: Number(form.cost),
         salePrice: Number(form.salePrice),
         managesStock: Boolean(form.managesStock),
@@ -135,6 +141,7 @@ function AdminArticles() {
       articleTypeId: row.article_type_id ?? row.articleTypeId ?? '',
       measurementUnitId: row.measurement_unit_id ?? row.measurementUnitId ?? '',
       categoryId: row.category_id ?? row.categoryId ?? '',
+      supplierId: row.supplier_id ?? row.supplierId ?? '',
       cost: row.cost,
       salePrice: row.sale_price ?? row.salePrice ?? 0,
       managesStock: row.manages_stock === 1 || row.manages_stock === true,
@@ -308,6 +315,7 @@ function AdminArticles() {
             { key: 'barcode', label: 'Código de barras', accessor: (row) => row.barcode || '-' },
             { key: 'articleType', label: 'Tipo', accessor: (row) => articleTypeMap[Number(row.article_type_id ?? row.articleTypeId)] || '-', sortAccessor: (row) => (articleTypeMap[Number(row.article_type_id ?? row.articleTypeId)] || '').toLowerCase(), sortable: true },
             { key: 'unit', label: 'Unidad', accessor: (row) => measurementUnitMap[Number(row.measurement_unit_id ?? row.measurementUnitId)] || '-' },
+            { key: 'supplier', label: 'Proveedor', accessor: (row) => row.supplier_name || '-' },
             { key: 'cost', label: 'Costo', accessor: (row) => formatCurrency(row.cost), sortAccessor: (row) => Number(row.cost) || 0, sortable: true },
             { key: 'salePrice', label: 'Precio venta', accessor: (row) => formatCurrency(row.sale_price ?? row.salePrice ?? 0), sortAccessor: (row) => Number(row.sale_price ?? row.salePrice) || 0, sortable: true },
             { key: 'flags', label: 'Flags', accessor: (row) => `Venta:${row.for_sale ? 'Sí' : 'No'} · Prod:${row.is_product ? 'Sí' : 'No'} · Insumo:${row.is_supply ? 'Sí' : 'No'}` },
@@ -373,6 +381,10 @@ function AdminArticles() {
               <select value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}>
                 <option value="">Seleccionar categoría</option>
                 {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+              <select value={form.supplierId} onChange={(event) => setForm((prev) => ({ ...prev, supplierId: event.target.value }))}>
+                <option value="">Proveedor principal (opcional)</option>
+                {suppliers.map((item) => <option key={item.id} value={item.id}>{item.business_name}</option>)}
               </select>
               <input
                 type="number"
