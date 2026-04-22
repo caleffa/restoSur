@@ -25,3 +25,16 @@ export async function getVatSalesBook(params = {}) {
   const { data } = await http.get('/sales/reports/vat-book', { params });
   return unwrap(data) || { totals: {}, rows: [] };
 }
+
+export async function getSalesInsights(params = {}) {
+  const { data } = await http.get('/sales/reports/insights', { params });
+  return unwrap(data) || { totals: {}, rows: [] };
+}
+
+export async function exportSalesInsights(params = {}) {
+  const response = await http.get('/sales/reports/insights/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+}

@@ -650,6 +650,86 @@ async function getVatSalesBook(branchId, rawFilters = {}) {
   return { rows, totals };
 }
 
+function normalizeReportType(reportType) {
+  const normalized = String(reportType || 'PLATOS').toUpperCase();
+  if (['PLATOS', 'MOZOS', 'ARTICULOS'].includes(normalized)) return normalized;
+  throw new AppError('Tipo de reporte inválido', 400);
+}
+
+async function getSalesInsightsReport(branchId, rawFilters = {}) {
+  if (!Number.isInteger(branchId) || branchId <= 0) {
+    throw new AppError('Sucursal inválida', 400);
+  }
+
+  const filters = {
+    reportType: normalizeReportType(rawFilters.reportType),
+    from: validateISODate(rawFilters.from, 'Fecha desde'),
+    to: validateISODate(rawFilters.to, 'Fecha hasta'),
+    status: rawFilters.status ? String(rawFilters.status).toUpperCase() : 'PAGADA',
+    paymentMethod: rawFilters.paymentMethod ? String(rawFilters.paymentMethod).toUpperCase() : '',
+    waiterId: toNumberOrNull(rawFilters.waiterId),
+    limit: Math.min(100, Math.max(5, Number(rawFilters.limit) || 20)),
+  };
+
+  if (filters.from && filters.to && filters.from > filters.to) {
+    throw new AppError('El rango de fechas es inválido', 400);
+  }
+
+  const reportLoaders = {
+    PLATOS: () => salesRepo.getTopDishesByBranch(branchId, filters),
+    ARTICULOS: () => salesRepo.getTopArticlesByBranch(branchId, filters),
+    MOZOS: () => salesRepo.getTopWaitersByBranch(branchId, filters),
+  };
+
+  const rows = await reportLoaders[filters.reportType]();
+  const totals = rows.reduce((acc, row) => {
+    acc.totalQty += Number(row.totalQty || 0);
+    acc.totalAmount += Number(row.totalAmount || 0);
+    acc.totalTickets += Number(row.tickets || 0);
+    return acc;
+  }, { totalQty: 0, totalAmount: 0, totalTickets: 0, rows: rows.length });
+
+  return {
+    reportType: filters.reportType,
+    rows,
+    totals,
+  };
+}
+
+function buildInsightsCsv(reportData = {}) {
+  const type = String(reportData.reportType || 'PLATOS').toUpperCase();
+  if (type === 'MOZOS') {
+    const lines = [['ID Mozo', 'Mozo', 'Tickets', 'Artículos', 'Total Venta'].join(',')];
+    for (const row of reportData.rows || []) {
+      lines.push([
+        row.id,
+        row.name,
+        Number(row.tickets || 0),
+        Number(row.totalQty || 0),
+        Number(row.totalAmount || 0).toFixed(2),
+      ].map(escapeCsv).join(','));
+    }
+    return lines.join('\n');
+  }
+
+  const lines = [['ID Artículo', 'Nombre', 'Cantidad', 'Tickets', 'Total Venta'].join(',')];
+  for (const row of reportData.rows || []) {
+    lines.push([
+      row.id,
+      row.name,
+      Number(row.totalQty || 0),
+      Number(row.tickets || 0),
+      Number(row.totalAmount || 0).toFixed(2),
+    ].map(escapeCsv).join(','));
+  }
+  return lines.join('\n');
+}
+
+async function exportSalesInsightsCsv(branchId, rawFilters = {}) {
+  const reportData = await getSalesInsightsReport(branchId, rawFilters);
+  return buildInsightsCsv(reportData);
+}
+
 module.exports = {
   createSale,
   addItem,
@@ -667,4 +747,6 @@ module.exports = {
   getSalesReport,
   exportSalesReportCsv,
   getVatSalesBook,
+  getSalesInsightsReport,
+  exportSalesInsightsCsv,
 };
