@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import KitchenOrders from '../components/pos/KitchenOrders';
@@ -282,6 +282,7 @@ function POS() {
   const [waiters, setWaiters] = useState([]);
   const [showWaiterModal, setShowWaiterModal] = useState(false);
   const [selectedWaiterId, setSelectedWaiterId] = useState(null);
+  const closingBySyncRef = useRef(false);
 
   const canEditWhenBillRequested = user?.role === 'ADMIN';
   const canEmitFiscalTicket = user?.role === 'ADMIN' || user?.role === 'CAJERO';
@@ -289,25 +290,54 @@ function POS() {
   const isBillRequested = tableStatus === 'CUENTA_PEDIDA';
   const canEdit = !isBillRequested || canEditWhenBillRequested;
 
+  const handleSaleClosedElsewhere = useCallback(() => {
+    if (closingBySyncRef.current) return;
+    closingBySyncRef.current = true;
+    clearLocalPOS(tableId);
+    navigate('/dashboard', {
+      replace: true,
+      state: {
+        toastMessage: `La mesa ${tableId} ya fue cerrada/cobrada en otra terminal.`,
+      },
+    });
+  }, [navigate, tableId]);
+
+  const syncOpenSaleState = useCallback(async () => {
+    try {
+      const [saleData, kitchenData] = await Promise.all([
+        getSaleByTable(tableId),
+        listKitchenOrders(tableId),
+      ]);
+      setSale(saleData);
+      setKitchenOrders(kitchenData);
+      return true;
+    } catch (err) {
+      const statusCode = Number(err?.response?.status || 0);
+      if (statusCode === 404) {
+        handleSaleClosedElsewhere();
+        return false;
+      }
+      throw err;
+    }
+  }, [handleSaleClosedElsewhere, tableId]);
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [saleData, productsData, kitchenData] = await Promise.all([
-        getSaleByTable(tableId),
+      const [productsData, saleSynced] = await Promise.all([
         getProducts(),
-        listKitchenOrders(tableId),
+        syncOpenSaleState(),
       ]);
 
-      setSale(saleData);
       setProducts(productsData);
-      setKitchenOrders(kitchenData);
+      if (!saleSynced) return;
       setError('');
     } catch {
       setError('No se pudo cargar la información del POS.');
     } finally {
       setLoading(false);
     }
-  }, [tableId]);
+  }, [syncOpenSaleState]);
 
   useEffect(() => {
     loadData();
@@ -352,11 +382,20 @@ function POS() {
     ws.onclose = () => setWsConnected(false);
     ws.onerror = () => setWsConnected(false);
     ws.onmessage = () => {
-      listKitchenOrders(tableId).then(setKitchenOrders).catch(() => {});
+      syncOpenSaleState().catch(() => {});
     };
 
     return () => ws.close();
-  }, [tableId]);
+  }, [syncOpenSaleState]);
+
+  useEffect(() => {
+    const pollInterval = window.setInterval(() => {
+      if (closingBySyncRef.current) return;
+      syncOpenSaleState().catch(() => {});
+    }, 8000);
+
+    return () => window.clearInterval(pollInterval);
+  }, [syncOpenSaleState]);
 
   const totals = useMemo(() => {
     const subtotal = (sale?.items || []).reduce((acc, item) => acc + Number(item.unitPrice) * Number(item.quantity), 0);
