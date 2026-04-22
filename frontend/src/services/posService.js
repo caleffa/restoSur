@@ -128,6 +128,12 @@ export async function getAfipCaea() {
   return unwrap(data) || [];
 }
 
+
+export async function triggerCashDrawerSignal(saleId, payload = {}) {
+  const { data } = await http.post(`/sales/${saleId}/open-drawer`, payload);
+  return unwrap(data);
+}
+
 export async function closeSale(saleId) {
   const { data } = await http.post(`/sales/${saleId}/close`);
   return unwrap(data);

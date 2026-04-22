@@ -6,6 +6,7 @@ const stockRepo = require('../stock/stock.repository');
 const recipesRepo = require('../recipes/recipes.repository');
 const cashRepo = require('../cash/cash.repository');
 const invoicesRepo = require('../invoices/invoices.repository');
+const { logError, logInfo } = require('../../utils/logger');
 
 function validateSaleId(saleId) {
   if (!Number.isInteger(saleId) || saleId <= 0) {
@@ -382,6 +383,67 @@ async function closeSale(saleId) {
   }
 }
 
+
+async function openDrawer(saleId, user, payload = {}) {
+  validateSaleId(saleId);
+
+  const sale = await salesRepo.findSaleById(saleId);
+  if (!sale) throw new AppError('Venta no encontrada', 404);
+
+  if (Number(sale.branch_id) !== Number(user.branchId)) {
+    throw new AppError('La venta no pertenece a la sucursal del usuario', 403);
+  }
+
+  if (sale.status !== 'PAGADA') {
+    throw new AppError('Solo se puede abrir el cajón luego de cobrar la venta', 400);
+  }
+
+  const signalUrl = process.env.CASH_DRAWER_SIGNAL_URL;
+  if (!signalUrl) {
+    return { triggered: false, reason: 'CASH_DRAWER_SIGNAL_URL no configurada' };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await fetch(signalUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        saleId,
+        branchId: Number(sale.branch_id),
+        userId: Number(user.id),
+        paymentMethod: payload.paymentMethod || 'EFECTIVO',
+        cashReceived: payload.cashReceived ?? null,
+        changeAmount: payload.changeAmount ?? null,
+        source: 'POS',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logError('Error al enviar señal de apertura de cajón', { saleId, status: response.status, body: errorText });
+      throw new AppError('No se pudo enviar la señal para abrir el cajón', 502);
+    }
+
+    logInfo('Señal para abrir cajón enviada correctamente', { saleId, signalUrl });
+    return { triggered: true };
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    logError('Fallo de comunicación al abrir cajón', { saleId, message: error.message });
+    throw new AppError('No se pudo enviar la señal para abrir el cajón', 502);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function cancelSale(saleId) {
   validateSaleId(saleId);
   const conn = await pool.getConnection();
@@ -738,6 +800,7 @@ module.exports = {
   requestBill,
   paySale,
   closeSale,
+  openDrawer,
   cancelSale,
   getSaleDetail,
   getSaleDetailByTable,
