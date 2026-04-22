@@ -292,6 +292,19 @@ body {
   font-size: 1rem;
 }
 
+.afip-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+
+.afip-form-grid label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
 .admin-table-list {
   display: grid;
   gap: 0.7rem;

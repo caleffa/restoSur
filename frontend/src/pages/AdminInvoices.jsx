@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import SimpleDataTable from '../components/SimpleDataTable';
 import {
   createInvoice,
   getAfipCaea,
@@ -103,6 +104,77 @@ function AdminInvoices() {
   const invoicedSaleIds = useMemo(() => new Set(invoices.map((invoice) => Number(invoice.sale_id))), [invoices]);
 
   const createInvoiceOptions = paidSales.filter((sale) => !invoicedSaleIds.has(Number(sale.id)));
+  const invoiceRows = useMemo(
+    () =>
+      invoices.map((invoice) => ({
+        ...invoice,
+        id: invoice.id,
+        invoiceNumber: `#${invoice.id}`,
+        saleNumber: `#${invoice.sale_id}`,
+      })),
+    [invoices]
+  );
+
+  const invoiceColumns = useMemo(
+    () => [
+      {
+        key: 'invoice',
+        label: 'Factura',
+        accessor: (row) => row.invoiceNumber,
+        sortable: true,
+        sortAccessor: (row) => Number(row.id),
+      },
+      {
+        key: 'sale',
+        label: 'Venta',
+        accessor: (row) => row.saleNumber,
+        sortable: true,
+        sortAccessor: (row) => Number(row.sale_id),
+      },
+      {
+        key: 'type',
+        label: 'Tipo',
+        accessor: (row) => row.invoice_type || '-',
+        sortable: true,
+      },
+      {
+        key: 'authType',
+        label: 'Autorización',
+        accessor: (row) => row.authorization_type || '-',
+        sortable: true,
+      },
+      {
+        key: 'authCode',
+        label: 'Código',
+        accessor: (row) => row.authorization_code || '-',
+      },
+      {
+        key: 'voucher',
+        label: 'Comprobante',
+        accessor: (row) => row.voucher_number || '-',
+      },
+      {
+        key: 'total',
+        label: 'Total',
+        accessor: (row) => formatCurrency(row.total || 0),
+        sortable: true,
+        sortAccessor: (row) => Number(row.total || 0),
+      },
+      {
+        key: 'table',
+        label: 'Mesa',
+        accessor: (row) => row.table_number || '-',
+        sortable: true,
+        sortAccessor: (row) => Number(row.table_number || 0),
+      },
+      {
+        key: 'user',
+        label: 'Usuario',
+        accessor: (row) => row.created_by_name || '-',
+      },
+    ],
+    []
+  );
 
   useEffect(() => {
     const saleIdFromQuery = Number(searchParams.get('saleId'));
@@ -268,67 +340,97 @@ function AdminInvoices() {
         <section className="admin-table-form">
           <h3>Configuración AFIP</h3>
           <form className="modal-form" onSubmit={onSaveConfig}>
-            <input 
-              placeholder="CUIT" 
-              value={configForm.cuit} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, cuit: e.target.value }))} 
-            />
-            <input 
-              placeholder="Razón social emisor" 
-              value={configForm.issuerName} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, issuerName: e.target.value }))} 
-            />
-            <input 
-              placeholder="Domicilio comercial emisor" 
-              value={configForm.issuerAddress} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, issuerAddress: e.target.value }))} 
-            />
-            <input 
-              type="number" 
-              min="1" 
-              placeholder="Punto de venta" 
-              value={configForm.pointOfSale} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, pointOfSale: e.target.value }))} 
-              required 
-            />
-            <select 
-              value={configForm.environment} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, environment: e.target.value }))}
-            >
-              <option value="HOMOLOGACION">Homologación</option>
-              <option value="PRODUCCION">Producción</option>
-            </select>
-            <select 
-              value={configForm.wsMode} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, wsMode: e.target.value }))}
-            >
-              <option value="MOCK">Integración mock (dev)</option>
-              <option value="MANUAL">Manual (ingresar CAEA)</option>
-              <option value="AFIP">AFIP WSFE (real)</option>
-            </select>
-            <input 
-              placeholder="Ruta certificado (opcional)" 
-              value={configForm.certPath} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, certPath: e.target.value }))} 
-            />
-            <input 
-              placeholder="Ruta llave privada (opcional)" 
-              value={configForm.keyPath} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, keyPath: e.target.value }))} 
-            />
-            <input 
-              placeholder="CUIT servicio (opcional)" 
-              value={configForm.serviceTaxId} 
-              onChange={(e) => setConfigForm((prev) => ({ ...prev, serviceTaxId: e.target.value }))} 
-            />
-            
-            <label htmlFor="ticketLogoUpload">Logo para ticket (57mm, opcional)</label>
-            <input 
-              id="ticketLogoUpload" 
-              type="file" 
-              accept="image/jpeg,image/png,image/webp,image/gif" 
-              onChange={onLogoFileChange} 
-            />
+            <div className="afip-form-grid">
+              <label>
+                <span>CUIT</span>
+                <input
+                  placeholder="Ej: 30712345678"
+                  value={configForm.cuit}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, cuit: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Razón social del emisor</span>
+                <input
+                  placeholder="Razón social"
+                  value={configForm.issuerName}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, issuerName: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Domicilio comercial</span>
+                <input
+                  placeholder="Dirección completa"
+                  value={configForm.issuerAddress}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, issuerAddress: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Punto de venta *</span>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Ej: 1"
+                  value={configForm.pointOfSale}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, pointOfSale: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                <span>Entorno</span>
+                <select
+                  value={configForm.environment}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, environment: e.target.value }))}
+                >
+                  <option value="HOMOLOGACION">Homologación</option>
+                  <option value="PRODUCCION">Producción</option>
+                </select>
+              </label>
+              <label>
+                <span>Modo WS</span>
+                <select
+                  value={configForm.wsMode}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, wsMode: e.target.value }))}
+                >
+                  <option value="MOCK">Integración mock (dev)</option>
+                  <option value="MANUAL">Manual (ingresar CAEA)</option>
+                  <option value="AFIP">AFIP WSFE (real)</option>
+                </select>
+              </label>
+              <label>
+                <span>Ruta certificado (opcional)</span>
+                <input
+                  placeholder="/ruta/certificado.crt"
+                  value={configForm.certPath}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, certPath: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Ruta llave privada (opcional)</span>
+                <input
+                  placeholder="/ruta/llave.key"
+                  value={configForm.keyPath}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, keyPath: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>CUIT servicio (opcional)</span>
+                <input
+                  placeholder="Ej: 20123456789"
+                  value={configForm.serviceTaxId}
+                  onChange={(e) => setConfigForm((prev) => ({ ...prev, serviceTaxId: e.target.value }))}
+                />
+              </label>
+              <label>
+                <span>Logo para ticket (57mm, opcional)</span>
+                <input
+                  id="ticketLogoUpload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={onLogoFileChange}
+                />
+              </label>
+            </div>
             
             {logoSrc && (
               <div style={{ marginTop: '10px' }}>
@@ -465,19 +567,32 @@ function AdminInvoices() {
         </section>
 
         <section className="admin-table-form">
-          <h3>Facturas emitidas</h3>
-          <div className="admin-table-list">
-            {invoices.map((invoice) => (
-              <article key={invoice.id} className="admin-table-item">
-                <div>
-                  <strong>Factura #{invoice.id} - Venta #{invoice.sale_id}</strong>
-                  <p>{invoice.invoice_type} | {invoice.authorization_type} | Código: {invoice.authorization_code} | Comprobante: {invoice.voucher_number || '-'}</p>
-                  <p>Total: {formatCurrency(invoice.total)} | Mesa: {invoice.table_number || '-'} | Usuario: {invoice.created_by_name || '-'}</p>
-                </div>
-              </article>
-            ))}
-            {!invoices.length && <p>No hay facturas emitidas todavía.</p>}
-          </div>
+          <SimpleDataTable
+            title="Facturas emitidas"
+            rows={invoiceRows}
+            columns={invoiceColumns}
+            filters={[
+              {
+                key: 'invoiceType',
+                label: 'Tipo factura',
+                accessor: (row) => row.invoice_type || '',
+                options: [...new Set(invoiceRows.map((row) => row.invoice_type).filter(Boolean))].map((type) => ({
+                  value: String(type),
+                  label: `Factura ${type}`,
+                })),
+              },
+              {
+                key: 'authType',
+                label: 'Tipo autorización',
+                accessor: (row) => row.authorization_type || '',
+                options: [...new Set(invoiceRows.map((row) => row.authorization_type).filter(Boolean))].map((type) => ({
+                  value: String(type),
+                  label: type,
+                })),
+              },
+            ]}
+            pageSize={10}
+          />
         </section>
       </main>
     </div>
