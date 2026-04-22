@@ -11,6 +11,7 @@ import {
   updateProduct,
 } from '../services/adminService';
 import { formatCurrency } from '../utils/formatters';
+import { sortByLabel } from '../utils/sort';
 
 const initialProduct = { name: '', price: '', categoryId: '', hasStock: true, active: true };
 
@@ -49,6 +50,7 @@ function AdminProducts() {
     () => Object.fromEntries(categories.map((category) => [Number(category.id), category.name])),
     [categories],
   );
+  const sortedCategories = useMemo(() => sortByLabel(categories, (category) => category.name), [categories]);
 
   const onCreateOrUpdateProduct = async (event) => {
     event.preventDefault();
@@ -146,7 +148,7 @@ function AdminProducts() {
               key: 'category',
               label: 'Categoría',
               accessor: (row) => String(row.category_id ?? row.categoryId ?? ''),
-              options: categories.map((category) => ({ value: String(category.id), label: category.name })),
+              options: sortedCategories.map((category) => ({ value: String(category.id), label: category.name })),
             },
           ]}
           columns={[
@@ -226,7 +228,7 @@ function AdminProducts() {
               <input type="number" min="0" step="0.01" placeholder="Precio" value={productForm.price} onChange={(e) => setProductForm((p) => ({ ...p, price: e.target.value }))} required />
               <select value={productForm.categoryId} onChange={(e) => setProductForm((p) => ({ ...p, categoryId: e.target.value }))} required>
                 <option value="">Seleccionar categoría</option>
-                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                {sortedCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
               </select>
               <label><input type="checkbox" checked={productForm.hasStock} onChange={(e) => setProductForm((p) => ({ ...p, hasStock: e.target.checked }))} /> Maneja stock</label>
               <label><input type="checkbox" checked={productForm.active} onChange={(e) => setProductForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>

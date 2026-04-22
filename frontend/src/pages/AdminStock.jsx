@@ -8,6 +8,7 @@ import {
   getStockMovements,
 } from '../services/adminService';
 import { formatNumber } from '../utils/formatters';
+import { sortByLabel } from '../utils/sort';
 
 const INITIAL_FORM = {
   articleId: '',
@@ -47,7 +48,10 @@ function AdminStock() {
   }, [loadData]);
 
   const articleOptions = useMemo(
-    () => articles.map((article) => ({ value: String(article.id), label: `${article.name} (${article.sku})` })),
+    () => sortByLabel(
+      articles.map((article) => ({ value: String(article.id), label: `${article.name} (${article.sku})` })),
+      (article) => article.label,
+    ),
     [articles],
   );
 
@@ -108,9 +112,9 @@ function AdminStock() {
               onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value }))}
               required
             >
-              <option value="INGRESO">Ingreso</option>
-              <option value="EGRESO">Egreso</option>
               <option value="AJUSTE">Ajuste (valor final)</option>
+              <option value="EGRESO">Egreso</option>
+              <option value="INGRESO">Ingreso</option>
             </select>
 
             <input

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { createUser, deleteUser, getUsers, updateUser } from '../services/adminService';
+import { sortByLabel } from '../utils/sort';
 
 const ROLE_OPTIONS = ['ADMIN', 'CAJERO', 'MOZO', 'COCINA'];
 const initialUser = { name: '', email: '', password: '', role: 'MOZO', branchId: 1, active: true };
@@ -29,6 +30,7 @@ function AdminUsers() {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+  const sortedRoles = useMemo(() => sortByLabel(ROLE_OPTIONS, (role) => role), []);
 
   const onCreateOrUpdateUser = async (event) => {
     event.preventDefault();
@@ -117,7 +119,7 @@ function AdminUsers() {
               key: 'role',
               label: 'Rol',
               accessor: (row) => row.role,
-              options: ROLE_OPTIONS.map((role) => ({ value: role, label: role })),
+              options: sortedRoles.map((role) => ({ value: role, label: role })),
             },
             {
               key: 'active',
@@ -166,7 +168,7 @@ function AdminUsers() {
                 <input type="password" placeholder="Contraseña" value={userForm.password} onChange={(e) => setUserForm((p) => ({ ...p, password: e.target.value }))} required />
               )}
               <select value={userForm.role} onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}>
-                {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+                {sortedRoles.map((role) => <option key={role} value={role}>{role}</option>)}
               </select>
               <input type="number" min="1" placeholder="Sucursal" value={userForm.branchId} onChange={(e) => setUserForm((p) => ({ ...p, branchId: e.target.value }))} />
               <label><input type="checkbox" checked={userForm.active} onChange={(e) => setUserForm((p) => ({ ...p, active: e.target.checked }))} /> Activo</label>

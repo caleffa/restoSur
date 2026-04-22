@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import SimpleDataTable from '../components/SimpleDataTable';
@@ -10,6 +10,7 @@ import {
   getVatTypes,
   updateSupplier,
 } from '../services/adminService';
+import { sortByLabel } from '../utils/sort';
 
 const initialForm = {
   businessName: '',
@@ -60,6 +61,8 @@ function AdminSuppliers() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+  const sortedVatTypes = useMemo(() => sortByLabel(vatTypes, (item) => item.name), [vatTypes]);
+  const sortedArticles = useMemo(() => sortByLabel(articles, (item) => item.name), [articles]);
 
   const save = async (event) => {
     event.preventDefault();
@@ -169,7 +172,7 @@ function AdminSuppliers() {
               <input placeholder="CUIT" value={form.cuit} onChange={(e) => setForm((p) => ({ ...p, cuit: e.target.value }))} />
               <select value={form.vatTypeId} onChange={(e) => setForm((p) => ({ ...p, vatTypeId: e.target.value }))}>
                 <option value="">Condición de IVA</option>
-                {vatTypes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {sortedVatTypes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
               <input placeholder="Ingresos Brutos" value={form.grossIncomeNumber} onChange={(e) => setForm((p) => ({ ...p, grossIncomeNumber: e.target.value }))} />
               <input placeholder="Email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
@@ -185,7 +188,7 @@ function AdminSuppliers() {
               <div>
                 <strong>Artículos relacionados</strong>
                 <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '0.5rem', marginTop: '0.5rem' }}>
-                  {articles.map((article) => {
+                  {sortedArticles.map((article) => {
                     const articleId = Number(article.id);
                     const checked = form.articleIds.includes(articleId);
                     return (

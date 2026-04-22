@@ -15,6 +15,7 @@ import {
   updateArticle,
 } from '../services/adminService';
 import { formatCurrency } from '../utils/formatters';
+import { sortByLabel } from '../utils/sort';
 
 const initialForm = {
   name: '',
@@ -80,6 +81,10 @@ function AdminArticles() {
     () => Object.fromEntries(measurementUnits.map((item) => [Number(item.id), `${item.name} (${item.code})`])),
     [measurementUnits],
   );
+  const sortedArticleTypes = useMemo(() => sortByLabel(articleTypes, (item) => item.name), [articleTypes]);
+  const sortedMeasurementUnits = useMemo(() => sortByLabel(measurementUnits, (item) => item.name), [measurementUnits]);
+  const sortedCategories = useMemo(() => sortByLabel(categories, (item) => item.name), [categories]);
+  const sortedSuppliers = useMemo(() => sortByLabel(suppliers, (item) => item.business_name), [suppliers]);
 
   const handleTypeToggle = (field, checked) => {
     setForm((prev) => ({ ...prev, [field]: checked }));
@@ -270,13 +275,13 @@ function AdminArticles() {
               key: 'articleType',
               label: 'Tipo',
               accessor: (row) => String(row.article_type_id ?? row.articleTypeId ?? ''),
-              options: articleTypes.map((item) => ({ value: String(item.id), label: item.name })),
+              options: sortedArticleTypes.map((item) => ({ value: String(item.id), label: item.name })),
             },
             {
               key: 'supplier',
               label: 'Proveedor',
               accessor: (row) => String(row.supplier_id ?? row.supplierId ?? ''),
-              options: suppliers.map((item) => ({ value: String(item.id), label: item.business_name })),
+              options: sortedSuppliers.map((item) => ({ value: String(item.id), label: item.business_name })),
             },
             {
               key: 'forSale',
@@ -374,7 +379,7 @@ function AdminArticles() {
                 required
               >
                 <option value="">Seleccionar tipo de artículo</option>
-                {articleTypes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {sortedArticleTypes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
               <select
                 value={form.measurementUnitId}
@@ -382,15 +387,15 @@ function AdminArticles() {
                 required
               >
                 <option value="">Seleccionar unidad de medida</option>
-                {measurementUnits.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.code})</option>)}
+                {sortedMeasurementUnits.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.code})</option>)}
               </select>
               <select value={form.categoryId} onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}>
                 <option value="">Seleccionar categoría</option>
-                {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {sortedCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
               <select value={form.supplierId} onChange={(event) => setForm((prev) => ({ ...prev, supplierId: event.target.value }))}>
                 <option value="">Proveedor principal (opcional)</option>
-                {suppliers.map((item) => <option key={item.id} value={item.id}>{item.business_name}</option>)}
+                {sortedSuppliers.map((item) => <option key={item.id} value={item.id}>{item.business_name}</option>)}
               </select>
               <input
                 type="number"

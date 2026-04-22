@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import CashMovementModal from '../components/CashMovementModal';
@@ -13,6 +13,7 @@ import {
   closeCash,
 } from '../services/cashService';
 import { formatCurrency } from '../utils/formatters';
+import { sortByLabel } from '../utils/sort';
 
 function Cash() {
   const [registers, setRegisters] = useState([]);
@@ -22,6 +23,7 @@ function Cash() {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const sortedRegisters = useMemo(() => sortByLabel(registers, (item) => item.name), [registers]);
   const [ticket, setTicket] = useState(null);
   const [openForm, setOpenForm] = useState({ registerId: '', openingAmount: '', observation: '' });
 
@@ -180,7 +182,7 @@ function Cash() {
             <label>Caja
               <select value={openForm.registerId} onChange={(e) => setOpenForm((p) => ({ ...p, registerId: e.target.value }))}>
                 <option value="">Seleccionar</option>
-                {registers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {sortedRegisters.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </label>
             <label>Monto inicial

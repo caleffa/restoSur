@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { getCashRegisters, getCashReports } from '../services/cashService';
 import { formatCurrency } from '../utils/formatters';
+import { sortByLabel } from '../utils/sort';
 
 function CashReport() {
   const [filters, setFilters] = useState({ from: '', to: '', userId: '', registerId: '' });
@@ -26,6 +27,7 @@ function CashReport() {
     });
     return Array.from(map.entries()).map(([day, total]) => ({ day, total }));
   }, [report]);
+  const sortedRegisters = useMemo(() => sortByLabel(registers, (item) => item.name), [registers]);
 
   return (
     <div className="app-layout">
@@ -41,7 +43,7 @@ function CashReport() {
             <div className="col-md-3"><label>Caja
               <select className="form-select" value={filters.registerId} onChange={(e) => setFilters((p) => ({ ...p, registerId: e.target.value }))}>
                 <option value="">Todas</option>
-                {registers.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                {sortedRegisters.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </label></div>
           </div>
