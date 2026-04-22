@@ -71,6 +71,7 @@ export const MENU_BY_ROLE = {
       children: [
         { label: 'Gestión ventas', path: '/sales/management' },
         { label: 'Reporte ventas', path: '/admin/reports/sales' },
+        { label: 'Reporte ganancias', path: '/admin/reports/profits' },
         { label: 'Facturación', path: '/admin/management/invoices' },
       ],
     },
@@ -93,6 +94,7 @@ export const MENU_BY_ROLE = {
     { label: 'Stock', path: '/admin/management/stock' },
     { label: 'Recepción OC', path: '/admin/management/purchase-orders/reception' },
     { label: 'Ventas', path: '/sales/management' },
+    { label: 'Ganancias', path: '/admin/reports/profits' },
     { label: 'Facturación', path: '/admin/management/invoices' },
     { label: 'Comandas', path: '/comandas' },
   ],

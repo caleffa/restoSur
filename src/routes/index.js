@@ -25,6 +25,7 @@ const vatTypesRoutes = require('../modules/vatTypes/vatTypes.routes');
 const suppliersRoutes = require('../modules/suppliers/suppliers.routes');
 const customersRoutes = require('../modules/customers/customers.routes');
 const purchaseOrdersRoutes = require('../modules/purchaseOrders/purchaseOrders.routes');
+const profitsRoutes = require('../modules/profits/profits.routes');
 
 const router = express.Router();
 
@@ -56,5 +57,6 @@ router.use('/vat-types', vatTypesRoutes);
 router.use('/suppliers', suppliersRoutes);
 router.use('/customers', customersRoutes);
 router.use('/purchase-orders', purchaseOrdersRoutes);
+router.use('/profits', profitsRoutes);
 
 module.exports = router;
