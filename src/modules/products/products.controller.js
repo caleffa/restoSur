@@ -2,6 +2,9 @@ const asyncHandler = require('../../middlewares/asyncHandler');
 const service = require('./products.service');
 
 const listProducts = asyncHandler(async (_req, res) => res.json({ ok: true, data: await service.listProducts() }));
+const listProductsCostReport = asyncHandler(async (_req, res) =>
+  res.json({ ok: true, data: await service.listProductsCostReport() })
+);
 const getProductById = asyncHandler(async (req, res) =>
   res.json({ ok: true, data: await service.getProductById(Number(req.params.id)) })
 );
@@ -21,4 +24,12 @@ const listTopProducts = asyncHandler(async (req, res) =>
   res.json({ ok: true, data: await service.listTopProducts(Number(req.user.branchId)) })
 );
 
-module.exports = { listProducts, getProductById, createProduct, updateProduct, deleteProduct, listTopProducts };
+module.exports = {
+  listProducts,
+  listProductsCostReport,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  listTopProducts,
+};

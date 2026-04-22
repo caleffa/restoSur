@@ -6,6 +6,7 @@ import {
   createProduct,
   deleteProduct,
   getCategories,
+  getProductsCostReport,
   getProducts,
   updateProduct,
 } from '../services/adminService';
@@ -15,6 +16,7 @@ const initialProduct = { name: '', price: '', categoryId: '', hasStock: true, ac
 
 function AdminProducts() {
   const [products, setProducts] = useState([]);
+  const [productsCostReport, setProductsCostReport] = useState([]);
   const [categories, setCategories] = useState([]);
   const [productForm, setProductForm] = useState(initialProduct);
   const [editingProductId, setEditingProductId] = useState(null);
@@ -25,9 +27,14 @@ function AdminProducts() {
 
   const loadData = useCallback(async () => {
     try {
-      const [categoriesData, productsData] = await Promise.all([getCategories(), getProducts()]);
+      const [categoriesData, productsData, productsCostReportData] = await Promise.all([
+        getCategories(),
+        getProducts(),
+        getProductsCostReport(),
+      ]);
       setCategories(categoriesData);
       setProducts(productsData);
+      setProductsCostReport(productsCostReportData);
       setError('');
     } catch {
       setError('No se pudo cargar la información de productos.');
@@ -158,6 +165,48 @@ function AdminProducts() {
                   <button type="button" className="touch-btn btn-danger" onClick={() => setPendingDeleteProduct(row)}>Eliminar</button>
                 </div>
               ),
+            },
+          ]}
+        />
+
+        <SimpleDataTable
+          title="Reporte de costos por receta"
+          rows={productsCostReport}
+          columns={[
+            { key: 'name', label: 'Producto', accessor: (row) => row.name, sortable: true },
+            {
+              key: 'category',
+              label: 'Categoría',
+              accessor: (row) => categoryMap[Number(row.category_id ?? row.categoryId)] || row.category_name || '-',
+              sortable: true,
+            },
+            {
+              key: 'salePrice',
+              label: 'Precio venta',
+              accessor: (row) => formatCurrency(row.sale_price ?? 0),
+              sortAccessor: (row) => Number(row.sale_price ?? 0),
+              sortable: true,
+            },
+            {
+              key: 'recipeCost',
+              label: 'Costo receta',
+              accessor: (row) => formatCurrency(row.recipe_cost ?? 0),
+              sortAccessor: (row) => Number(row.recipe_cost ?? 0),
+              sortable: true,
+            },
+            {
+              key: 'grossProfit',
+              label: 'Ganancia bruta',
+              accessor: (row) => formatCurrency(row.gross_profit ?? 0),
+              sortAccessor: (row) => Number(row.gross_profit ?? 0),
+              sortable: true,
+            },
+            {
+              key: 'margin',
+              label: 'Margen',
+              accessor: (row) => `${Number(row.margin_percentage ?? 0).toFixed(2)}%`,
+              sortAccessor: (row) => Number(row.margin_percentage ?? 0),
+              sortable: true,
             },
           ]}
         />
