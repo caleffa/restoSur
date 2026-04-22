@@ -1,11 +1,13 @@
 const { query } = require('../../repositories/baseRepository');
 
 const BASE_SELECT = `SELECT a.*, at.name AS article_type_name, mu.name AS unit_name, mu.code AS unit_code,
-                     c.name AS category_name
+                     c.name AS category_name, sa.supplier_id, s.business_name AS supplier_name
                      FROM articles a
                      JOIN article_types at ON at.id = a.article_type_id
                      JOIN measurement_units mu ON mu.id = a.measurement_unit_id
-                     LEFT JOIN categories c ON c.id = a.category_id`;
+                     LEFT JOIN categories c ON c.id = a.category_id
+                     LEFT JOIN supplier_articles sa ON sa.article_id = a.id AND sa.is_default = 1
+                     LEFT JOIN suppliers s ON s.id = sa.supplier_id`;
 
 async function findById(id) {
   const rows = await query(
@@ -110,4 +112,16 @@ async function remove(id) {
   await query('DELETE FROM articles WHERE id = ?', [id]);
 }
 
-module.exports = { findById, findBySku, findByBarcode, list, create, update, remove };
+async function setPreferredSupplier(articleId, supplierId = null) {
+  await query('UPDATE supplier_articles SET is_default = 0 WHERE article_id = ?', [articleId]);
+  if (!supplierId) return;
+
+  await query(
+    `INSERT INTO supplier_articles (supplier_id, article_id, is_default)
+     VALUES (?, ?, 1)
+     ON DUPLICATE KEY UPDATE is_default = VALUES(is_default)`,
+    [supplierId, articleId]
+  );
+}
+
+module.exports = { findById, findBySku, findByBarcode, list, create, update, remove, setPreferredSupplier };

@@ -1,4 +1,5 @@
 const repo = require('./suppliers.repository');
+const articlesRepo = require('../articles/articles.repository');
 const AppError = require('../../utils/appError');
 
 function cleanText(value) {
@@ -32,17 +33,38 @@ function normalizePayload(data, user) {
   };
 }
 
+function normalizeArticleIds(articleIds) {
+  if (!Array.isArray(articleIds)) return [];
+  const unique = new Set();
+  for (const value of articleIds) {
+    const parsed = Number(value);
+    if (Number.isInteger(parsed) && parsed > 0) unique.add(parsed);
+  }
+  return Array.from(unique);
+}
+
+async function validateArticlesExist(articleIds) {
+  for (const articleId of articleIds) {
+    const article = await articlesRepo.findById(articleId);
+    if (!article) throw new AppError(`Artículo no encontrado (ID ${articleId})`, 404);
+  }
+}
+
 async function listSuppliers(branchId) {
   return repo.list(branchId);
 }
 
 async function createSupplier(data, user) {
   const payload = normalizePayload(data, user);
+  const articleIds = normalizeArticleIds(data.articleIds);
   if (payload.cuit) {
     const exists = await repo.findByCuit(payload.branchId, payload.cuit);
     if (exists) throw new AppError('Ya existe un proveedor con ese CUIT', 409);
   }
-  return repo.create(payload);
+  await validateArticlesExist(articleIds);
+  const created = await repo.create(payload);
+  await repo.syncArticles(created.id, articleIds);
+  return created;
 }
 
 async function updateSupplier(id, data, user) {
@@ -53,13 +75,16 @@ async function updateSupplier(id, data, user) {
   if (!current) throw new AppError('Proveedor no encontrado', 404);
 
   const payload = normalizePayload(data, user);
+  const articleIds = normalizeArticleIds(data.articleIds);
 
   if (payload.cuit) {
     const exists = await repo.findByCuit(payload.branchId, payload.cuit, supplierId);
     if (exists) throw new AppError('Ya existe un proveedor con ese CUIT', 409);
   }
 
+  await validateArticlesExist(articleIds);
   await repo.update(supplierId, payload);
+  await repo.syncArticles(supplierId, articleIds);
 }
 
 async function removeSupplier(id) {

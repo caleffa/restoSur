@@ -26,10 +26,13 @@ async function findByCuit(branchId, cuit, excludeId = null) {
 
 async function list(branchId) {
   return query(
-    `SELECT s.*, vt.name AS vat_type_name
+    `SELECT s.*, vt.name AS vat_type_name,
+            GROUP_CONCAT(sa.article_id ORDER BY sa.article_id) AS article_ids
      FROM suppliers s
      LEFT JOIN vat_types vt ON vt.id = s.vat_type_id
+     LEFT JOIN supplier_articles sa ON sa.supplier_id = s.id
      WHERE s.branch_id=?
+     GROUP BY s.id
      ORDER BY s.business_name ASC`,
     [branchId]
   );
@@ -86,4 +89,28 @@ async function remove(id) {
   await query('DELETE FROM suppliers WHERE id=?', [id]);
 }
 
-module.exports = { findById, findByCuit, list, create, update, remove };
+async function syncArticles(supplierId, articleIds = []) {
+  if (!articleIds.length) {
+    await query('DELETE FROM supplier_articles WHERE supplier_id = ?', [supplierId]);
+    return;
+  }
+
+  const placeholders = articleIds.map(() => '?').join(',');
+  await query(
+    `DELETE FROM supplier_articles
+     WHERE supplier_id = ?
+       AND article_id NOT IN (${placeholders})`,
+    [supplierId, ...articleIds]
+  );
+
+  await Promise.all(
+    articleIds.map((articleId) => query(
+      `INSERT INTO supplier_articles (supplier_id, article_id, is_default)
+       VALUES (?, ?, 0)
+       ON DUPLICATE KEY UPDATE supplier_id = supplier_id`,
+      [supplierId, articleId]
+    ))
+  );
+}
+
+module.exports = { findById, findByCuit, list, create, update, remove, syncArticles };

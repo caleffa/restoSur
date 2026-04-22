@@ -240,6 +240,18 @@ CREATE TABLE suppliers (
   FOREIGN KEY (vat_type_id) REFERENCES vat_types(id)
 );
 
+CREATE TABLE supplier_articles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  supplier_id INT NOT NULL,
+  article_id INT NOT NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_supplier_article (supplier_id, article_id),
+  KEY idx_supplier_articles_article (article_id),
+  FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
+  FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+);
+
 
 
 CREATE TABLE purchase_orders (

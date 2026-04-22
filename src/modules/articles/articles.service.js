@@ -2,6 +2,7 @@ const repo = require('./articles.repository');
 const articleTypeRepo = require('../articleTypes/articleTypes.repository');
 const measurementUnitRepo = require('../measurementUnits/measurementUnits.repository');
 const categoriesRepo = require('../categories/categories.repository');
+const suppliersRepo = require('../suppliers/suppliers.repository');
 const AppError = require('../../utils/appError');
 
 function toOptionalNumber(value) {
@@ -17,6 +18,7 @@ function normalizePayload(data) {
   const articleTypeId = Number(data.articleTypeId);
   const measurementUnitId = Number(data.measurementUnitId);
   const categoryId = toOptionalNumber(data.categoryId);
+  const supplierId = toOptionalNumber(data.supplierId);
   const cost = Number(data.cost);
   const salePrice = Number(data.salePrice ?? data.price ?? 0);
 
@@ -47,6 +49,7 @@ function normalizePayload(data) {
     articleTypeId,
     measurementUnitId,
     categoryId,
+    supplierId,
     cost,
     salePrice,
     managesStock: data.managesStock === undefined ? true : Boolean(data.managesStock),
@@ -167,15 +170,17 @@ async function resolveReferenceIds(csvRow, refs) {
 }
 
 async function validateReferences(data) {
-  const [articleType, measurementUnit, category] = await Promise.all([
+  const [articleType, measurementUnit, category, supplier] = await Promise.all([
     articleTypeRepo.findById(data.articleTypeId),
     measurementUnitRepo.findById(data.measurementUnitId),
     data.categoryId ? categoriesRepo.findById(data.categoryId) : Promise.resolve(null),
+    data.supplierId ? suppliersRepo.findById(data.supplierId) : Promise.resolve(null),
   ]);
 
   if (!articleType) throw new AppError('Tipo de artículo no encontrado', 404);
   if (!measurementUnit) throw new AppError('Unidad de medida no encontrada', 404);
   if (data.categoryId && !category) throw new AppError('Categoría no encontrada', 404);
+  if (data.supplierId && !supplier) throw new AppError('Proveedor no encontrado', 404);
 }
 
 async function ensureUniqueFields(data, currentId = null) {
@@ -222,7 +227,9 @@ async function createArticle(data) {
   const payload = normalizePayload(data);
   await validateReferences(payload);
   await ensureUniqueFields(payload);
-  return repo.create(payload);
+  const created = await repo.create(payload);
+  await repo.setPreferredSupplier(created.id, payload.supplierId);
+  return created;
 }
 
 async function importArticlesFromCsv(csvRaw) {
@@ -373,6 +380,7 @@ async function updateArticle(id, data) {
   await validateReferences(payload);
   await ensureUniqueFields(payload, articleId);
   await repo.update(articleId, payload);
+  await repo.setPreferredSupplier(articleId, payload.supplierId);
 }
 
 async function removeArticle(id) {
