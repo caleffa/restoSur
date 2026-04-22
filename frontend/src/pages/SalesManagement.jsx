@@ -3,7 +3,13 @@ import Modal from '../components/Modal';
 import Navbar from '../components/Navbar';
 import SimpleDataTable from '../components/SimpleDataTable';
 import { getSaleDetail } from '../services/kitchenService';
-import { exportSalesReport, getSalesReport, getVatSalesBook } from '../services/salesService';
+import {
+  exportSalesInsights,
+  exportSalesReport,
+  getSalesInsights,
+  getSalesReport,
+  getVatSalesBook,
+} from '../services/salesService';
 import { createInvoice, getAfipConfig, getInvoices } from '../services/adminService';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
@@ -15,6 +21,14 @@ const initialFilters = {
 };
 const initialPagination = { page: 1, pageSize: 25 };
 const initialSort = { sortBy: 'date', sortDirection: 'DESC' };
+const initialInsightFilters = {
+  from: '',
+  to: '',
+  status: 'PAGADA',
+  paymentMethod: '',
+  reportType: 'PLATOS',
+  limit: 15,
+};
 
 function formatAmount(value) {
   return formatCurrency(value || 0);
@@ -82,6 +96,8 @@ function SalesManagement() {
   const [invoicesBySaleId, setInvoicesBySaleId] = useState(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [insightFilters, setInsightFilters] = useState(initialInsightFilters);
+  const [insights, setInsights] = useState({ reportType: 'PLATOS', rows: [], totals: {} });
 
   const load = useCallback(async ({
     nextFilters = filters,
@@ -117,6 +133,19 @@ function SalesManagement() {
     }
   }, [filters, pagination, search, sort]);
 
+  const loadInsights = useCallback(async (nextFilters = insightFilters) => {
+    setLoading(true);
+    try {
+      const data = await getSalesInsights(nextFilters);
+      setInsights(data);
+      setError('');
+    } catch {
+      setError('No se pudo cargar el reporte de ranking.');
+    } finally {
+      setLoading(false);
+    }
+  }, [insightFilters]);
+
   useEffect(() => {
     load({
       nextFilters: initialFilters,
@@ -125,6 +154,10 @@ function SalesManagement() {
       nextSearch: '',
     });
   }, [load]);
+
+  useEffect(() => {
+    loadInsights(initialInsightFilters);
+  }, [loadInsights]);
 
   const paymentOptions = useMemo(() => {
     const methods = new Set((report.rows || []).map((row) => row.paymentMethod).filter((item) => item && item !== '-'));
@@ -315,6 +348,26 @@ function SalesManagement() {
     }
   }, [filters, search, sort.sortBy, sort.sortDirection]);
 
+  const handleExportInsightExcel = useCallback(async () => {
+    try {
+      setLoading(true);
+      const blob = await exportSalesInsights(insightFilters);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+      const link = document.createElement('a');
+      const dateTag = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.setAttribute('download', `ranking_${insightFilters.reportType.toLowerCase()}_${dateTag}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('No se pudo exportar el ranking.');
+    } finally {
+      setLoading(false);
+    }
+  }, [insightFilters]);
+
   return (
     <div className="app-layout">
       <Navbar />
@@ -460,6 +513,124 @@ function SalesManagement() {
                 <option value="id:ASC">ID asc</option>
               </select>
             </label>
+          </div>
+        </section>
+
+        <section className="admin-card">
+          <h3>Reportes de ventas</h3>
+          <p>Consultá rankings de platos, mozos y artículos más vendidos, con descarga en Excel (CSV).</p>
+          <div className="row g-2">
+            <div className="col-md-2">
+              <label>Desde
+                <input
+                  type="date"
+                  className="form-control"
+                  value={insightFilters.from}
+                  onChange={(e) => setInsightFilters((prev) => ({ ...prev, from: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="col-md-2">
+              <label>Hasta
+                <input
+                  type="date"
+                  className="form-control"
+                  value={insightFilters.to}
+                  onChange={(e) => setInsightFilters((prev) => ({ ...prev, to: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="col-md-2">
+              <label>Estado
+                <select
+                  className="form-select"
+                  value={insightFilters.status}
+                  onChange={(e) => setInsightFilters((prev) => ({ ...prev, status: e.target.value }))}
+                >
+                  <option value="PAGADA">PAGADA</option>
+                  <option value="ABIERTA">ABIERTA</option>
+                  <option value="CANCELADA">CANCELADA</option>
+                  <option value="">Todos</option>
+                </select>
+              </label>
+            </div>
+            <div className="col-md-2">
+              <label>Método pago
+                <select
+                  className="form-select"
+                  value={insightFilters.paymentMethod}
+                  onChange={(e) => setInsightFilters((prev) => ({ ...prev, paymentMethod: e.target.value }))}
+                >
+                  <option value="">Todos</option>
+                  {paymentOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="col-md-2">
+              <label>Reporte
+                <select
+                  className="form-select"
+                  value={insightFilters.reportType}
+                  onChange={(e) => setInsightFilters((prev) => ({ ...prev, reportType: e.target.value }))}
+                >
+                  <option value="PLATOS">Platos más vendidos</option>
+                  <option value="MOZOS">Mozos</option>
+                  <option value="ARTICULOS">Artículos más vendidos</option>
+                </select>
+              </label>
+            </div>
+            <div className="col-md-2">
+              <label>Top
+                <input
+                  type="number"
+                  min={5}
+                  max={100}
+                  className="form-control"
+                  value={insightFilters.limit}
+                  onChange={(e) => setInsightFilters((prev) => ({ ...prev, limit: Number(e.target.value) || 5 }))}
+                />
+              </label>
+            </div>
+          </div>
+          <div className="admin-actions-row mt-3">
+            <button type="button" className="touch-btn btn-primary" onClick={() => loadInsights(insightFilters)} disabled={loading}>
+              {loading ? 'Cargando...' : 'Generar reporte'}
+            </button>
+            <button type="button" className="touch-btn" onClick={handleExportInsightExcel} disabled={loading}>
+              Descargar Excel (CSV)
+            </button>
+          </div>
+          <p className="mb-2 mt-3">
+            Filas: {formatNumber(insights.totals?.rows || 0, 0)} | Cantidad: {formatNumber(insights.totals?.totalQty || 0, 2)} | Tickets: {formatNumber(insights.totals?.totalTickets || 0, 0)} | Total venta: {formatAmount(insights.totals?.totalAmount || 0)}
+          </p>
+          <div className="admin-table-wrap">
+            <table className="table table-striped table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{insights.reportType === 'MOZOS' ? 'Mozo' : 'Artículo/Plato'}</th>
+                  <th>Cantidad</th>
+                  <th>Tickets</th>
+                  <th>Total venta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(insights.rows || []).map((row, index) => (
+                  <tr key={`${row.id}-${index}`}>
+                    <td>{index + 1}</td>
+                    <td>{row.name}</td>
+                    <td>{formatNumber(row.totalQty || 0, 2)}</td>
+                    <td>{formatNumber(row.tickets || 0, 0)}</td>
+                    <td>{formatAmount(row.totalAmount || 0)}</td>
+                  </tr>
+                ))}
+                {!(insights.rows || []).length && (
+                  <tr><td colSpan={5} className="text-center py-3">Sin datos para ese filtro.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
 

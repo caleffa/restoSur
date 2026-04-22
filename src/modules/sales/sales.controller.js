@@ -88,6 +88,20 @@ const vatBook = asyncHandler(async (req, res) => {
   res.json({ ok: true, data });
 });
 
+const insightsReport = asyncHandler(async (req, res) => {
+  const data = await service.getSalesInsightsReport(Number(req.user.branchId), req.query || {});
+  res.json({ ok: true, data });
+});
+
+const exportInsightsReport = asyncHandler(async (req, res) => {
+  const csv = await service.exportSalesInsightsCsv(Number(req.user.branchId), req.query || {});
+  const typeTag = String(req.query?.reportType || 'PLATOS').toUpperCase();
+  const filename = `reporte_${typeTag.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(`\uFEFF${csv}`);
+});
+
 module.exports = {
   createSale,
   addItem,
@@ -105,4 +119,6 @@ module.exports = {
   report,
   exportReport,
   vatBook,
+  insightsReport,
+  exportInsightsReport,
 };

@@ -363,6 +363,99 @@ async function getVatSalesBookByBranch(branchId, filters = {}) {
   );
 }
 
+function buildSalesReportConditions(branchId, filters = {}) {
+  const conditions = ['s.branch_id = ?'];
+  const values = [branchId];
+
+  if (filters.from) {
+    conditions.push('DATE(COALESCE(s.paid_at, s.opened_at)) >= ?');
+    values.push(filters.from);
+  }
+  if (filters.to) {
+    conditions.push('DATE(COALESCE(s.paid_at, s.opened_at)) <= ?');
+    values.push(filters.to);
+  }
+  if (filters.status) {
+    conditions.push('s.status = ?');
+    values.push(filters.status);
+  }
+  if (filters.paymentMethod) {
+    conditions.push('cm.payment_method = ?');
+    values.push(filters.paymentMethod);
+  }
+  if (filters.waiterId) {
+    conditions.push('s.user_id = ?');
+    values.push(filters.waiterId);
+  }
+
+  return { conditions, values };
+}
+
+async function getTopDishesByBranch(branchId, filters = {}) {
+  const { conditions, values } = buildSalesReportConditions(branchId, filters);
+  return query(
+    `SELECT
+      a.id,
+      a.name,
+      SUM(si.quantity) AS totalQty,
+      ROUND(SUM(si.quantity * si.unit_price), 2) AS totalAmount,
+      COUNT(DISTINCT s.id) AS tickets
+    FROM sales s
+    JOIN sale_items si ON si.sale_id = s.id
+    JOIN articles a ON a.id = si.article_id
+    LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    WHERE ${conditions.join(' AND ')}
+      AND a.is_product = 1
+    GROUP BY a.id, a.name
+    ORDER BY totalQty DESC, totalAmount DESC
+    LIMIT ?`,
+    [...values, Number(filters.limit || 20)]
+  );
+}
+
+async function getTopArticlesByBranch(branchId, filters = {}) {
+  const { conditions, values } = buildSalesReportConditions(branchId, filters);
+  return query(
+    `SELECT
+      a.id,
+      a.name,
+      SUM(si.quantity) AS totalQty,
+      ROUND(SUM(si.quantity * si.unit_price), 2) AS totalAmount,
+      COUNT(DISTINCT s.id) AS tickets
+    FROM sales s
+    JOIN sale_items si ON si.sale_id = s.id
+    JOIN articles a ON a.id = si.article_id
+    LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    WHERE ${conditions.join(' AND ')}
+    GROUP BY a.id, a.name
+    ORDER BY totalQty DESC, totalAmount DESC
+    LIMIT ?`,
+    [...values, Number(filters.limit || 20)]
+  );
+}
+
+async function getTopWaitersByBranch(branchId, filters = {}) {
+  const { conditions, values } = buildSalesReportConditions(branchId, filters);
+  return query(
+    `SELECT
+      u.id,
+      u.name,
+      COUNT(DISTINCT s.id) AS tickets,
+      ROUND(SUM(COALESCE(s.total, 0)), 2) AS totalAmount,
+      COALESCE(SUM(si.quantity), 0) AS totalQty
+    FROM sales s
+    JOIN users u ON u.id = s.user_id
+    LEFT JOIN sale_items si ON si.sale_id = s.id
+    LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    WHERE ${conditions.join(' AND ')}
+      AND u.role = 'MOZO'
+    GROUP BY u.id, u.name
+    ORDER BY totalAmount DESC, tickets DESC
+    LIMIT ?`,
+    [...values, Number(filters.limit || 20)]
+  );
+}
+
 module.exports = {
   createSale,
   findSaleById,
@@ -381,6 +474,9 @@ module.exports = {
   getSalesReportByBranch,
   getSalesTotalsByBranch,
   getVatSalesBookByBranch,
+  getTopDishesByBranch,
+  getTopArticlesByBranch,
+  getTopWaitersByBranch,
   listWaitersByBranch,
   findWaiterById,
   updateSaleWaiter,
