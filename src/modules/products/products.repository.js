@@ -44,15 +44,27 @@ async function listCostReport() {
       a.category_id,
       c.name AS category_name,
       a.sale_price AS sale_price,
-      ROUND(COALESCE(SUM(ri.quantity * i.cost), 0), 2) AS recipe_cost,
-      ROUND(a.sale_price - COALESCE(SUM(ri.quantity * i.cost), 0), 2) AS gross_profit,
+      case when a.is_product = 1 then
+      	ROUND(COALESCE(SUM(ri.quantity * i.cost), 0), 2) 
+		else
+			a.cost
+		END AS recipe_cost,
+      	
+      case when a.is_product = 1 then
+      	ROUND(a.sale_price - COALESCE(SUM(ri.quantity * i.cost), 0), 2)
+      ELSE a.sale_price - a.cost
+		end AS gross_profit,
+		
+		case when a.is_product = 1 then
       ROUND(
         CASE
           WHEN a.sale_price > 0 THEN ((a.sale_price - COALESCE(SUM(ri.quantity * i.cost), 0)) / a.sale_price) * 100
           ELSE 0
         END,
         2
-      ) AS margin_percentage
+      ) 
+      ELSE ROUND(((a.sale_price - a.cost) / a.sale_price) * 100 ,2)
+		end AS margin_percentage
     FROM articles a
     LEFT JOIN categories c ON c.id = a.category_id
     LEFT JOIN recipes r ON r.product_id = a.id AND r.active = 1

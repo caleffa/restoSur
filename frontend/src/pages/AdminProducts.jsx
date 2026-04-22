@@ -170,7 +170,7 @@ function AdminProducts() {
         />
 
         <SimpleDataTable
-          title="Reporte de costos por receta"
+          title="Reporte de costos"
           rows={productsCostReport}
           columns={[
             { key: 'name', label: 'Producto', accessor: (row) => row.name, sortable: true },
