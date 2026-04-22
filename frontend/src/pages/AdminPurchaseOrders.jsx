@@ -17,6 +17,15 @@ const INITIAL_FORM = {
   items: [{ articleId: '', quantity: '', unitCost: '' }],
 };
 
+function parseArticleIds(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map((id) => Number(id)).filter((id) => id > 0);
+  return String(value)
+    .split(',')
+    .map((id) => Number(id.trim()))
+    .filter((id) => id > 0);
+}
+
 function statusLabel(status) {
   switch (status) {
     case 'EMITIDA': return 'Emitida';
@@ -60,13 +69,19 @@ function AdminPurchaseOrders() {
     loadData();
   }, [loadData]);
 
-  const articleOptions = useMemo(
-    () => articles.map((article) => ({
-      value: String(article.id),
-      label: `${article.name} (${article.sku})`,
-    })),
-    [articles],
-  );
+  const articleOptions = useMemo(() => {
+    if (!form.supplierId) return [];
+
+    const selectedSupplier = suppliers.find((supplier) => Number(supplier.id) === Number(form.supplierId));
+    const supplierArticleIds = new Set(parseArticleIds(selectedSupplier?.article_ids));
+
+    return articles
+      .filter((article) => supplierArticleIds.has(Number(article.id)))
+      .map((article) => ({
+        value: String(article.id),
+        label: `${article.name} (${article.sku})`,
+      }));
+  }, [articles, form.supplierId, suppliers]);
 
   const addItemRow = () => {
     setForm((prev) => ({ ...prev, items: [...prev.items, { articleId: '', quantity: '', unitCost: '' }] }));
@@ -148,7 +163,11 @@ function AdminPurchaseOrders() {
           <form className="admin-table-form purchase-order-form" onSubmit={onSubmit}>
             <select
               value={form.supplierId}
-              onChange={(event) => setForm((prev) => ({ ...prev, supplierId: event.target.value }))}
+              onChange={(event) => setForm((prev) => ({
+                ...prev,
+                supplierId: event.target.value,
+                items: prev.items.map((item) => ({ ...item, articleId: '' })),
+              }))}
               required
             >
               <option value="">Seleccionar proveedor</option>
