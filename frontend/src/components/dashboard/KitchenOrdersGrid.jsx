@@ -28,7 +28,7 @@ function KitchenOrdersGrid({ orders, loading, onSelectOrder }) {
     const normalizedSale = filters.sale.trim().toLowerCase();
 
     return orders.filter((order) => {
-      const tableLabel = `${order.tableNumber || order.tableId || ''}`.toLowerCase();
+      const tableLabel = `${order.tableId || order.tableNumber || ''}`.toLowerCase();
       const waiterLabel = `${order.waiterName || ''}`.toLowerCase();
       const dishLabel = `${order.articleName || ''}`.toLowerCase();
       const saleLabel = `${order.saleId || ''}`.toLowerCase();
@@ -92,7 +92,7 @@ function KitchenOrdersGrid({ orders, loading, onSelectOrder }) {
               {filteredOrders.map((order) => (
                 <tr key={order.id} role="button" onClick={() => onSelectOrder(order)}>
                   <td>{getTimeFromDateString(order.createdAt)}</td>
-                  <td>{order.tableNumber || order.tableId || '-'}</td>
+                  <td>{order.tableId || order.tableNumber || '-'}</td>
                   <td>{order.waiterName || '-'}</td>
                   <td>{order.articleName || '-'}</td>
                   <td>{order.quantity}</td>
