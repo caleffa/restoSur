@@ -1,10 +1,18 @@
 :root {
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'Roboto', Inter, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 body {
   margin: 0;
   background: #f7f8fa;
+  font-family: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 .app-layout {
@@ -587,6 +595,16 @@ body {
   min-height: 34px;
   padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
+}
+
+.simple-data-table {
+  font-size: 0.92rem;
+}
+
+.simple-data-table .admin-table-toolbar input,
+.simple-data-table .admin-filters-row select,
+.simple-data-table .touch-btn {
+  font-size: 0.88rem;
 }
 
 .category-cards-grid {
