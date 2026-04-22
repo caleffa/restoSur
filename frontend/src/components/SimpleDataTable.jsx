@@ -4,6 +4,9 @@ function normalize(value) {
   if (value === null || value === undefined) return '';
   return String(value).toLowerCase();
 }
+function sortOptions(options) {
+  return [...options].sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }));
+}
 
 function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
   const [search, setSearch] = useState('');
@@ -90,7 +93,7 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
                 onChange={(event) => setFilter(filter.key, event.target.value)}
               >
                 <option value="">Todos</option>
-                {filter.options.map((option) => (
+                {sortOptions(filter.options).map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

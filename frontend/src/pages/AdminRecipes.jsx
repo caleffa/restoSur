@@ -11,6 +11,7 @@ import {
   getRecipeById,
   getKitchens,
 } from '../services/adminService';
+import { sortByLabel } from '../utils/sort';
 
 const initialForm = {
   productId: '',
@@ -63,6 +64,9 @@ function AdminRecipes() {
     () => Object.fromEntries(articles.map((article) => [Number(article.id), article])),
     [articles]
   );
+  const sortedProducts = useMemo(() => sortByLabel(products, (product) => product.name), [products]);
+  const sortedKitchens = useMemo(() => sortByLabel(kitchens, (kitchen) => kitchen.name), [kitchens]);
+  const sortedArticles = useMemo(() => sortByLabel(articles, (article) => article.name), [articles]);
 
   const resetAndCloseModal = () => {
     setForm(initialForm);
@@ -210,14 +214,14 @@ function AdminRecipes() {
             <form className="admin-table-form modal-form" onSubmit={submitForm}>
               <select value={form.productId} onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))} required>
                 <option value="">Seleccionar producto</option>
-                {products.map((product) => (
+                {sortedProducts.map((product) => (
                   <option key={product.id} value={product.id}>{product.name}</option>
                 ))}
               </select>
 
               <select value={form.kitchenId} onChange={(e) => setForm((prev) => ({ ...prev, kitchenId: e.target.value }))} required>
                 <option value="">Seleccionar cocina</option>
-                {kitchens.map((kitchen) => (
+                {sortedKitchens.map((kitchen) => (
                   <option key={kitchen.id} value={kitchen.id}>{kitchen.name}</option>
                 ))}
               </select>
@@ -242,7 +246,7 @@ function AdminRecipes() {
                         required
                       >
                         <option value="">Seleccionar artículo</option>
-                        {articles.map((article) => (
+                        {sortedArticles.map((article) => (
                           <option key={article.id} value={article.id}>{article.name} ({article.sku})</option>
                         ))}
                       </select>
