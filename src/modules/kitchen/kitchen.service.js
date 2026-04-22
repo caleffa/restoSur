@@ -58,6 +58,7 @@ module.exports = {
       saleItemId: row.sale_item_id,
       branchId: row.branch_id,
       tableId: row.table_id,
+      tableNumber: row.table_number || null,
       articleName: row.article_name,
       quantity: Number(row.quantity),
       kitchenId: row.kitchen_id ? Number(row.kitchen_id) : null,
@@ -65,6 +66,7 @@ module.exports = {
       status: row.status,
       userId: row.user_id ? Number(row.user_id) : null,
       updatedByName: row.user_name || null,
+      waiterName: row.waiter_name || null,
       createdAt: row.sent_at,
       updatedAt: row.updated_at,
     }));

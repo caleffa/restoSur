@@ -37,16 +37,21 @@ async function listPending(branchId) {
       ko.sent_at,
       ko.updated_at,
       s.table_id,
+      tr.table_number,
       a.name AS article_name,
       k.name AS kitchen_name,
-      u.name AS user_name
+      u.name AS user_name,
+      wu.name AS waiter_name
     FROM kitchen_orders ko
     JOIN sales s ON s.id = ko.sale_id
+    JOIN tables_restaurant tr ON tr.id = s.table_id
     JOIN sale_items si ON si.id = ko.sale_item_id
     JOIN articles a ON a.id = si.article_id
     LEFT JOIN kitchens k ON k.id = ko.kitchen_id
     LEFT JOIN users u ON u.id = ko.user_id
+    LEFT JOIN users wu ON wu.id = s.user_id
     WHERE ko.branch_id = ?
+      AND DATE(ko.sent_at) = CURDATE()
     ORDER BY ko.id DESC`,
     [branchId]
   );
