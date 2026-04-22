@@ -78,6 +78,11 @@ export async function getProducts() {
   return unwrap(data) || [];
 }
 
+export async function getProductsCostReport() {
+  const { data } = await http.get('/products/cost-report');
+  return unwrap(data) || [];
+}
+
 export async function createProduct(payload) {
   const { data } = await http.post('/products', payload);
   return unwrap(data);

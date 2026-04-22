@@ -29,6 +29,10 @@ async function listProducts() {
   return repo.listSaleProducts();
 }
 
+async function listProductsCostReport() {
+  return repo.listCostReport();
+}
+
 async function getProductById(id) {
   if (!id || id <= 0) throw new AppError('ID de producto inválido', 400);
   const product = await repo.findById(id);
@@ -61,4 +65,12 @@ async function listTopProducts(branchId) {
   return repo.listTopProductsByBranch(branchId, 8);
 }
 
-module.exports = { listProducts, getProductById, createProduct, updateProduct, removeProduct, listTopProducts };
+module.exports = {
+  listProducts,
+  listProductsCostReport,
+  getProductById,
+  createProduct,
+  updateProduct,
+  removeProduct,
+  listTopProducts,
+};

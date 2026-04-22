@@ -36,6 +36,35 @@ async function listSaleProducts() {
   );
 }
 
+async function listCostReport() {
+  return query(
+    `SELECT
+      a.id,
+      a.name,
+      a.category_id,
+      c.name AS category_name,
+      a.sale_price AS sale_price,
+      ROUND(COALESCE(SUM(ri.quantity * i.cost), 0), 2) AS recipe_cost,
+      ROUND(a.sale_price - COALESCE(SUM(ri.quantity * i.cost), 0), 2) AS gross_profit,
+      ROUND(
+        CASE
+          WHEN a.sale_price > 0 THEN ((a.sale_price - COALESCE(SUM(ri.quantity * i.cost), 0)) / a.sale_price) * 100
+          ELSE 0
+        END,
+        2
+      ) AS margin_percentage
+    FROM articles a
+    LEFT JOIN categories c ON c.id = a.category_id
+    LEFT JOIN recipes r ON r.product_id = a.id AND r.active = 1
+    LEFT JOIN recipe_items ri ON ri.recipe_id = r.id
+    LEFT JOIN articles i ON i.id = ri.article_id
+    WHERE a.for_sale = 1
+      AND a.active = 1
+    GROUP BY a.id, a.name, a.category_id, c.name, a.sale_price
+    ORDER BY a.name ASC`
+  );
+}
+
 async function createProduct(data) {
   const result = await query(
     `INSERT INTO articles
@@ -94,6 +123,7 @@ module.exports = {
   findById,
   listProducts,
   listSaleProducts,
+  listCostReport,
   createProduct,
   updateProduct,
   removeProduct,

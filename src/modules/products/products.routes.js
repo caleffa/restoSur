@@ -6,6 +6,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('', controller.listProducts);
+router.get('/cost-report', controller.listProductsCostReport);
 router.get('/top', controller.listTopProducts);
 router.get('/:id', controller.getProductById);
 router.post('', roleMiddleware('ADMIN'), controller.createProduct);
