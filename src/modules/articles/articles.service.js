@@ -21,6 +21,7 @@ function normalizePayload(data) {
   const supplierId = toOptionalNumber(data.supplierId);
   const cost = Number(data.cost);
   const salePrice = Number(data.salePrice ?? data.price ?? 0);
+  const stockMinimum = toOptionalNumber(data.stockMinimum ?? data.stock_minimum ?? data.stockMinimo);
 
   if (!name) throw new AppError('El nombre del artículo es obligatorio', 400);
   if (!sku) throw new AppError('El SKU del artículo es obligatorio', 400);
@@ -28,6 +29,9 @@ function normalizePayload(data) {
   if (!measurementUnitId) throw new AppError('La unidad de medida es obligatoria', 400);
   if (!Number.isFinite(cost) || cost < 0) throw new AppError('El costo del artículo es inválido', 400);
   if (!Number.isFinite(salePrice) || salePrice < 0) throw new AppError('El precio de venta es inválido', 400);
+  if (stockMinimum !== null && stockMinimum < 0) {
+    throw new AppError('El stock mínimo del artículo es inválido', 400);
+  }
 
   const isProduct = data.isProduct === undefined ? false : Boolean(data.isProduct);
   const isSupply = data.isSupply === undefined ? false : Boolean(data.isSupply);
@@ -52,6 +56,7 @@ function normalizePayload(data) {
     supplierId,
     cost,
     salePrice,
+    stockMinimum,
     managesStock: data.managesStock === undefined ? true : Boolean(data.managesStock),
     isProduct,
     isSupply,
@@ -266,6 +271,7 @@ async function importArticlesFromCsv(csvRaw) {
         categoryId: resolved.categoryId,
         cost: firstNonEmpty(entry.row.cost, entry.row.costo),
         salePrice: firstNonEmpty(entry.row.sale_price, entry.row.saleprice, entry.row.precio_venta),
+        stockMinimum: firstNonEmpty(entry.row.stock_minimum, entry.row.stock_minimo),
         managesStock: parseBoolean(firstNonEmpty(entry.row.manages_stock, entry.row.maneja_stock), true),
         isProduct: parseBoolean(firstNonEmpty(entry.row.is_product, entry.row.es_producto), false),
         isSupply: parseBoolean(firstNonEmpty(entry.row.is_supply, entry.row.es_insumo), false),
@@ -317,6 +323,7 @@ async function generateImportTemplateCsv() {
     'category_name',
     'cost',
     'sale_price',
+    'stock_minimum',
     'manages_stock',
     'is_product',
     'is_supply',
@@ -339,6 +346,7 @@ async function generateImportTemplateCsv() {
       category_name: 'Cervezas',
       cost: '850.00',
       sale_price: '1750.00',
+      stock_minimum: '10',
       manages_stock: 'true',
       is_product: 'true',
       is_supply: 'false',
@@ -358,6 +366,7 @@ async function generateImportTemplateCsv() {
       category_name: 'Insumos',
       cost: '12000.00',
       sale_price: '0',
+      stock_minimum: '5',
       manages_stock: 'true',
       is_product: 'false',
       is_supply: 'true',

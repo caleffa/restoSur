@@ -62,8 +62,8 @@ async function create(data) {
   const result = await query(
     `INSERT INTO articles (
       name, sku, barcode, article_type_id, measurement_unit_id, category_id, cost, sale_price,
-      manages_stock, is_product, is_supply, for_sale, active
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      stock_minimum, manages_stock, is_product, is_supply, for_sale, active
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.name,
       data.sku,
@@ -73,6 +73,7 @@ async function create(data) {
       data.categoryId,
       data.cost,
       data.salePrice,
+      data.stockMinimum,
       data.managesStock ? 1 : 0,
       data.isProduct ? 1 : 0,
       data.isSupply ? 1 : 0,
@@ -87,7 +88,7 @@ async function update(id, data) {
   await query(
     `UPDATE articles
      SET name = ?, sku = ?, barcode = ?, article_type_id = ?, measurement_unit_id = ?, category_id = ?,
-         cost = ?, sale_price = ?, manages_stock = ?, is_product = ?, is_supply = ?, for_sale = ?, active = ?
+         cost = ?, sale_price = ?, stock_minimum = ?, manages_stock = ?, is_product = ?, is_supply = ?, for_sale = ?, active = ?
      WHERE id = ?`,
     [
       data.name,
@@ -98,6 +99,7 @@ async function update(id, data) {
       data.categoryId,
       data.cost,
       data.salePrice,
+      data.stockMinimum,
       data.managesStock ? 1 : 0,
       data.isProduct ? 1 : 0,
       data.isSupply ? 1 : 0,

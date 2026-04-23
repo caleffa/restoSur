@@ -121,6 +121,7 @@ CREATE TABLE articles (
   category_id INT NULL,
   cost DECIMAL(12,2) NOT NULL DEFAULT 0,
   sale_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  stock_minimum DECIMAL(12,3) NULL,
   manages_stock TINYINT(1) DEFAULT 1,
   is_product TINYINT(1) DEFAULT 0,
   is_supply TINYINT(1) DEFAULT 1,

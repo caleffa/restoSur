@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { MENU_BY_ROLE } from '../utils/roles';
-import { getAfipConfig } from '../services/adminService';
-import  {  FaAngleLeft,FaArrowAltCircleLeft, FaPowerOff, FaReply, FaUser, FaDolly }  from  "react-icons/fa" ;
+import { getAfipConfig, getStock } from '../services/adminService';
+import { FaBell, FaPowerOff, FaReply } from 'react-icons/fa';
 
 
 function Navbar() {
@@ -14,6 +14,7 @@ function Navbar() {
   const [logoUrl, setLogoUrl] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [activeParentPath, setActiveParentPath] = useState(null);
+  const [lowStockCount, setLowStockCount] = useState(0);
   const menuItems = MENU_BY_ROLE[user?.role] || [];
 
   useEffect(() => {
@@ -73,6 +74,36 @@ function Navbar() {
 
     loadLogo();
   }, [user?.role]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLowStockAlerts = async () => {
+      try {
+        const stockRows = await getStock();
+        if (cancelled) return;
+
+        const totalAlerts = (Array.isArray(stockRows) ? stockRows : []).filter((item) => {
+          const minimum = Number(item.stock_minimum);
+          const quantity = Number(item.quantity);
+          const managesStock = item.manages_stock === 1 || item.manages_stock === true;
+          return managesStock && Number.isFinite(minimum) && minimum >= 0 && quantity <= minimum;
+        }).length;
+
+        setLowStockCount(totalAlerts);
+      } catch {
+        if (!cancelled) setLowStockCount(0);
+      }
+    };
+
+    loadLowStockAlerts();
+    const intervalId = setInterval(loadLowStockAlerts, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const visibleMenuItems = activeParentPath
     ? menuItems.find((item) => item.path === activeParentPath)?.children || []
@@ -149,8 +180,17 @@ function Navbar() {
             </Link>
           )
         ))}
+        <button
+          type="button"
+          className={`btn-label-2 touch-btn-2 navbar-bell-btn ${lowStockCount > 0 ? 'has-alert' : ''}`}
+          onClick={() => navigate('/dashboard')}
+          title={lowStockCount > 0 ? `Hay ${lowStockCount} artículo(s) en stock mínimo` : 'Sin alertas de stock mínimo'}
+        >
+          <FaBell />
+          {lowStockCount > 0 ? <span className="navbar-alert-badge">{lowStockCount}</span> : null}
+        </button>
         <button type="button" className="btn-label-2 touch-btn-danger-2" onClick={logout}>
-          < FaPowerOff />
+          <FaPowerOff />
         </button>
       </nav>
     </header>

@@ -1339,6 +1339,32 @@ textarea {
   font-size:40px;
 }
 
+.navbar-bell-btn {
+  position: relative;
+}
+
+.navbar-bell-btn.has-alert {
+  background: #d97706;
+  color: #fff;
+}
+
+.navbar-alert-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #dc2626;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .btn-label-2{
   font-size:12px;
   text-align:center;
