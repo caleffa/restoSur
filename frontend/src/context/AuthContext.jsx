@@ -1,7 +1,24 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { loginRequest } from '../services/authService';
 
 const AuthContext = createContext(null);
+const TOKEN_EXPIRATION_BUFFER_MS = 5_000;
+
+function getTokenExpirationTime(token) {
+  if (!token) return null;
+
+  try {
+    const payloadBase64 = token.split('.')[1];
+    if (!payloadBase64) return null;
+
+    const payload = JSON.parse(atob(payloadBase64));
+    if (!payload?.exp) return null;
+
+    return payload.exp * 1000;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -75,11 +92,31 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.clear(); // 🔥 limpieza completa (opcional)
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const expirationTime = getTokenExpirationTime(token);
+    if (!expirationTime) return undefined;
+
+    const remainingTime = expirationTime - Date.now();
+    if (remainingTime <= 0) {
+      logout();
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => logout(),
+      Math.max(remainingTime - TOKEN_EXPIRATION_BUFFER_MS, 0)
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [logout, token]);
 
   const value = useMemo(
     () => ({
@@ -90,7 +127,7 @@ export function AuthProvider({ children }) {
       loading,
       isAuthenticated: Boolean(token),
     }),
-    [user, token, loading]
+    [user, token, login, logout, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
