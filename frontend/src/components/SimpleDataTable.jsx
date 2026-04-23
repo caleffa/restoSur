@@ -1,11 +1,28 @@
 import { useMemo, useState } from 'react';
-
 function normalize(value) {
   if (value === null || value === undefined) return '';
   return String(value).toLowerCase();
 }
+
 function sortOptions(options) {
   return [...options].sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }));
+}
+
+function formatCellValue(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  if (Array.isArray(value)) return value.map((item) => formatCellValue(item)).join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
@@ -14,6 +31,11 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
   const [sortBy, setSortBy] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
   const [page, setPage] = useState(1);
+
+  const exportableColumns = useMemo(
+    () => columns.filter((column) => !column.disableExport),
+    [columns],
+  );
 
   const filteredRows = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
@@ -53,6 +75,13 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
   const start = (page - 1) * pageSize;
   const paginatedRows = sortedRows.slice(start, start + pageSize);
 
+  const exportRows = useMemo(() => (
+    sortedRows.map((row) => exportableColumns.map((column) => {
+      const accessor = column.exportAccessor || column.accessor;
+      return formatCellValue(accessor ? accessor(row) : '');
+    }))
+  ), [sortedRows, exportableColumns]);
+
   const setFilter = (key, value) => {
     setSelectedFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
@@ -66,6 +95,79 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
       return;
     }
     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+  };
+
+  const openPrintableWindow = () => {
+    const tableHeaders = exportableColumns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('');
+    const tableRows = exportRows
+      .map((row) => `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`)
+      .join('');
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=700');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8" />
+          <title>${escapeHtml(title)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 16px; }
+            h1 { margin: 0 0 12px; font-size: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(title)}</h1>
+          <table>
+            <thead><tr>${tableHeaders}</tr></thead>
+            <tbody>${tableRows || `<tr><td colspan="${exportableColumns.length}">Sin resultados</td></tr>`}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    return printWindow;
+  };
+
+  const handlePrint = () => {
+    const printWindow = openPrintableWindow();
+    if (!printWindow) return;
+    printWindow.print();
+  };
+
+  const handlePdfExport = () => {
+    const printWindow = openPrintableWindow();
+    if (!printWindow) return;
+    printWindow.print();
+  };
+
+  const handleExcelExport = () => {
+    const tableHtml = `
+      <table>
+        <thead>
+          <tr>${exportableColumns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${exportRows.map((row) => `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+
+    const blob = new Blob([`\ufeff${tableHtml}`], {
+      type: 'application/vnd.ms-excel;charset=utf-8;',
+    });
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${title.toLowerCase().replaceAll(/[^a-z0-9]+/gi, '-') || 'listado'}.xls`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
 
   return (
@@ -103,6 +205,18 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
           ))}
         </div>
       )}
+
+      <div className="admin-actions-row admin-export-row">
+        <button type="button" className="touch-btn" onClick={handlePrint}>
+          Imprimir
+        </button>
+        <button type="button" className="touch-btn" onClick={handlePdfExport}>
+          Descargar PDF
+        </button>
+        <button type="button" className="touch-btn" onClick={handleExcelExport}>
+          Descargar Excel
+        </button>
+      </div>
 
       <div className="admin-table-wrap">
         <table className="table table-striped table-hover align-middle mb-0">
