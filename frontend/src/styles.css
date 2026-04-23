@@ -601,6 +601,11 @@ textarea {
   font-size: 0.92rem;
 }
 
+
+.simple-data-table .admin-export-row {
+  justify-content: flex-end;
+}
+
 .simple-data-table .admin-table-toolbar input,
 .simple-data-table .admin-filters-row select,
 .simple-data-table .touch-btn {
