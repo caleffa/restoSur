@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { MENU_BY_ROLE } from '../utils/roles';
 import { getAfipConfig, getStock } from '../services/adminService';
 import { FaBell, FaPowerOff, FaReply } from 'react-icons/fa';
+import Modal from './Modal';
 
 
 function Navbar() {
@@ -15,6 +16,8 @@ function Navbar() {
   const [logoError, setLogoError] = useState(false);
   const [activeParentPath, setActiveParentPath] = useState(null);
   const [lowStockCount, setLowStockCount] = useState(0);
+  const [lowStockAlerts, setLowStockAlerts] = useState([]);
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
   const menuItems = MENU_BY_ROLE[user?.role] || [];
 
   useEffect(() => {
@@ -83,16 +86,27 @@ function Navbar() {
         const stockRows = await getStock();
         if (cancelled) return;
 
-        const totalAlerts = (Array.isArray(stockRows) ? stockRows : []).filter((item) => {
+        const alerts = (Array.isArray(stockRows) ? stockRows : []).filter((item) => {
           const minimum = Number(item.stock_minimum);
           const quantity = Number(item.quantity);
           const managesStock = item.manages_stock === 1 || item.manages_stock === true;
           return managesStock && Number.isFinite(minimum) && minimum >= 0 && quantity <= minimum;
-        }).length;
+        });
 
-        setLowStockCount(totalAlerts);
+        setLowStockCount(alerts.length);
+        setLowStockAlerts(
+          alerts.map((item) => {
+            const name = item.name || item.article_name || 'Artículo sin nombre';
+            const quantity = Number(item.quantity);
+            const minimum = Number(item.stock_minimum);
+            return `${name}: stock actual ${Number.isFinite(quantity) ? quantity : 0}, mínimo ${Number.isFinite(minimum) ? minimum : 0}`;
+          }),
+        );
       } catch {
-        if (!cancelled) setLowStockCount(0);
+        if (!cancelled) {
+          setLowStockCount(0);
+          setLowStockAlerts([]);
+        }
       }
     };
 
@@ -183,7 +197,7 @@ function Navbar() {
         <button
           type="button"
           className={`btn-label-2 touch-btn-2 navbar-bell-btn ${lowStockCount > 0 ? 'has-alert' : ''}`}
-          onClick={() => navigate('/dashboard')}
+          onClick={() => setShowAlertsModal(true)}
           title={lowStockCount > 0 ? `Hay ${lowStockCount} artículo(s) en stock mínimo` : 'Sin alertas de stock mínimo'}
         >
           <FaBell />
@@ -193,6 +207,27 @@ function Navbar() {
           <FaPowerOff />
         </button>
       </nav>
+      {showAlertsModal && (
+        <Modal
+          title="Alertas"
+          onClose={() => setShowAlertsModal(false)}
+          actions={(
+            <button type="button" className="touch-btn-danger" onClick={() => setShowAlertsModal(false)}>
+              Cerrar
+            </button>
+          )}
+        >
+          {lowStockAlerts.length > 0 ? (
+            <ul className="alerts-list">
+              {lowStockAlerts.map((message, index) => (
+                <li key={`${message}-${index}`}>{message}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No hay mensajes de alerta.</p>
+          )}
+        </Modal>
+      )}
     </header>
   );
 }
