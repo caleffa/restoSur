@@ -40,6 +40,8 @@ async function listStock(branchId) {
       s.updated_at,
       a.name AS article_name,
       a.sku AS article_sku,
+      a.stock_minimum,
+      a.manages_stock,
       a.active,
       mu.code AS measurement_unit_code,
       GROUP_CONCAT(DISTINCT rp.name ORDER BY rp.name SEPARATOR ', ') AS related_products

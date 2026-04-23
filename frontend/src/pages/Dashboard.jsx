@@ -14,7 +14,7 @@ import {
   getTables,
   getWaiters,
 } from '../services/tableService';
-import { getAreas } from '../services/adminService';
+import { getAreas, getStock } from '../services/adminService';
 import {
   getDashboardSummary,
   getOpenSales,
@@ -37,6 +37,7 @@ function Dashboard() {
   const [openSales, setOpenSales] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [salesByHour, setSalesByHour] = useState([]);
+  const [lowStockArticles, setLowStockArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyTableId, setBusyTableId] = useState(null);
   const [waiters, setWaiters] = useState([]);
@@ -63,13 +64,14 @@ function Dashboard() {
           ...(Array.isArray(mapData?.unplacedTables) ? mapData.unplacedTables : []),
         ]);
 
-      const [summaryData, tablesData, salesData, productsData, hourlyData, kitchenData] = await Promise.all([
+      const [summaryData, tablesData, salesData, productsData, hourlyData, kitchenData, stockData] = await Promise.all([
         getDashboardSummary(),
         tablesPromise,
         getOpenSales(),
         getTopProducts(),
         getSalesByHour(),
         isKitchenRole ? getKitchenOrders() : Promise.resolve([]),
+        getStock(),
       ]);
 
       setSummary(summaryData);
@@ -85,6 +87,14 @@ function Dashboard() {
       setTopProducts(productsData);
       setSalesByHour(hourlyData);
       setKitchenOrders(kitchenData);
+      setLowStockArticles(
+        (Array.isArray(stockData) ? stockData : []).filter((item) => {
+          const minimum = Number(item.stock_minimum);
+          const quantity = Number(item.quantity);
+          const managesStock = item.manages_stock === 1 || item.manages_stock === true;
+          return managesStock && Number.isFinite(minimum) && minimum >= 0 && quantity <= minimum;
+        })
+      );
       setError('');
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudieron cargar los datos del dashboard.');
@@ -213,10 +223,11 @@ function Dashboard() {
 
     return {
       outOfStockProducts,
+      lowStockArticles,
       pendingBillTables,
       delayedOrders,
     };
-  }, [tables, openSales, topProducts]);
+  }, [tables, openSales, topProducts, lowStockArticles]);
 
   const maxHourlySale = useMemo(() => {
     if (!salesByHour.length) return 1;
@@ -356,6 +367,11 @@ function Dashboard() {
                 <li>
                   <strong>Sin stock:</strong> {alerts.outOfStockProducts.length > 0
                     ? alerts.outOfStockProducts.map((product) => product.name).join(', ')
+                    : 'Sin alertas'}
+                </li>
+                <li>
+                  <strong>Stock en mínimo:</strong> {alerts.lowStockArticles.length > 0
+                    ? alerts.lowStockArticles.map((article) => article.article_name).join(', ')
                     : 'Sin alertas'}
                 </li>
                 <li>

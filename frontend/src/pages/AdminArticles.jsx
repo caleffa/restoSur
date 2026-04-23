@@ -27,6 +27,7 @@ const initialForm = {
   supplierId: '',
   cost: '',
   salePrice: '',
+  stockMinimum: '',
   managesStock: true,
   isProduct: false,
   isSupply: false,
@@ -107,6 +108,7 @@ function AdminArticles() {
         supplierId: form.supplierId ? Number(form.supplierId) : null,
         cost: Number(form.cost),
         salePrice: Number(form.salePrice),
+        stockMinimum: form.stockMinimum === '' ? null : Number(form.stockMinimum),
         managesStock: Boolean(form.managesStock),
         isProduct: Boolean(form.isProduct),
         isSupply: Boolean(form.isSupply),
@@ -149,6 +151,7 @@ function AdminArticles() {
       supplierId: row.supplier_id ?? row.supplierId ?? '',
       cost: row.cost,
       salePrice: row.sale_price ?? row.salePrice ?? 0,
+      stockMinimum: row.stock_minimum ?? row.stockMinimum ?? '',
       managesStock: row.manages_stock === 1 || row.manages_stock === true,
       isProduct: row.is_product === 1 || row.is_product === true,
       isSupply: row.is_supply === 1 || row.is_supply === true,
@@ -329,6 +332,7 @@ function AdminArticles() {
             { key: 'supplier', label: 'Proveedor', accessor: (row) => row.supplier_name || '-' },
             { key: 'cost', label: 'Costo', accessor: (row) => formatCurrency(row.cost), sortAccessor: (row) => Number(row.cost) || 0, sortable: true },
             { key: 'salePrice', label: 'Precio venta', accessor: (row) => formatCurrency(row.sale_price ?? row.salePrice ?? 0), sortAccessor: (row) => Number(row.sale_price ?? row.salePrice) || 0, sortable: true },
+            { key: 'stockMin', label: 'Stock mínimo', accessor: (row) => (row.stock_minimum ?? row.stockMinimum ?? '-') },
             { key: 'flags', label: 'Flags', accessor: (row) => `Venta:${row.for_sale ? 'Sí' : 'No'} · Prod:${row.is_product ? 'Sí' : 'No'} · Insumo:${row.is_supply ? 'Sí' : 'No'}` },
             { key: 'status', label: 'Estado', accessor: (row) => ((row.active === 1 || row.active === true) ? 'Activo' : 'Inactivo') },
             {
@@ -414,6 +418,14 @@ function AdminArticles() {
                 value={form.salePrice}
                 onChange={(event) => setForm((prev) => ({ ...prev, salePrice: event.target.value }))}
                 required
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                placeholder="Stock mínimo (opcional)"
+                value={form.stockMinimum}
+                onChange={(event) => setForm((prev) => ({ ...prev, stockMinimum: event.target.value }))}
               />
               <label><input type="checkbox" checked={form.managesStock} onChange={(event) => setForm((prev) => ({ ...prev, managesStock: event.target.checked }))} /> Maneja stock</label>
               <label><input type="checkbox" checked={form.isProduct} onChange={(event) => handleTypeToggle('isProduct', event.target.checked)} /> Es producto</label>
