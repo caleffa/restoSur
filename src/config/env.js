@@ -1,6 +1,11 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+const parseBoolean = (value, defaultValue = false) => {
+  if (value === undefined) return defaultValue;
+  return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+};
+
 module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 3000),
@@ -15,5 +20,10 @@ module.exports = {
   jwt: {
     secret: process.env.JWT_SECRET || 'change_me',
     expiresIn: process.env.JWT_EXPIRES_IN || '8h',
+  },
+  ssl: {
+    enabled: parseBoolean(process.env.HTTPS_ENABLED, true),
+    keyPath: process.env.SSL_KEY_PATH || 'certs/localhost-key.pem',
+    certPath: process.env.SSL_CERT_PATH || 'certs/localhost.pem',
   },
 };

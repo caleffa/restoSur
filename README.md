@@ -104,7 +104,7 @@ npm run dev
 ```
 
 Variables:
-- `VITE_API_URL` (default: `http://localhost:3000/api`)
+- `VITE_API_URL` (default: `https://localhost:3000/api`)
 
 ## Comandas
 - Acceso permitido para roles `ADMIN` y `COCINA`.
@@ -113,3 +113,19 @@ Variables:
 - POST `/comandas`
 - PATCH `/comandas/:id/status`
 - DELETE `/comandas/:id`
+
+
+## HTTPS local
+El backend y frontend están preparados para HTTPS en desarrollo.
+
+Variables backend (`.env`):
+- `HTTPS_ENABLED=true`
+- `SSL_KEY_PATH=certs/localhost-key.pem`
+- `SSL_CERT_PATH=certs/localhost.pem`
+
+Variables frontend (`frontend/.env` opcional):
+- `VITE_API_URL=https://localhost:3000/api`
+- `VITE_SSL_KEY_PATH=../certs/localhost-key.pem`
+- `VITE_SSL_CERT_PATH=../certs/localhost.pem`
+
+Si no definís certificados para Vite, usa certificado autofirmado automático (`https: true`).

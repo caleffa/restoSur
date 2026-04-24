@@ -10,11 +10,15 @@ const app = express();
 // ✅ CORS PRIMERO
 const corsOptions = {
   origin: [
+    'https://localhost:5173',
+    'https://127.0.0.1:5173',
+    'https://192.168.1.11:5173',
+    'https://192.168.0.11:5173',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://192.168.1.11:5173',  // Tu IP del frontend
+    'http://192.168.1.11:5173',
     'http://192.168.0.11:5173'
-  ],  // Otra IP posible
+  ],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,

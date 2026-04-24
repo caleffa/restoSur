@@ -49,7 +49,7 @@ function Navbar() {
     }
     
     // Obtener la URL base del API
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.REACT_APP_API_URL || 'https://localhost:3000';
     
     // Asegurar que la ruta tenga el formato correcto
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
