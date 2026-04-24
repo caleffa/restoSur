@@ -26,6 +26,7 @@ const suppliersRoutes = require('../modules/suppliers/suppliers.routes');
 const customersRoutes = require('../modules/customers/customers.routes');
 const purchaseOrdersRoutes = require('../modules/purchaseOrders/purchaseOrders.routes');
 const profitsRoutes = require('../modules/profits/profits.routes');
+const paymentMethodsRoutes = require('../modules/paymentMethods/paymentMethods.routes');
 
 const router = express.Router();
 
@@ -58,5 +59,6 @@ router.use('/suppliers', suppliersRoutes);
 router.use('/customers', customersRoutes);
 router.use('/purchase-orders', purchaseOrdersRoutes);
 router.use('/profits', profitsRoutes);
+router.use('/payment-methods', paymentMethodsRoutes);
 
 module.exports = router;

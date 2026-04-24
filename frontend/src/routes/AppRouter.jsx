@@ -27,6 +27,7 @@ import AdminRecipes from '../pages/AdminRecipes';
 import AdminKitchenTypes from '../pages/AdminKitchenTypes';
 import AdminKitchens from '../pages/AdminKitchens';
 import AdminCashReasons from '../pages/AdminCashReasons';
+import AdminPaymentMethods from '../pages/AdminPaymentMethods';
 import AdminVatTypes from '../pages/AdminVatTypes';
 import AdminSuppliers from '../pages/AdminSuppliers';
 import AdminCustomers from '../pages/AdminCustomers';
@@ -179,6 +180,16 @@ function AppRouter() {
         )}
       />
 
+
+
+      <Route
+        path="/admin/management/payment-methods"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO]}>
+            <AdminPaymentMethods />
+          </ProtectedRoute>
+        )}
+      />
 
       <Route
         path="/admin/management/cash-reasons"

@@ -63,6 +63,7 @@ export const MENU_BY_ROLE = {
         { label: 'Caja', path: '/cash' },
         { label: 'Admin cajas', path: '/cash/registers' },
         { label: 'Reportes', path: '/cash/reports' },
+        { label: 'Medios de pago', path: '/admin/management/payment-methods' },
       ],
     },
     {
@@ -89,8 +90,15 @@ export const MENU_BY_ROLE = {
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Mesas', path: '/tables' },
-    { label: 'Caja', path: '/cash' },
-    { label: 'Reportes Caja', path: '/cash/reports' },
+    {
+      label: 'Caja',
+      path: '/cash',
+      children: [
+        { label: 'Caja', path: '/cash' },
+        { label: 'Reportes Caja', path: '/cash/reports' },
+        { label: 'Medios de pago', path: '/admin/management/payment-methods' },
+      ],
+    },
     { label: 'Stock', path: '/admin/management/stock' },
     { label: 'Recepción OC', path: '/admin/management/purchase-orders/reception' },
     { label: 'Ventas', path: '/sales/management' },

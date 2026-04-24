@@ -6,6 +6,7 @@ const stockRepo = require('../stock/stock.repository');
 const recipesRepo = require('../recipes/recipes.repository');
 const cashRepo = require('../cash/cash.repository');
 const invoicesRepo = require('../invoices/invoices.repository');
+const paymentMethodsService = require('../paymentMethods/paymentMethods.service');
 const { logError, logInfo } = require('../../utils/logger');
 
 function validateSaleId(saleId) {
@@ -14,36 +15,40 @@ function validateSaleId(saleId) {
   }
 }
 
-const ALLOWED_PAYMENT_METHODS = new Set(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA']);
-
 function roundMoney(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
-function normalizePaymentSplits(total, paymentData = {}) {
+async function resolvePaymentMethod(inputMethod) {
+  const paymentMethodCode = String(inputMethod || 'EFECTIVO').toUpperCase().trim();
+  const method = await paymentMethodsService.getPaymentMethodByCode(paymentMethodCode);
+  if (!method) throw new AppError('Método de pago inválido', 400);
+  return method;
+}
+
+async function normalizePaymentSplits(total, paymentData = {}) {
   const rawSplits = Array.isArray(paymentData.paymentSplits) ? paymentData.paymentSplits : [];
 
   if (!rawSplits.length) {
-    const paymentMethod = String(paymentData.paymentMethod || 'EFECTIVO').toUpperCase();
-    if (!ALLOWED_PAYMENT_METHODS.has(paymentMethod)) {
-      throw new AppError('Método de pago inválido', 400);
-    }
-    return [{ paymentMethod, amount: roundMoney(total) }];
+    const paymentMethod = await resolvePaymentMethod(paymentData.paymentMethod);
+    return [{ paymentMethodId: Number(paymentMethod.id), paymentMethodCode: paymentMethod.code, amount: roundMoney(total) }];
   }
 
-  const normalizedSplits = rawSplits.map((entry) => ({
-    paymentMethod: String(entry?.paymentMethod || '').toUpperCase(),
-    amount: roundMoney(entry?.amount),
-  }));
+  const normalizedSplits = [];
+  for (const entry of rawSplits) {
+    const paymentMethod = await resolvePaymentMethod(entry?.paymentMethod);
+    normalizedSplits.push({
+      paymentMethodId: Number(paymentMethod.id),
+      paymentMethodCode: paymentMethod.code,
+      amount: roundMoney(entry?.amount),
+    });
+  }
 
   if (!normalizedSplits.length) {
     throw new AppError('Debe seleccionar al menos un medio de pago', 400);
   }
 
   for (const split of normalizedSplits) {
-    if (!ALLOWED_PAYMENT_METHODS.has(split.paymentMethod)) {
-      throw new AppError('Método de pago inválido en división', 400);
-    }
     if (!Number.isFinite(split.amount) || split.amount <= 0) {
       throw new AppError('Los montos de la división deben ser mayores a 0', 400);
     }
@@ -322,7 +327,7 @@ async function paySale(saleId, user, paymentData = {}) {
       );
     }
 
-    const paymentSplits = normalizePaymentSplits(total, paymentData);
+    const paymentSplits = await normalizePaymentSplits(total, paymentData);
 
     for (const split of paymentSplits) {
       await cashRepo.insertMovement(
@@ -334,15 +339,16 @@ async function paySale(saleId, user, paymentData = {}) {
           userId: user.id,
           type: 'VENTA',
           amount: split.amount,
-          paymentMethod: split.paymentMethod,
+          paymentMethodId: split.paymentMethodId,
           reference: `sale-${saleId}`,
           reason: `Cobro venta ${saleId}`,
-          affectsBalance: split.paymentMethod === 'EFECTIVO',
+          affectsBalance: split.paymentMethodCode === 'EFECTIVO',
         },
         conn
       );
     }
 
+    await salesRepo.updateSalePaymentMethod(saleId, paymentSplits[0]?.paymentMethodId || null, conn);
     await salesRepo.updateSaleTotalsAndStatus(saleId, total, 'PAGADA', conn);
     await salesRepo.markTableOccupied(sale.table_id, 'LIBRE', conn);
 

@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Modal from '../Modal';
 import { formatCurrency } from '../../utils/formatters';
 
-const METHODS = [
+const DEFAULT_METHODS = [
   { value: 'EFECTIVO', label: 'Efectivo' },
   { value: 'TARJETA', label: 'Tarjeta' },
   { value: 'TRANSFERENCIA', label: 'Transferencia' },
@@ -20,19 +20,12 @@ function PaymentModal({
   loading,
   caeaOptions = [],
   canEmitFiscalTicket = false,
+  methods = DEFAULT_METHODS,
 }) {
   const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
   const [splitMode, setSplitMode] = useState(false);
-  const [splitSelection, setSplitSelection] = useState({
-    EFECTIVO: true,
-    TARJETA: false,
-    TRANSFERENCIA: false,
-  });
-  const [splitAmounts, setSplitAmounts] = useState({
-    EFECTIVO: '',
-    TARJETA: '',
-    TRANSFERENCIA: '',
-  });
+  const [splitSelection, setSplitSelection] = useState({});
+  const [splitAmounts, setSplitAmounts] = useState({});
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [emitFiscalTicket, setEmitFiscalTicket] = useState(canEmitFiscalTicket);
   const [invoiceType, setInvoiceType] = useState('B');
@@ -43,12 +36,24 @@ function PaymentModal({
 
   const formattedTotal = useMemo(() => formatCurrency(total || 0), [total]);
 
+  useEffect(() => {
+    const nextSelection = {};
+    const nextAmounts = {};
+    methods.forEach((method, index) => {
+      nextSelection[method.value] = index === 0;
+      nextAmounts[method.value] = '';
+    });
+    setPaymentMethod(methods[0]?.value || 'EFECTIVO');
+    setSplitSelection(nextSelection);
+    setSplitAmounts(nextAmounts);
+  }, [methods]);
+
   const selectedSplits = useMemo(
-    () => METHODS.filter((method) => splitSelection[method.value]).map((method) => ({
+    () => methods.filter((method) => splitSelection[method.value]).map((method) => ({
       paymentMethod: method.value,
       amount: roundMoney(splitAmounts[method.value]),
     })),
-    [splitAmounts, splitSelection]
+    [methods, splitAmounts, splitSelection]
   );
 
   const splitTotal = useMemo(
@@ -153,7 +158,7 @@ function PaymentModal({
                   setCashReceived('');
                 }}
               >
-                {METHODS.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
+                {methods.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
               </select>
             </div>
           )}
@@ -161,7 +166,7 @@ function PaymentModal({
           {splitMode && (
             <div className="border rounded p-2 d-grid gap-2">
               <p className="mb-0 fw-semibold">Dividir entre medios de pago</p>
-              {METHODS.map((method) => (
+              {methods.map((method) => (
                 <div key={method.value} className="d-flex gap-2 align-items-center">
                   <label className="form-check mb-0 flex-grow-1 d-flex gap-2 align-items-center">
                     <input

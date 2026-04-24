@@ -160,6 +160,10 @@ async function updateSaleTotalsAndStatus(saleId, total, status, conn) {
   await query('UPDATE sales SET total = ?, status = ?, paid_at = NOW() WHERE id = ?', [total, status, saleId], conn);
 }
 
+async function updateSalePaymentMethod(saleId, paymentMethodId, conn) {
+  await query('UPDATE sales SET payment_method_id = ? WHERE id = ?', [paymentMethodId, saleId], conn);
+}
+
 async function markTableOccupied(tableId, status, conn) {
   await query('UPDATE tables_restaurant SET status = ? WHERE id = ?', [status, tableId], conn);
 }
@@ -189,7 +193,7 @@ async function getSalesReportByBranch(branchId, filters = {}) {
     values.push(filters.tableId);
   }
   if (filters.paymentMethod) {
-    conditions.push('cm.payment_method = ?');
+    conditions.push('pm.code = ?');
     values.push(filters.paymentMethod);
   }
   if (filters.search) {
@@ -204,6 +208,7 @@ async function getSalesReportByBranch(branchId, filters = {}) {
     JOIN users u ON u.id = s.user_id
     LEFT JOIN sale_items si ON si.sale_id = s.id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
     WHERE ${conditions.join(' AND ')}
   `;
 
@@ -217,11 +222,11 @@ async function getSalesReportByBranch(branchId, filters = {}) {
       tr.table_number AS tableNumber,
       u.id AS userId,
       u.name AS userName,
-      COALESCE(cm.payment_method, '-') AS paymentMethod,
+      COALESCE(pm.code, '-') AS paymentMethod,
       COUNT(si.id) AS itemsCount,
       COALESCE(SUM(si.quantity), 0) AS itemsQty
     ${baseFrom}
-    GROUP BY s.id, s.status, s.total, s.opened_at, s.paid_at, tr.table_number, u.id, u.name, cm.payment_method
+    GROUP BY s.id, s.status, s.total, s.opened_at, s.paid_at, tr.table_number, u.id, u.name, pm.code
   `;
 
   const countRows = await query(
@@ -285,7 +290,7 @@ async function getSalesTotalsByBranch(branchId, filters = {}) {
     values.push(filters.tableId);
   }
   if (filters.paymentMethod) {
-    conditions.push('cm.payment_method = ?');
+    conditions.push('pm.code = ?');
     values.push(filters.paymentMethod);
   }
   if (filters.search) {
@@ -300,6 +305,7 @@ async function getSalesTotalsByBranch(branchId, filters = {}) {
     JOIN users u ON u.id = s.user_id
     LEFT JOIN sale_items si ON si.sale_id = s.id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
     WHERE ${conditions.join(' AND ')}
   `;
 
@@ -344,7 +350,7 @@ async function getVatSalesBookByBranch(branchId, filters = {}) {
       i.voucher_number AS voucherNumber,
       i.total,
       u.name AS customer,
-      COALESCE(cm.payment_method, '-') AS paymentMethod,
+      COALESCE(pm.code, '-') AS paymentMethod,
       CASE
         WHEN i.invoice_type = 'C' THEN ROUND(i.total, 2)
         ELSE ROUND(i.total / 1.21, 2)
@@ -357,6 +363,7 @@ async function getVatSalesBookByBranch(branchId, filters = {}) {
     JOIN sales s ON s.id = i.sale_id
     JOIN users u ON u.id = s.user_id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
     WHERE ${conditions.join(' AND ')}
     ORDER BY i.created_at DESC`,
     values
@@ -380,7 +387,7 @@ function buildSalesReportConditions(branchId, filters = {}) {
     values.push(filters.status);
   }
   if (filters.paymentMethod) {
-    conditions.push('cm.payment_method = ?');
+    conditions.push('pm.code = ?');
     values.push(filters.paymentMethod);
   }
   if (filters.waiterId) {
@@ -404,6 +411,7 @@ async function getTopDishesByBranch(branchId, filters = {}) {
     JOIN sale_items si ON si.sale_id = s.id
     JOIN articles a ON a.id = si.article_id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
     WHERE ${conditions.join(' AND ')}
       AND a.is_product = 1
     GROUP BY a.id, a.name
@@ -426,6 +434,7 @@ async function getTopArticlesByBranch(branchId, filters = {}) {
     JOIN sale_items si ON si.sale_id = s.id
     JOIN articles a ON a.id = si.article_id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
     WHERE ${conditions.join(' AND ')}
     GROUP BY a.id, a.name
     ORDER BY totalQty DESC, totalAmount DESC
@@ -447,6 +456,7 @@ async function getTopWaitersByBranch(branchId, filters = {}) {
     JOIN users u ON u.id = s.user_id
     LEFT JOIN sale_items si ON si.sale_id = s.id
     LEFT JOIN cash_movements cm ON cm.sale_id = s.id AND cm.type = 'VENTA'
+    LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
     WHERE ${conditions.join(' AND ')}
       AND u.role = 'MOZO'
     GROUP BY u.id, u.name
@@ -469,6 +479,7 @@ module.exports = {
   deleteItemsBySaleId,
   deleteKitchenOrdersBySaleId,
   cancelSaleById,
+  updateSalePaymentMethod,
   updateSaleTotalsAndStatus,
   markTableOccupied,
   getSalesReportByBranch,

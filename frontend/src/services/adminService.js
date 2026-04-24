@@ -313,6 +313,28 @@ export async function deleteCashReason(reasonId) {
   return unwrap(data);
 }
 
+
+// Medios de pago
+export async function getPaymentMethods(params = {}) {
+  const { data } = await http.get('/payment-methods', { params });
+  return unwrap(data) || [];
+}
+
+export async function createPaymentMethod(payload) {
+  const { data } = await http.post('/payment-methods', payload);
+  return unwrap(data);
+}
+
+export async function updatePaymentMethod(paymentMethodId, payload) {
+  const { data } = await http.put(`/payment-methods/${paymentMethodId}`, payload);
+  return unwrap(data);
+}
+
+export async function deletePaymentMethod(paymentMethodId) {
+  const { data } = await http.delete(`/payment-methods/${paymentMethodId}`);
+  return unwrap(data);
+}
+
 // Tipos de IVA
 export async function getVatTypes() {
   const { data } = await http.get('/vat-types');

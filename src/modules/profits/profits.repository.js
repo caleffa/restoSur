@@ -24,13 +24,14 @@ async function getSalesOverview(branchId, from, to) {
 async function getSalesByPaymentMethod(branchId, from, to) {
   return query(
     `SELECT
-      COALESCE(cm.payment_method, 'OTROS') AS channel,
+      COALESCE(pm.code, 'OTROS') AS channel,
       COALESCE(SUM(cm.amount), 0) AS total
      FROM cash_movements cm
+     LEFT JOIN payment_methods pm ON pm.id = cm.payment_method_id
      WHERE cm.branch_id = ?
        AND cm.type = 'VENTA'
        AND DATE(cm.created_at) BETWEEN ? AND ?
-     GROUP BY COALESCE(cm.payment_method, 'OTROS')
+     GROUP BY COALESCE(pm.code, 'OTROS')
      ORDER BY total DESC`,
     [branchId, from, to]
   );

@@ -1,6 +1,7 @@
 const { pool } = require('../../config/database');
 const AppError = require('../../utils/appError');
 const repo = require('./cash.repository');
+const paymentMethodsService = require('../paymentMethods/paymentMethods.service');
 
 function toAmount(value) {
   const parsed = Number(value);
@@ -185,12 +186,11 @@ async function registerSale(data, user) {
     if (!shift) throw new AppError('No hay caja abierta', 400);
 
     const amount = toAmount(data.amount);
-    // Normalizar el método de pago a mayúsculas
-    const paymentMethod = String(data.paymentMethod || 'EFECTIVO').toUpperCase().trim();
-    const affectsBalance = paymentMethod === 'EFECTIVO';
-    
-    // Debug: Log para verificar
-    //console.log(`[registerSale] Método: ${paymentMethod}, Afecta balance: ${affectsBalance}, Monto: ${amount}`);
+    const paymentMethodCode = String(data.paymentMethod || 'EFECTIVO').toUpperCase().trim();
+    const paymentMethod = await paymentMethodsService.getPaymentMethodByCode(paymentMethodCode);
+    if (!paymentMethod) throw new AppError('Medio de pago inválido', 400);
+
+    const affectsBalance = paymentMethod.code === 'EFECTIVO';
 
     await repo.insertMovement(
       {
@@ -200,7 +200,7 @@ async function registerSale(data, user) {
         userId: user.id,
         type: 'VENTA',
         amount,
-        paymentMethod,
+        paymentMethodId: paymentMethod.id,
         saleId: data.saleId || null,
         reference: data.saleId ? `sale-${data.saleId}` : data.reference,
         affectsBalance, // ✅ Esto debe ser true SOLO para efectivo

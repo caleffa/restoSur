@@ -129,6 +129,12 @@ export async function getAfipCaea() {
 }
 
 
+
+export async function getPaymentMethods() {
+  const { data } = await http.get('/payment-methods', { params: { activeOnly: 1 } });
+  return unwrap(data) || [];
+}
+
 export async function triggerCashDrawerSignal(saleId, payload = {}) {
   const { data } = await http.post(`/sales/${saleId}/open-drawer`, payload);
   return unwrap(data);
