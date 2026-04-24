@@ -15,6 +15,8 @@ import {
 import { formatCurrency } from '../utils/formatters';
 import { sortByLabel } from '../utils/sort';
 
+const CHART_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16', '#f97316'];
+
 function Cash() {
   const [registers, setRegisters] = useState([]);
   const [current, setCurrent] = useState(null);
@@ -26,6 +28,42 @@ function Cash() {
   const sortedRegisters = useMemo(() => sortByLabel(registers, (item) => item.name), [registers]);
   const [ticket, setTicket] = useState(null);
   const [openForm, setOpenForm] = useState({ registerId: '', openingAmount: '', observation: '' });
+  const paymentBalanceData = useMemo(() => {
+    const movements = current?.movements || [];
+    const totalsByMethod = new Map();
+    movements.forEach((movement) => {
+      const type = String(movement.type || '').toUpperCase();
+      let amount = Number(movement.amount || 0);
+      if (!Number.isFinite(amount) || amount === 0) return;
+      if (type === 'EGRESO') amount *= -1;
+      if (!['APERTURA', 'VENTA', 'INGRESO', 'EGRESO'].includes(type)) return;
+      const method = (movement.payment_method || (type === 'VENTA' ? 'OTROS' : 'EFECTIVO')).toUpperCase();
+      totalsByMethod.set(method, Number((Number(totalsByMethod.get(method) || 0) + amount).toFixed(2)));
+    });
+
+    const entries = [...totalsByMethod.entries()].filter(([, amount]) => amount !== 0);
+    return entries.map(([method, amount], index) => ({
+      method,
+      amount,
+      color: CHART_COLORS[index % CHART_COLORS.length],
+    }));
+  }, [current?.movements]);
+
+  const doughnutData = useMemo(
+    () => paymentBalanceData.map((item) => ({ ...item, value: Math.abs(item.amount) })).filter((item) => item.value > 0),
+    [paymentBalanceData]
+  );
+  const doughnutBackground = useMemo(() => {
+    const total = doughnutData.reduce((acc, item) => acc + item.value, 0);
+    if (!total) return '#e5e7eb';
+    let angle = 0;
+    const stops = doughnutData.map((item) => {
+      const start = angle;
+      angle += (item.value / total) * 360;
+      return `${item.color} ${start}deg ${angle}deg`;
+    });
+    return `conic-gradient(${stops.join(', ')})`;
+  }, [doughnutData]);
 
   const load = async () => {
     const [registerData, currentData] = await Promise.all([getCashRegisters(), getCurrentCash()]);
@@ -141,6 +179,35 @@ function Cash() {
               <PrintTicket ticket={ticket} />
             </div>
           </div></article>
+
+          <article className="card shadow-sm">
+            <div className="card-body">
+              <h5>Saldo actual por medio de pago</h5>
+              {paymentBalanceData.length ? (
+                <div className="cash-doughnut-wrap">
+                  <div className="cash-doughnut-canvas">
+                    <div className="cash-doughnut-visual" style={{ background: doughnutBackground }}>
+                      <div className="cash-doughnut-hole">
+                        <strong>{formatCurrency(current?.totals?.expectedBalance || 0)}</strong>
+                        <small>Total</small>
+                      </div>
+                    </div>
+                  </div>
+                  <ul className="cash-doughnut-legend">
+                    {paymentBalanceData.map((item) => (
+                      <li key={item.method}>
+                        <span className="cash-doughnut-dot" style={{ backgroundColor: item.color }} />
+                        <span>{item.method}</span>
+                        <strong>{formatCurrency(item.amount)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="muted-text mb-0">Sin datos para mostrar por método de pago.</p>
+              )}
+            </div>
+          </article>
         </section>
 
         <section className="admin-card">
