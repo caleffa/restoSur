@@ -52,6 +52,16 @@ CREATE TABLE cash_shifts (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE payment_methods (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(80) NOT NULL,
+  code VARCHAR(30) NOT NULL UNIQUE,
+  active TINYINT(1) DEFAULT 1,
+  display_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE cash_movement_reasons (
   id INT AUTO_INCREMENT PRIMARY KEY,
   description VARCHAR(100) NOT NULL,
@@ -71,7 +81,7 @@ CREATE TABLE cash_movements (
   user_id INT NOT NULL,
   sale_id INT NULL,
   type ENUM('APERTURA','VENTA','INGRESO','EGRESO','CIERRE') NOT NULL,
-  payment_method VARCHAR(30) NULL,
+  payment_method_id INT NULL,
   reference VARCHAR(60) NULL,
   amount DECIMAL(12,2) NOT NULL,
   reason VARCHAR(255) NULL,
@@ -83,7 +93,8 @@ CREATE TABLE cash_movements (
   FOREIGN KEY (register_id) REFERENCES cash_registers(id),
   FOREIGN KEY (branch_id) REFERENCES branches(id),
   FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id)
+  FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id),
+  FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)
 );
 
 CREATE TABLE categories (
@@ -362,12 +373,14 @@ CREATE TABLE sales (
   table_id INT NOT NULL,
   user_id INT NOT NULL,
   status ENUM('ABIERTA','PAGADA','CANCELADA') DEFAULT 'ABIERTA',
+  payment_method_id INT NULL,
   total DECIMAL(12,2) DEFAULT 0,
   opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   paid_at TIMESTAMP NULL,
   FOREIGN KEY (branch_id) REFERENCES branches(id),
   FOREIGN KEY (table_id) REFERENCES tables_restaurant(id),
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)
 );
 
 CREATE TABLE sale_items (
@@ -460,3 +473,8 @@ CREATE TABLE system_events (
   payload JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO payment_methods (name, code, active, display_order) VALUES
+  ('Efectivo', 'EFECTIVO', 1, 1),
+  ('Tarjeta', 'TARJETA', 1, 2),
+  ('Transferencia', 'TRANSFERENCIA', 1, 3);

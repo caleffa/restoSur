@@ -141,6 +141,30 @@ async function ensureCashSchema() {
   );
 
   await query(
+    `CREATE TABLE IF NOT EXISTS payment_methods (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(80) NOT NULL,
+      code VARCHAR(30) NOT NULL UNIQUE,
+      active TINYINT(1) DEFAULT 1,
+      display_order INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`
+  );
+
+  await query(
+    `INSERT INTO payment_methods (name, code, active, display_order)
+     VALUES
+      ('Efectivo', 'EFECTIVO', 1, 1),
+      ('Tarjeta', 'TARJETA', 1, 2),
+      ('Transferencia', 'TRANSFERENCIA', 1, 3)
+     ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      active = VALUES(active),
+      display_order = VALUES(display_order)`
+  );
+
+  await query(
     `CREATE TABLE IF NOT EXISTS cash_movement_reasons (
       id INT AUTO_INCREMENT PRIMARY KEY,
       description VARCHAR(255) NOT NULL,
@@ -161,7 +185,7 @@ async function ensureCashSchema() {
       user_id INT NOT NULL,
       sale_id INT NULL,
       type ENUM('APERTURA','VENTA','INGRESO','EGRESO','CIERRE') NOT NULL,
-      payment_method VARCHAR(30) NULL,
+      payment_method_id INT NULL,
       reference VARCHAR(60) NULL,
       amount DECIMAL(12,2) NOT NULL,
       reason VARCHAR(255) NULL,
@@ -173,7 +197,8 @@ async function ensureCashSchema() {
       FOREIGN KEY (register_id) REFERENCES cash_registers(id),
       FOREIGN KEY (branch_id) REFERENCES branches(id),
       FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id)
+      FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id),
+      FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)
     )`
   );
 
@@ -181,11 +206,34 @@ async function ensureCashSchema() {
   await ensureColumn('cash_movements', 'register_id', 'INT NULL', 'shift_id');
   await ensureColumn('cash_movements', 'branch_id', 'INT NULL', 'register_id');
   await ensureColumn('cash_movements', 'payment_method', 'VARCHAR(30) NULL', 'type');
-  await ensureColumn('cash_movements', 'reference', 'VARCHAR(60) NULL', 'payment_method');
+  await ensureColumn('cash_movements', 'payment_method_id', 'INT NULL', 'payment_method');
+  await ensureColumn('cash_movements', 'reference', 'VARCHAR(60) NULL', 'payment_method_id');
   await ensureColumn('cash_movements', 'reason', 'VARCHAR(255) NULL', 'amount');
   await ensureColumn('cash_movements', 'reason_id', 'INT NULL', 'reason');
   await ensureColumn('cash_movements', 'observation', 'VARCHAR(255) NULL', 'reason');
   await ensureColumn('cash_movements', 'affects_balance', 'TINYINT(1) DEFAULT 1', 'observation');
+
+  await query(
+    `UPDATE cash_movements m
+     JOIN payment_methods pm ON pm.code = UPPER(m.payment_method)
+     SET m.payment_method_id = pm.id
+     WHERE m.payment_method_id IS NULL
+       AND m.payment_method IS NOT NULL`
+  ).catch(() => {});
+
+  await ensureColumn('sales', 'payment_method_id', 'INT NULL', 'status').catch(() => {});
+
+  await query(
+    `UPDATE sales s
+     JOIN (
+       SELECT sale_id, MIN(payment_method_id) AS payment_method_id
+       FROM cash_movements
+       WHERE sale_id IS NOT NULL AND payment_method_id IS NOT NULL
+       GROUP BY sale_id
+     ) cm ON cm.sale_id = s.id
+     SET s.payment_method_id = cm.payment_method_id
+     WHERE s.payment_method_id IS NULL`
+  ).catch(() => {});
 
   if (!(await foreignKeyExists('cash_movements', 'shift_id'))) {
     await query(
@@ -216,6 +264,22 @@ async function ensureCashSchema() {
       `ALTER TABLE cash_movements
        ADD CONSTRAINT fk_cash_movements_reason
        FOREIGN KEY (reason_id) REFERENCES cash_movement_reasons(id)`
+    ).catch(() => {});
+  }
+
+  if (!(await foreignKeyExists('cash_movements', 'payment_method_id'))) {
+    await query(
+      `ALTER TABLE cash_movements
+       ADD CONSTRAINT fk_cash_movements_payment_method
+       FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)`
+    ).catch(() => {});
+  }
+
+  if (!(await foreignKeyExists('sales', 'payment_method_id'))) {
+    await query(
+      `ALTER TABLE sales
+       ADD CONSTRAINT fk_sales_payment_method
+       FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id)`
     ).catch(() => {});
   }
 }

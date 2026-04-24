@@ -48,7 +48,7 @@ async function updateShiftClose(data, conn) {
 async function insertMovement(data, conn = null) {
   const result = await query(
     `INSERT INTO cash_movements
-      (shift_id, register_id, branch_id, user_id, type, payment_method, sale_id, reference, amount, reason, reason_id, observation, affects_balance)
+      (shift_id, register_id, branch_id, user_id, type, payment_method_id, sale_id, reference, amount, reason, reason_id, observation, affects_balance)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.shiftId,
@@ -56,7 +56,7 @@ async function insertMovement(data, conn = null) {
       data.branchId,
       data.userId,
       data.type,
-      data.paymentMethod || null,
+      data.paymentMethodId || null,
       data.saleId || null,
       data.reference || null,
       data.amount,
@@ -78,10 +78,11 @@ async function findCashReasonById(id) {
 
 async function getShiftMovements(shiftId) {
   return query(
-    `SELECT m.*, u.name AS user_name, r.description AS reason_description
+    `SELECT m.*, pm.code AS payment_method, pm.name AS payment_method_name, u.name AS user_name, r.description AS reason_description
      FROM cash_movements m
      INNER JOIN users u ON u.id = m.user_id
      LEFT JOIN cash_movement_reasons r ON r.id = m.reason_id
+     LEFT JOIN payment_methods pm ON pm.id = m.payment_method_id
      WHERE m.shift_id=?
      ORDER BY m.id DESC`,
     [shiftId]
@@ -116,11 +117,12 @@ async function getMovements(filters = {}) {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   return query(
-    `SELECT m.*, r.name AS register_name, u.name AS user_name, cmr.description AS reason_description
+    `SELECT m.*, pm.code AS payment_method, pm.name AS payment_method_name, r.name AS register_name, u.name AS user_name, cmr.description AS reason_description
      FROM cash_movements m
      INNER JOIN cash_registers r ON r.id = m.register_id
      INNER JOIN users u ON u.id = m.user_id
      LEFT JOIN cash_movement_reasons cmr ON cmr.id = m.reason_id
+     LEFT JOIN payment_methods pm ON pm.id = m.payment_method_id
      ${where}
      ORDER BY m.id DESC`,
     params

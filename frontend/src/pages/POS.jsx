@@ -25,6 +25,7 @@ import {
   createInvoice,
   triggerCashDrawerSignal,
   getWaiters,
+  getPaymentMethods,
   updateSaleWaiter,
   updateTableStatus,
   updateSaleItem,
@@ -280,6 +281,7 @@ function POS() {
   const [wsConnected, setWsConnected] = useState(false);
   const [afipConfig, setAfipConfig] = useState(null);
   const [caeaList, setCaeaList] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
   const [waiters, setWaiters] = useState([]);
   const [showWaiterModal, setShowWaiterModal] = useState(false);
   const [selectedWaiterId, setSelectedWaiterId] = useState(null);
@@ -346,6 +348,15 @@ function POS() {
 
   useEffect(() => {
     getWaiters().then(setWaiters).catch(() => setWaiters([]));
+  }, []);
+
+  useEffect(() => {
+    getPaymentMethods()
+      .then((rows) => {
+        const mappedRows = (Array.isArray(rows) ? rows : []).map((row) => ({ value: row.code, label: row.name }));
+        setPaymentMethods(mappedRows);
+      })
+      .catch(() => setPaymentMethods([]));
   }, []);
 
   useEffect(() => {
@@ -896,6 +907,7 @@ function POS() {
           hasItems={(sale?.items || []).length > 0}
           loading={saving}
           caeaOptions={caeaList}
+          methods={paymentMethods}
           canEmitFiscalTicket={canEmitFiscalTicket}
           onClose={() => !saving && setShowPaymentModal(false)}
           onConfirm={handleCloseSale}
