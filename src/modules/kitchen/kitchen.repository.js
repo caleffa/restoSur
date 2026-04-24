@@ -136,6 +136,7 @@ async function listByTable(tableId, branchId) {
     LEFT JOIN kitchens k ON k.id = ko.kitchen_id
     LEFT JOIN users u ON u.id = ko.user_id
     WHERE s.table_id = ? AND ko.branch_id = ?
+    and s.status = 'ABIERTA'
     ORDER BY ko.id DESC`,
     [tableId, branchId]
   );
