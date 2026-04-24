@@ -90,7 +90,7 @@ function Navbar() {
           const minimum = Number(item.stock_minimum);
           const quantity = Number(item.quantity);
           const managesStock = item.manages_stock === 1 || item.manages_stock === true;
-          return managesStock && Number.isFinite(minimum) && minimum >= 0 && quantity <= minimum;
+          return managesStock && Number.isFinite(minimum) && minimum > 0 && quantity <= minimum;
         });
 
         setLowStockCount(alerts.length);
