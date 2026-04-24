@@ -679,6 +679,7 @@ textarea {
 .modal-card {
   width: min(640px, 100%);
   background: #fff;
+  color: #111827;
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.22);
   display: grid;
