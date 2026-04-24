@@ -22,7 +22,7 @@ module.exports = {
     expiresIn: process.env.JWT_EXPIRES_IN || '8h',
   },
   ssl: {
-    enabled: parseBoolean(process.env.HTTPS_ENABLED, true),
+    enabled: parseBoolean(process.env.HTTPS_ENABLED, false),
     keyPath: process.env.SSL_KEY_PATH || 'certs/localhost-key.pem',
     certPath: process.env.SSL_CERT_PATH || 'certs/localhost.pem',
   },
