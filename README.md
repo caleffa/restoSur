@@ -104,7 +104,7 @@ npm run dev
 ```
 
 Variables:
-- `VITE_API_URL` (default: `https://localhost:3000/api`)
+- `VITE_API_URL` (default: usa el mismo protocolo del frontend, ej. `http://localhost:3000/api` o `https://localhost:3000/api`)
 
 ## Comandas
 - Acceso permitido para roles `ADMIN` y `COCINA`.
