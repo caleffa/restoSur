@@ -11,7 +11,9 @@
     "start": "node src/server.js",
     "lint": "echo 'Sin linter configurado'",
     "check": "node --check src/server.js",
-    "seed:operacion": "node scripts/generateOperationalData.js 60"
+    "seed:operacion": "node scripts/generateOperationalData.js 60",
+    "dev:mobile": "npm run start --prefix mobile",
+    "apk:build": "npm run apk --prefix mobile"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
