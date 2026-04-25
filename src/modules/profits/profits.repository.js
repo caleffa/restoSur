@@ -77,6 +77,57 @@ async function getSalesBySchedule(branchId, from, to) {
   return rows;
 }
 
+
+async function getSalesByCostCategory(branchId, from, to) {
+  return query(
+    `SELECT
+      CASE
+        WHEN LOWER(COALESCE(c.name, '')) REGEXP 'bebida|drink|cerveza|vino|gaseosa|jugo|coctel|cocktail|bar' THEN 'BEBIDA'
+        ELSE 'ALIMENTO'
+      END AS costCategory,
+      COALESCE(SUM(si.quantity * COALESCE(a.cost, 0)), 0) AS cost
+     FROM sale_items si
+     JOIN sales s ON s.id = si.sale_id
+     JOIN articles a ON a.id = si.article_id
+     LEFT JOIN categories c ON c.id = a.category_id
+     WHERE s.branch_id = ?
+       AND s.status = 'PAGADA'
+       AND DATE(COALESCE(s.paid_at, s.opened_at)) BETWEEN ? AND ?
+     GROUP BY costCategory`,
+    [branchId, from, to]
+  );
+}
+
+async function getTopProducts(branchId, from, to) {
+  return query(
+    `SELECT
+      a.name AS product,
+      COALESCE(SUM(si.quantity), 0) AS units,
+      COALESCE(SUM(si.quantity * si.unit_price), 0) AS revenue
+     FROM sale_items si
+     JOIN sales s ON s.id = si.sale_id
+     JOIN articles a ON a.id = si.article_id
+     WHERE s.branch_id = ?
+       AND s.status = 'PAGADA'
+       AND DATE(COALESCE(s.paid_at, s.opened_at)) BETWEEN ? AND ?
+     GROUP BY a.id, a.name
+     ORDER BY units DESC, revenue DESC
+     LIMIT 10`,
+    [branchId, from, to]
+  );
+}
+
+async function getFirstSaleDate(branchId) {
+  const rows = await query(
+    `SELECT DATE(MIN(COALESCE(s.paid_at, s.opened_at))) AS firstDate
+     FROM sales s
+     WHERE s.branch_id = ?
+       AND s.status = 'PAGADA'`,
+    [branchId]
+  );
+  return rows[0]?.firstDate || null;
+}
+
 async function getCogsTotals(branchId, from, to) {
   const recipeRows = await query(
     `SELECT
@@ -162,6 +213,9 @@ module.exports = {
   getSalesByPaymentMethod,
   getSalesByCategory,
   getSalesBySchedule,
+  getSalesByCostCategory,
+  getTopProducts,
+  getFirstSaleDate,
   getCogsTotals,
   getWasteCost,
   getOperatingExpenses,

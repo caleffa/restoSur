@@ -7,8 +7,8 @@ const PERIOD_OPTIONS = [
   { value: 'DIARIO', label: 'Diario' },
   { value: 'SEMANAL', label: 'Semanal' },
   { value: 'MENSUAL', label: 'Mensual' },
-  { value: 'TRIMESTRAL', label: 'Trimestral' },
   { value: 'ANUAL', label: 'Anual' },
+  { value: 'TOTAL', label: 'Total histórico' },
 ];
 
 function formatPercent(value) {
@@ -18,6 +18,28 @@ function formatPercent(value) {
 function formatIsoDate(value) {
   if (!value) return '-';
   return new Date(value).toLocaleDateString('es-AR');
+}
+
+function downloadCsv(report) {
+  const rows = [
+    ['Concepto', 'Monto'],
+    ['Ventas netas', report?.report?.totals?.netSales || 0],
+    ['COGS total', report?.report?.cogs?.total || 0],
+    ['Ganancia bruta', report?.report?.grossProfit?.amount || 0],
+    ['Gastos operativos', report?.report?.operatingExpenses?.total || 0],
+    ['Ganancia neta', report?.report?.netProfit?.amount || 0],
+  ];
+
+  const csvContent = rows.map((line) => line.map((item) => `"${String(item).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const dateTag = new Date().toISOString().slice(0, 10);
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute('download', `reporte_ganancias_${dateTag}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 }
 
 function AdminProfitReport() {
@@ -48,16 +70,17 @@ function AdminProfitReport() {
   const operatingRows = useMemo(() => {
     if (!reportData?.operatingExpenses) return [];
     return [
-      { label: 'Personal', value: reportData.operatingExpenses.personal },
-      { label: 'Alquiler', value: reportData.operatingExpenses.alquiler },
-      { label: 'Servicios', value: reportData.operatingExpenses.servicios },
-      { label: 'Marketing', value: reportData.operatingExpenses.marketing },
-      { label: 'Mantenimiento', value: reportData.operatingExpenses.mantenimiento },
-      { label: 'Administrativos', value: reportData.operatingExpenses.administrativos },
-      { label: 'Delivery', value: reportData.operatingExpenses.delivery },
-      { label: 'Otros operativos', value: reportData.operatingExpenses.otrosOperativos },
+      { label: 'Nómina del personal', value: reportData.operatingExpenses.personal },
+      { label: 'Rentas o arrendamiento', value: reportData.operatingExpenses.alquiler },
+      { label: 'Servicios públicos', value: reportData.operatingExpenses.servicios },
+      { label: 'Mantenimiento de equipos', value: reportData.operatingExpenses.mantenimiento },
+      { label: 'Publicidad y marketing', value: reportData.operatingExpenses.marketing },
     ];
   }, [reportData]);
+
+  const topProducts = reportData?.breakdown?.topProducts || [];
+  const peakHours = reportData?.breakdown?.bySchedule || [];
+  const paymentMethods = reportData?.breakdown?.byChannel || [];
 
   return (
     <div className="app-layout">
@@ -69,7 +92,7 @@ function AdminProfitReport() {
         <section className="admin-card cash-filters">
           <div className="row g-2">
             <div className="col-md-3">
-              <label htmlFor="profit-period">Período</label>
+              <label htmlFor="profit-period">Tipo de reporte</label>
               <select
                 id="profit-period"
                 className="form-select"
@@ -106,63 +129,42 @@ function AdminProfitReport() {
             <button type="button" className="touch-btn btn-primary" onClick={() => loadReport(filters)} disabled={loading}>
               {loading ? 'Generando...' : 'Generar reporte'}
             </button>
+            <button type="button" className="touch-btn btn-outline-secondary" onClick={() => downloadCsv(report)} disabled={!report}>
+              Exportar Excel (CSV)
+            </button>
+            <button type="button" className="touch-btn btn-outline-secondary" onClick={() => window.print()} disabled={!report}>
+              Exportar PDF
+            </button>
           </div>
         </section>
 
         {report && (
           <>
             <section className="admin-card">
-              <h3>{report.header.restaurantName}</h3>
-              <p>
-                Período: {report.header.period} | Desde: {formatIsoDate(report.header.from)} | Hasta: {formatIsoDate(report.header.to)}
-              </p>
-              <p>Generado: {new Date(report.header.generatedAt).toLocaleString('es-AR')}</p>
-            </section>
-
-            <section className="cash-info-grid">
-              <article className="dashboard-card">
-                <p className="kpi-label">Ganancia neta</p>
-                <p className="kpi-value">{formatCurrency(report.executiveSummary.netProfit)}</p>
-              </article>
-              <article className="dashboard-card">
-                <p className="kpi-label">Margen neto</p>
-                <p className="kpi-value">{formatPercent(report.executiveSummary.netMargin)}</p>
-              </article>
-              <article className="dashboard-card">
-                <p className="kpi-label">Comparación período anterior</p>
-                <p className="kpi-value">{formatCurrency(report.executiveSummary.comparison.netProfit.diffAmount)}</p>
-                <small>{formatPercent(report.executiveSummary.comparison.netProfit.diffPercent)}</small>
-              </article>
+              <h4>1. Encabezado del reporte</h4>
+              <p><strong>Restaurante:</strong> {report.header.restaurantName}</p>
+              <p><strong>Rango de fechas:</strong> del {formatIsoDate(report.header.from)} al {formatIsoDate(report.header.to)}</p>
+              <p><strong>Fecha de generación:</strong> {new Date(report.header.generatedAt).toLocaleString('es-AR')}</p>
+              <p><strong>Tipo de reporte:</strong> {report.header.period}</p>
             </section>
 
             <section className="admin-card">
-              <h4>A. Ingresos totales</h4>
-              <p>Ventas brutas: <strong>{formatCurrency(reportData.totals.grossSales)}</strong></p>
-              <p>Descuentos: <strong>{formatCurrency(reportData.totals.discounts)}</strong> | Devoluciones: <strong>{formatCurrency(reportData.totals.returns)}</strong></p>
-              <p>Ventas netas: <strong>{formatCurrency(reportData.totals.netSales)}</strong></p>
-
+              <h4>2. Ingresos totales</h4>
+              <p>Ventas netas (pedidos - descuentos/devoluciones): <strong>{formatCurrency(reportData.totals.netSales)}</strong></p>
               <div className="row g-3">
-                <div className="col-md-4">
-                  <h5>Canales / métodos de cobro</h5>
-                  <ul>
-                    {(reportData.breakdown.byChannel || []).map((item) => (
-                      <li key={item.channel}>{item.channel}: {formatCurrency(item.total)} ({formatPercent(item.percentage)})</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="col-md-4">
-                  <h5>Categorías</h5>
+                <div className="col-md-6">
+                  <h5>Desglose por categoría</h5>
                   <ul>
                     {(reportData.breakdown.byCategory || []).map((item) => (
                       <li key={item.category}>{item.category}: {formatCurrency(item.total)} ({formatPercent(item.percentage)})</li>
                     ))}
                   </ul>
                 </div>
-                <div className="col-md-4">
-                  <h5>Horarios</h5>
+                <div className="col-md-6">
+                  <h5>Ingresos por método de pago</h5>
                   <ul>
-                    {(reportData.breakdown.bySchedule || []).map((item) => (
-                      <li key={item.schedule}>{item.schedule}: {formatCurrency(item.total)} ({formatPercent(item.percentage)})</li>
+                    {paymentMethods.map((item) => (
+                      <li key={item.channel}>{item.channel}: {formatCurrency(item.total)} ({formatPercent(item.percentage)})</li>
                     ))}
                   </ul>
                 </div>
@@ -170,21 +172,22 @@ function AdminProfitReport() {
             </section>
 
             <section className="admin-card">
-              <h4>B. Costo de ventas (COGS)</h4>
-              <p>{reportData.cogs.inventoryMethod}</p>
-              <p>Costo teórico: <strong>{formatCurrency(reportData.cogs.theoreticalCost)}</strong></p>
-              <p>Mermas/ajustes: <strong>{formatCurrency(reportData.cogs.wasteCost)}</strong></p>
+              <h4>3. Costos directos (COGS)</h4>
+              <p>Costo de alimentos (materia prima): <strong>{formatCurrency(reportData.cogs.foodCost)}</strong></p>
+              <p>Costo de bebidas: <strong>{formatCurrency(reportData.cogs.beverageCost)}</strong></p>
+              <p>Mermas y desperdicios: <strong>{formatCurrency(reportData.cogs.wasteCost)}</strong></p>
               <p>Total COGS: <strong>{formatCurrency(reportData.cogs.total)}</strong> ({formatPercent(reportData.cogs.percentage)})</p>
             </section>
 
             <section className="admin-card">
-              <h4>C. Ganancia bruta</h4>
+              <h4>4. Cálculo de ganancia bruta</h4>
+              <p>Fórmula: Ingresos totales - Costos directos</p>
               <p>Ganancia bruta: <strong>{formatCurrency(reportData.grossProfit.amount)}</strong></p>
-              <p>Margen bruto: <strong>{formatPercent(reportData.grossProfit.margin)}</strong></p>
+              <p>Margen de ganancia bruta: <strong>{formatPercent(reportData.grossProfit.margin)}</strong></p>
             </section>
 
             <section className="admin-card">
-              <h4>D. Gastos operativos</h4>
+              <h4>5. Gastos operativos básicos</h4>
               <table className="table table-sm">
                 <thead>
                   <tr><th>Categoría</th><th>Monto</th><th>% sobre ventas netas</th></tr>
@@ -207,43 +210,60 @@ function AdminProfitReport() {
             </section>
 
             <section className="admin-card">
-              <h4>E. Otros ingresos/gastos</h4>
-              <p>Otros ingresos: <strong>{formatCurrency(reportData.others.incomes)}</strong></p>
-              <p>Otros gastos: <strong>{formatCurrency(reportData.others.expenses)}</strong></p>
-              <p>Neto otros: <strong>{formatCurrency(reportData.others.net)}</strong></p>
-            </section>
-
-            <section className="admin-card">
-              <h4>F. Ganancia neta final</h4>
+              <h4>6. Ganancia neta</h4>
+              <p>Ganancia neta = Ganancia bruta - Gastos operativos</p>
               <p>Ganancia neta: <strong>{formatCurrency(reportData.netProfit.amount)}</strong></p>
               <p>Margen neto: <strong>{formatPercent(reportData.netProfit.margin)}</strong></p>
             </section>
 
             <section className="admin-card">
-              <h4>Indicadores clave</h4>
+              <h4>7. Métricas clave adicionales</h4>
               <div className="row g-2">
-                <div className="col-md-4"><strong>Margen neto:</strong> {formatPercent(reportData.kpis.netMargin)}</div>
-                <div className="col-md-4"><strong>Costo AyB:</strong> {formatPercent(reportData.kpis.foodAndBeverageCost)}</div>
-                <div className="col-md-4"><strong>Mano de obra:</strong> {formatPercent(reportData.kpis.laborCost)}</div>
-                <div className="col-md-4"><strong>Gastos generales:</strong> {formatPercent(reportData.kpis.overheadCost)}</div>
-                <div className="col-md-4"><strong>Venta promedio:</strong> {formatCurrency(reportData.kpis.averagePerSale)}</div>
-                <div className="col-md-4"><strong>Rotación mesas (proxy):</strong> {formatNumber(reportData.kpis.tableTurnover, 2)}</div>
-                <div className="col-md-4"><strong>Punto equilibrio:</strong> {formatCurrency(reportData.kpis.breakEvenSales)}</div>
+                <div className="col-md-4"><strong>Ticket promedio por cliente:</strong> {formatCurrency(reportData.kpis.averagePerSale)}</div>
+                <div className="col-md-4"><strong>Total de clientes atendidos:</strong> {formatNumber(reportData.kpis.totalCustomers, 0)}</div>
+                <div className="col-md-4"><strong>Productos más vendidos:</strong> {topProducts.slice(0, 3).map((p) => p.product).join(', ') || 'Sin datos'}</div>
+              </div>
+              <div className="mt-3">
+                <h5>Horas pico de ventas</h5>
+                {peakHours.map((item) => (
+                  <div key={item.schedule} className="mb-2">
+                    <div className="d-flex justify-content-between">
+                      <span>{item.schedule}</span>
+                      <span>{formatCurrency(item.total)}</span>
+                    </div>
+                    <div className="progress" role="progressbar" aria-label={item.schedule}>
+                      <div className="progress-bar" style={{ width: `${Math.min(100, Math.max(2, item.percentage))}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 
             <section className="admin-card">
-              <h4>Ejemplo visual simplificado</h4>
+              <h4>8. Comparativas</h4>
+              <p>Versus período anterior: <strong>{formatCurrency(report.executiveSummary.comparison.netProfit.diffAmount)}</strong> ({formatPercent(report.executiveSummary.comparison.netProfit.diffPercent)})</p>
+              <p>Versus presupuesto esperado: <strong>{formatCurrency(report.executiveSummary.comparison.budget.diffAmount)}</strong> ({formatPercent(report.executiveSummary.comparison.budget.diffPercent)})</p>
+            </section>
+
+            <section className="admin-card">
+              <h4>9. Observaciones o notas</h4>
+              <ul>
+                {(reportData.notes || []).map((note, index) => <li key={`${note}-${index}`}>{note}</li>)}
+              </ul>
+            </section>
+
+            <section className="admin-card">
+              <h4>10. Formato recomendado</h4>
+              <p>Este reporte incluye tabla resumen clara, barras simples de tendencia por horario y exportación a Excel (CSV) o PDF.</p>
               <table className="table table-sm">
                 <thead>
-                  <tr><th>Concepto</th><th>Monto ($)</th><th>% sobre ventas netas</th></tr>
+                  <tr><th>Concepto</th><th>Monto</th><th>% sobre ventas netas</th></tr>
                 </thead>
                 <tbody>
                   <tr><td>Ventas netas</td><td>{formatCurrency(reportData.totals.netSales)}</td><td>100%</td></tr>
                   <tr><td>- Costo de ventas</td><td>{formatCurrency(reportData.cogs.total)}</td><td>{formatPercent(reportData.cogs.percentage)}</td></tr>
                   <tr><td>= Ganancia bruta</td><td>{formatCurrency(reportData.grossProfit.amount)}</td><td>{formatPercent(reportData.grossProfit.margin)}</td></tr>
                   <tr><td>- Gastos operativos</td><td>{formatCurrency(reportData.operatingExpenses.total)}</td><td>{formatPercent(reportData.operatingExpenses.percentage)}</td></tr>
-                  <tr><td>± Otros</td><td>{formatCurrency(reportData.others.net)}</td><td>{formatPercent((reportData.others.net / (reportData.totals.netSales || 1)) * 100)}</td></tr>
                   <tr><td>= Ganancia neta</td><td>{formatCurrency(reportData.netProfit.amount)}</td><td>{formatPercent(reportData.netProfit.margin)}</td></tr>
                 </tbody>
               </table>

@@ -8,7 +8,7 @@ function parseDate(value, fallback) {
   return date.toISOString().slice(0, 10);
 }
 
-function getRangeByPeriod(period = 'MENSUAL') {
+function getRangeByPeriod(period = 'MENSUAL', totalFrom = null) {
   const now = new Date();
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth();
@@ -35,6 +35,9 @@ function getRangeByPeriod(period = 'MENSUAL') {
     }
     case 'ANUAL':
       start = new Date(Date.UTC(year, 0, 1));
+      break;
+    case 'TOTAL':
+      start = totalFrom ? new Date(`${totalFrom}T00:00:00.000Z`) : new Date(Date.UTC(year, 0, 1));
       break;
     case 'MENSUAL':
     default:
@@ -131,6 +134,8 @@ async function buildMetricsForRange(branchId, from, to) {
     salesByChannel,
     salesByCategory,
     salesBySchedule,
+    salesByCostCategory,
+    topProducts,
     cogs,
     wasteCost,
     operatingRows,
@@ -140,6 +145,8 @@ async function buildMetricsForRange(branchId, from, to) {
     repo.getSalesByPaymentMethod(branchId, from, to),
     repo.getSalesByCategory(branchId, from, to),
     repo.getSalesBySchedule(branchId, from, to),
+    repo.getSalesByCostCategory(branchId, from, to),
+    repo.getTopProducts(branchId, from, to),
     repo.getCogsTotals(branchId, from, to),
     repo.getWasteCost(branchId, from, to),
     repo.getOperatingExpenses(branchId, from, to),
@@ -151,6 +158,14 @@ async function buildMetricsForRange(branchId, from, to) {
   const returns = Number(salesOverview.returnsAmount || 0);
   const netSales = round(grossSales - discounts - returns);
 
+  const costByType = salesByCostCategory.reduce((acc, item) => {
+    const key = String(item.costCategory || '').toUpperCase();
+    acc[key] = Number(item.cost || 0);
+    return acc;
+  }, {});
+
+  const foodCost = round(costByType.ALIMENTO || 0);
+  const beverageCost = round(costByType.BEBIDA || 0);
   const cogsTotal = round(Number(cogs.theoretical || 0) + Number(wasteCost || 0));
   const grossProfit = round(netSales - cogsTotal);
 
@@ -184,10 +199,17 @@ async function buildMetricsForRange(branchId, from, to) {
         total: round(item.total),
         percentage: round(pct(item.total, netSales)),
       })),
+      topProducts: topProducts.map((item) => ({
+        product: item.product,
+        units: round(item.units),
+        revenue: round(item.revenue),
+      })),
     },
     cogs: {
       inventoryMethod: 'Costo teórico basado en recetas + mermas por ajustes de stock',
       theoreticalCost: round(cogs.theoretical),
+      foodCost,
+      beverageCost,
       wasteCost: round(wasteCost),
       total: cogsTotal,
       percentage: round(pct(cogsTotal, netSales)),
@@ -218,9 +240,14 @@ async function buildMetricsForRange(branchId, from, to) {
       laborCost: round(pct(operatingExpenses.personal, netSales)),
       overheadCost: round(pct(operatingExpenses.alquiler + operatingExpenses.servicios, netSales)),
       averagePerSale: round(netSales / (Number(salesOverview.paidSales || 0) || 1)),
+      totalCustomers: Number(salesOverview.paidSales || 0),
       tableTurnover: round(Number(salesOverview.paidSales || 0) / Math.max(1, ((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1)),
       breakEvenSales: round(totalOperatingExpenses + cogsTotal),
     },
+    notes: [
+      'Eventos especiales: sin registros automáticos para el período seleccionado.',
+      'Problemas operativos relevantes: revisar gastos en categoría "otros operativos" para mayor detalle.',
+    ],
   };
 }
 
@@ -235,7 +262,8 @@ async function getProfitReport(branchId, query = {}) {
   }
 
   const period = String(query.period || 'MENSUAL').toUpperCase();
-  const suggestedRange = getRangeByPeriod(period);
+  const totalFrom = period === 'TOTAL' ? await repo.getFirstSaleDate(branchId) : null;
+  const suggestedRange = getRangeByPeriod(period, totalFrom);
   const from = parseDate(query.from, suggestedRange.from);
   const to = parseDate(query.to, suggestedRange.to);
 
@@ -256,10 +284,13 @@ async function getProfitReport(branchId, query = {}) {
 
   const previous = await buildMetricsForRange(branchId, prevFrom, prevTo);
 
+  const expectedBudget = Number(query.expectedBudget || 0);
+
   const comparison = {
     netProfit: buildComparison(current.netProfit.amount, previous.netProfit.amount),
     netSales: buildComparison(current.totals.netSales, previous.totals.netSales),
     grossProfit: buildComparison(current.grossProfit.amount, previous.grossProfit.amount),
+    budget: buildComparison(current.netProfit.amount, expectedBudget),
   };
 
   return {
