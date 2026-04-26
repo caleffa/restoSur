@@ -19,6 +19,7 @@ const httpsConfig = keyPath && certPath
   : true;
 
 export default defineConfig({
+  base: './',
   plugins: [react()],
   server: {
     host: true,
