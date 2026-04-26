@@ -160,6 +160,33 @@ function getOpenSslCandidates() {
   return [...new Set(windowsCandidates.filter(Boolean))];
 }
 
+function looksLikeWindowsAbsolutePath(inputPath = '') {
+  return /^[a-zA-Z]:[\\/]/.test(String(inputPath).trim());
+}
+
+async function assertReadableFile(filePath, label) {
+  const normalizedPath = String(filePath || '').trim();
+  if (!normalizedPath) {
+    throw new AppError(`${label} no configurado`, 400);
+  }
+
+  if (process.platform !== 'win32' && looksLikeWindowsAbsolutePath(normalizedPath)) {
+    throw new AppError(
+      `${label} inválido para este servidor: "${normalizedPath}". Estás usando una ruta de Windows (C:\\...) en un backend Linux. Subí los archivos al servidor y configurá una ruta local del servidor.`,
+      400
+    );
+  }
+
+  try {
+    await fs.promises.access(normalizedPath, fs.constants.R_OK);
+  } catch (error) {
+    throw new AppError(
+      `${label} no accesible en el servidor: "${normalizedPath}". Verificá que el archivo exista en el backend y que tenga permisos de lectura.`,
+      400
+    );
+  }
+}
+
 async function signCms({ certPath, keyPath, traXml }) {
   const tempBase = path.join(os.tmpdir(), `restosur-afip-${crypto.randomUUID()}`);
   const traPath = `${tempBase}.xml`;
@@ -182,6 +209,8 @@ async function signCms({ certPath, keyPath, traXml }) {
   ];
 
   try {
+    await assertReadableFile(certPath, 'Certificado AFIP (certPath)');
+    await assertReadableFile(keyPath, 'Clave privada AFIP (keyPath)');
     await fs.promises.writeFile(traPath, traXml, 'utf8');
     const candidates = getOpenSslCandidates();
     let lastEnoentError = null;
