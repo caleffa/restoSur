@@ -5,6 +5,7 @@ import { MENU_BY_ROLE } from '../utils/roles';
 import { getAfipConfig, getStock } from '../services/adminService';
 import { FaBell, FaPowerOff, FaReply } from 'react-icons/fa';
 import Modal from './Modal';
+import { getRuntimeConfigValue } from '../config/runtimeConfig';
 
 
 function Navbar() {
@@ -49,7 +50,7 @@ function Navbar() {
     }
     
     // Obtener la URL base del API
-    const baseUrl = process.env.REACT_APP_API_URL || 'https://localhost:3000';
+    const baseUrl = getRuntimeConfigValue('VITE_API_URL', import.meta.env.VITE_API_URL || 'https://localhost:3000/api').replace(/\/api\/?$/, '');
     
     // Asegurar que la ruta tenga el formato correcto
     const cleanPath = path.startsWith('/') ? path : `/${path}`;

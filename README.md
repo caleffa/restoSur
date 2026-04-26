@@ -106,6 +106,25 @@ npm run dev
 Variables:
 - `VITE_API_URL` (default: usa el mismo protocolo del frontend, ej. `http://localhost:3000/api` o `https://localhost:3000/api`)
 
+### Instalable para Windows (frontend)
+Desde `frontend/` se puede generar un instalador `.exe` usando Electron Builder:
+
+```bash
+cd frontend
+npm install
+npm run build:desktop
+```
+
+El instalador queda en `frontend/release/`.
+
+Configuración por PC:
+- Editar `resources/runtime-config.js` dentro de la carpeta instalada (o `frontend/public/runtime-config.js` antes de compilar).
+- Variables disponibles:
+  - `VITE_API_URL` (ej: `https://IP_DEL_SERVIDOR:3000/api`)
+  - `VITE_KITCHEN_WS_URL` (ej: `wss://IP_DEL_SERVIDOR:3000/ws/kitchen`)
+
+Esto permite conectar cada PC a un backend distinto sin recompilar el frontend.
+
 ## Comandas
 - Acceso permitido para roles `ADMIN` y `COCINA`.
 - GET `/comandas`
