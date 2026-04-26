@@ -31,6 +31,7 @@ import {
   updateSaleItem,
 } from '../services/posService';
 import { formatCurrency } from '../utils/formatters';
+import { getRuntimeConfigValue } from '../config/runtimeConfig';
 
 const AFIP_QR_VERIFY_URL = 'https://www.afip.gob.ar/fe/qr/';
 
@@ -386,7 +387,7 @@ function POS() {
   }, [toastMessage]);
 
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_KITCHEN_WS_URL;
+    const wsUrl = getRuntimeConfigValue('VITE_KITCHEN_WS_URL', import.meta.env.VITE_KITCHEN_WS_URL);
     if (!wsUrl) return undefined;
 
     const ws = new WebSocket(wsUrl);
@@ -845,7 +846,7 @@ function POS() {
                   Mozo: {sale?.waiterName || 'Sin asignar'}
                 </span>
                 <span className="fw-semibold">Total acumulado: {formatCurrency(totals.total)}</span>
-                {import.meta.env.VITE_KITCHEN_WS_URL && (
+                {getRuntimeConfigValue('VITE_KITCHEN_WS_URL', import.meta.env.VITE_KITCHEN_WS_URL) && (
                   <small className={wsConnected ? 'text-success' : 'text-muted'}>
                     Cocina WS: {wsConnected ? 'conectado' : 'sin conexión'}
                   </small>

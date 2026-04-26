@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
+import { getRuntimeConfigValue } from '../../config/runtimeConfig';
 import Modal from '../Modal';
 import { formatCurrency } from '../../utils/formatters';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://localhost:3000/api').replace(/\/api\/?$/, '');
+const API_BASE_URL = getRuntimeConfigValue('VITE_API_URL', import.meta.env.VITE_API_URL || 'https://localhost:3000/api').replace(/\/api\/?$/, '');
 
 function resolveImageUrl(imagePath) {
   if (!imagePath) return '';
