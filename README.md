@@ -148,3 +148,28 @@ Variables frontend (`frontend/.env` opcional):
 - `VITE_SSL_CERT_PATH=../certs/localhost.pem`
 
 Si no definís certificados para Vite, usa certificado autofirmado automático (`https: true`).
+
+## Deploy a VPS (backend + MySQL + Nginx ya instalado)
+Se agregaron scripts para automatizar deploy sin romper otras apps en el mismo servidor:
+
+- `scripts/deploy/deploy-backend-vps.sh`: publica backend, crea servicio systemd y agrega un site de nginx separado (usa puerto interno `3001` por defecto).
+- `scripts/deploy/deploy-db-vps.sh`: crea la base si no existe e importa `sql/schema.sql` en MySQL remoto.
+
+### 1) Deploy del backend
+```bash
+./scripts/deploy/deploy-backend-vps.sh \
+  --host TU_VPS \
+  --user TU_USUARIO \
+  --domain api.tudominio.com
+```
+
+### 2) Deploy del esquema de base de datos
+```bash
+./scripts/deploy/deploy-db-vps.sh \
+  --host TU_VPS \
+  --user TU_USUARIO \
+  --db-name restosur \
+  --db-user app_user
+```
+
+Podés ver todas las opciones con `--help` en ambos scripts.
