@@ -23,6 +23,7 @@ function AdminProducts() {
   const [editingProductId, setEditingProductId] = useState(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [pendingDeleteProduct, setPendingDeleteProduct] = useState(null);
+  const [menuPrintDate, setMenuPrintDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -51,6 +52,24 @@ function AdminProducts() {
     [categories],
   );
   const sortedCategories = useMemo(() => sortByLabel(categories, (category) => category.name), [categories]);
+  const printableMenuItems = useMemo(
+    () => sortByLabel(
+      products.filter((row) => row.active === 1 || row.active === true),
+      (row) => `${categoryMap[Number(row.category_id ?? row.categoryId)] || ''} ${row.name || ''}`,
+    ),
+    [products, categoryMap],
+  );
+  const menuPrintDateLabel = useMemo(
+    () => menuPrintDate.toLocaleString('es-AR', { dateStyle: 'long', timeStyle: 'short' }),
+    [menuPrintDate],
+  );
+
+  const printMenu = () => {
+    setMenuPrintDate(new Date());
+    window.setTimeout(() => {
+      window.print();
+    }, 50);
+  };
 
   const onCreateOrUpdateProduct = async (event) => {
     event.preventDefault();
@@ -120,11 +139,16 @@ function AdminProducts() {
     <div className="app-layout">
       <Navbar />
       <main className="content admin-management-screen">
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-3 no-print">
         <h2>Administración de productos</h2>
-        <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
-          Nuevo producto
-        </button>
+          <div className="admin-actions-row">
+            <button type="button" className="touch-btn" onClick={printMenu}>
+              Imprimir carta
+            </button>
+            <button type="button" className="touch-btn btn-primary" onClick={openCreateModal}>
+              Nuevo producto
+            </button>
+          </div>
         </div>
 
         {error && <p className="error-text">{error}</p>}
@@ -212,6 +236,25 @@ function AdminProducts() {
             },
           ]}
         />
+
+        <section className="menu-print-sheet" aria-hidden="true">
+          <header className="menu-print-header">
+            <p className="menu-print-subtitle">Restaurante</p>
+            <h1>Nuestra carta</h1>
+            <p className="menu-print-date">Fecha de impresión: {menuPrintDateLabel}</p>
+          </header>
+          <div className="menu-print-list">
+            {printableMenuItems.map((row) => (
+              <article key={row.id} className="menu-print-item">
+                <div>
+                  <h3>{row.name}</h3>
+                  <p>{row.description || categoryMap[Number(row.category_id ?? row.categoryId)] || 'Especialidad de la casa'}</p>
+                </div>
+                <strong>{formatCurrency(row.price)}</strong>
+              </article>
+            ))}
+          </div>
+        </section>
 
         {isFormModalOpen && (
           <Modal
