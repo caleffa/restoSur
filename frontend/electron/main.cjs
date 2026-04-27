@@ -6,6 +6,7 @@ function createWindow() {
     width: 1400,
     height: 900,
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '..', 'public', 'icons', 'app-icon.ico'),
   });
 
   win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));

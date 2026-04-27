@@ -58,6 +58,15 @@ textarea {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
+
+.auth-logo {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  align-self: center;
+  margin-bottom: 0.2rem;
+}
+
 .auth-card input {
   min-height: 52px;
   border-radius: 10px;
