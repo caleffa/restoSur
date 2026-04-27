@@ -37,11 +37,7 @@ function normalizePayload(data) {
   const isSupply = data.isSupply === undefined ? false : Boolean(data.isSupply);
   const forSale = data.forSale === undefined ? false : Boolean(data.forSale);
 
-  if (isProduct && isSupply) {
-    throw new AppError('Un artículo no puede ser producto e insumo al mismo tiempo', 400);
-  }
-
-  if (isSupply && forSale) {
+  if (isSupply && !isProduct && forSale) {
     throw new AppError('Un insumo no puede estar a la venta', 400);
   }
 
