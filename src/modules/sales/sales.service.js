@@ -19,6 +19,57 @@ function roundMoney(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
+function addRequiredQuantity(requiredByArticle, articleId, quantity) {
+  const accumulated = requiredByArticle.get(articleId) || 0;
+  requiredByArticle.set(articleId, Number((accumulated + quantity).toFixed(3)));
+}
+
+async function getActiveRecipeItems(productId, conn, recipeCache) {
+  if (recipeCache.has(productId)) {
+    return recipeCache.get(productId);
+  }
+
+  const recipeItems = await recipesRepo.findActiveItemsByProductIds([productId], conn);
+  recipeCache.set(productId, recipeItems);
+  return recipeItems;
+}
+
+async function accumulateRequiredStockFromArticle(
+  articleId,
+  quantity,
+  conn,
+  requiredByArticle,
+  recipeCache,
+  recipePath = new Set()
+) {
+  const recipeItems = await getActiveRecipeItems(articleId, conn, recipeCache);
+
+  if (!recipeItems.length) {
+    addRequiredQuantity(requiredByArticle, articleId, quantity);
+    return;
+  }
+
+  if (recipePath.has(articleId)) {
+    throw new AppError(`Dependencia circular detectada en recetas para artículo ID ${articleId}`, 400);
+  }
+
+  const nextPath = new Set(recipePath);
+  nextPath.add(articleId);
+
+  for (const recipeItem of recipeItems) {
+    const nestedArticleId = Number(recipeItem.article_id);
+    const nestedQty = quantity * Number(recipeItem.quantity);
+    await accumulateRequiredStockFromArticle(
+      nestedArticleId,
+      nestedQty,
+      conn,
+      requiredByArticle,
+      recipeCache,
+      nextPath
+    );
+  }
+}
+
 async function resolvePaymentMethod(inputMethod) {
   const paymentMethodCode = String(inputMethod || 'EFECTIVO').toUpperCase().trim();
   const method = await paymentMethodsService.getPaymentMethodByCode(paymentMethodCode);
@@ -126,19 +177,20 @@ async function addItem(saleId, { productId, articleId, quantity, notes }) {
     }
 
     if (product.has_stock === 1 || product.has_stock === true) {
-      const recipeItems = await recipesRepo.findActiveItemsByProductIds([selectedArticleId], conn);
-      if (recipeItems.length > 0) {
-        for (const recipeItem of recipeItems) {
-          const requiredQty = normalizedQuantity * Number(recipeItem.quantity);
-          const current = await stockRepo.findStock(sale.branch_id, Number(recipeItem.article_id), conn);
-          if (Number(current?.quantity || 0) < requiredQty) {
-            throw new AppError('Stock insuficiente para la receta del artículo', 400);
-          }
-        }
-      } else {
-        const current = await stockRepo.findStock(sale.branch_id, selectedArticleId, conn);
-        if (Number(current?.quantity || 0) < normalizedQuantity) {
-          throw new AppError('Stock insuficiente para el artículo', 400);
+      const requiredByArticle = new Map();
+      const recipeCache = new Map();
+      await accumulateRequiredStockFromArticle(
+        selectedArticleId,
+        normalizedQuantity,
+        conn,
+        requiredByArticle,
+        recipeCache
+      );
+
+      for (const [articleId, requiredQty] of requiredByArticle.entries()) {
+        const current = await stockRepo.findStock(sale.branch_id, articleId, conn);
+        if (Number(current?.quantity || 0) < requiredQty) {
+          throw new AppError('Stock insuficiente para el artículo o receta asociada', 400);
         }
       }
     }
@@ -272,35 +324,24 @@ async function paySale(saleId, user, paymentData = {}) {
 
     const total = items.reduce((acc, it) => acc + Number(it.quantity) * Number(it.unit_price), 0);
 
-    const recipeItems = await recipesRepo.findActiveItemsByProductIds(
-      [...new Set(items.map((item) => Number(item.article_id)))],
-      conn
-    );
-
-    const recipeByProduct = new Map();
-    for (const recipeItem of recipeItems) {
-      const productId = Number(recipeItem.product_id);
-      const productRecipe = recipeByProduct.get(productId) || [];
-      productRecipe.push(recipeItem);
-      recipeByProduct.set(productId, productRecipe);
-    }
-
     const requiredByArticle = new Map();
+    const recipeCache = new Map();
     for (const item of items) {
       const itemArticleId = Number(item.article_id);
-      const productRecipes = recipeByProduct.get(itemArticleId) || [];
+      const itemQty = Number(item.quantity);
+      const recipeItems = await getActiveRecipeItems(itemArticleId, conn, recipeCache);
 
-      if (productRecipes.length > 0) {
-        for (const recipeItem of productRecipes) {
-          const articleId = Number(recipeItem.article_id);
-          const requiredQty = Number(item.quantity) * Number(recipeItem.quantity);
-          const accumulated = requiredByArticle.get(articleId) || 0;
-          requiredByArticle.set(articleId, Number((accumulated + requiredQty).toFixed(3)));
-        }
+      if (recipeItems.length > 0) {
+        await accumulateRequiredStockFromArticle(
+          itemArticleId,
+          itemQty,
+          conn,
+          requiredByArticle,
+          recipeCache
+        );
       } else if (item.has_stock === 1 || item.has_stock === true) {
         const requiredQty = Number(item.quantity);
-        const accumulated = requiredByArticle.get(itemArticleId) || 0;
-        requiredByArticle.set(itemArticleId, Number((accumulated + requiredQty).toFixed(3)));
+        addRequiredQuantity(requiredByArticle, itemArticleId, requiredQty);
       }
     }
 
