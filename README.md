@@ -174,3 +174,16 @@ Se agregaron scripts para automatizar deploy sin romper otras apps en el mismo s
 ```
 
 Podés ver todas las opciones con `--help` en ambos scripts.
+
+
+## Versionado del sistema
+
+- La versión visible en la UI se define en `frontend/src/config/appVersion.json`.
+- Formato mostrado: `vMAJOR.MINOR.PATCH.BUILD`.
+- Para que cada `git pull` incremente automáticamente el `BUILD`, ejecutar una vez:
+
+```bash
+npm run hooks:install
+```
+
+Luego de eso, los hooks `post-merge` y `post-rewrite` aumentan el build al hacer `pull` (merge o rebase).

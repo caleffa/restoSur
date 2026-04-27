@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getAppVersion } from '../config/version';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ function Login() {
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+  const appVersion = getAppVersion();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -48,7 +50,9 @@ function Login() {
     <main className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <img className="auth-logo" src="/icons/icon-512.svg" alt="RestoSur" />
-        <h2><strong>RestoSur</strong></h2><h4>Ingreso al sistema</h4>
+        <h2><strong>RestoSur</strong></h2>
+        <p className="system-version">Versión {appVersion}</p>
+        <h4>Ingreso al sistema</h4>
 
         <label htmlFor="email">Email</label>
         <input

@@ -13,7 +13,9 @@
     "check": "node --check src/server.js",
     "seed:operacion": "node scripts/generateOperationalData.js 60",
     "dev:mobile": "npm run start --prefix mobile",
-    "apk:build": "npm run apk --prefix mobile"
+    "apk:build": "npm run apk --prefix mobile",
+    "hooks:install": "bash scripts/setup-git-hooks.sh",
+    "version:bump:pull": "node scripts/bump-build-on-pull.js"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
