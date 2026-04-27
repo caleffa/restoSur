@@ -1105,6 +1105,20 @@ textarea {
   color: #ebebeb;
 }
 
+.navbar-brand-version {
+  font-size: 0.78rem;
+  color: #d1d5db;
+  margin-top: 2px;
+}
+
+.system-version {
+  margin: -0.2rem 0 0.2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+
 /* Ajuste para móviles */
 @media (max-width: 768px) {
   .navbar-logo {

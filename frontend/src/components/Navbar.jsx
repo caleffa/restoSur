@@ -6,6 +6,7 @@ import { getAfipConfig, getStock } from '../services/adminService';
 import { FaBell, FaPowerOff, FaReply } from 'react-icons/fa';
 import Modal from './Modal';
 import { getRuntimeConfigValue } from '../config/runtimeConfig';
+import { getAppVersion } from '../config/version';
 
 
 function Navbar() {
@@ -20,6 +21,7 @@ function Navbar() {
   const [lowStockAlerts, setLowStockAlerts] = useState([]);
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const menuItems = MENU_BY_ROLE[user?.role] || [];
+  const appVersion = getAppVersion();
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -152,7 +154,8 @@ function Navbar() {
               />
             </div>
           )}
-          <div className="navbar-brand-text">RestoPOS</div> 
+          <div className="navbar-brand-text">RestoPOS</div>
+          <div className="navbar-brand-version">{appVersion}</div>
         </div>
         <button
           type="button"
