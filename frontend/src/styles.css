@@ -1588,3 +1588,90 @@ textarea {
   text-align: center;
   font-size: 2rem;
 }
+
+.menu-print-sheet {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .app-navbar,
+  .no-print,
+  .simple-data-table,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  .app-layout,
+  .content {
+    padding: 0;
+  }
+
+  .menu-print-sheet {
+    display: block;
+    font-family: 'Times New Roman', serif;
+    color: #1b1208;
+    padding: 28px;
+  }
+
+  .menu-print-header {
+    text-align: center;
+    border-bottom: 1px solid #d6c8b0;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+
+  .menu-print-subtitle {
+    margin: 0;
+    letter-spacing: 0.2rem;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: #7a6247;
+  }
+
+  .menu-print-header h1 {
+    margin: 0.3rem 0 0.45rem;
+    font-size: 38px;
+    font-weight: 600;
+  }
+
+  .menu-print-date {
+    margin: 0;
+    font-size: 13px;
+    color: #604c36;
+  }
+
+  .menu-print-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .menu-print-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 14px;
+    border-bottom: 1px dotted #b8a58a;
+    padding-bottom: 10px;
+  }
+
+  .menu-print-item h3 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .menu-print-item p {
+    margin: 3px 0 0;
+    color: #6c5a44;
+    font-size: 13px;
+  }
+
+  .menu-print-item strong {
+    white-space: nowrap;
+    font-size: 20px;
+    color: #291b0c;
+  }
+}
