@@ -5,6 +5,7 @@ import SimpleDataTable from '../components/SimpleDataTable';
 import {
   createProduct,
   deleteProduct,
+  getAfipConfig,
   getCategories,
   getProductsCostReport,
   getProducts,
@@ -12,6 +13,7 @@ import {
 } from '../services/adminService';
 import { formatCurrency } from '../utils/formatters';
 import { sortByLabel } from '../utils/sort';
+import { getRuntimeConfigValue } from '../config/runtimeConfig';
 
 const initialProduct = { name: '', price: '', categoryId: '', hasStock: true, active: true };
 
@@ -24,24 +26,40 @@ function AdminProducts() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [pendingDeleteProduct, setPendingDeleteProduct] = useState(null);
   const [menuPrintDate, setMenuPrintDate] = useState(new Date());
+  const [menuIssuerName, setMenuIssuerName] = useState('');
+  const [menuLogoUrl, setMenuLogoUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const resolveImageUrl = useCallback((path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+    const baseUrl = getRuntimeConfigValue(
+      'VITE_API_URL',
+      import.meta.env.VITE_API_URL || 'https://localhost:3000/api',
+    ).replace(/\/api\/?$/, '');
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${baseUrl}${cleanPath}`;
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
-      const [categoriesData, productsData, productsCostReportData] = await Promise.all([
+      const [categoriesData, productsData, productsCostReportData, afipConfig] = await Promise.all([
         getCategories(),
         getProducts(),
         getProductsCostReport(),
+        getAfipConfig().catch(() => null),
       ]);
       setCategories(categoriesData);
       setProducts(productsData);
       setProductsCostReport(productsCostReportData);
+      setMenuIssuerName(afipConfig?.issuer_name || afipConfig?.issuerName || '');
+      setMenuLogoUrl(resolveImageUrl(afipConfig?.ticket_logo_path || afipConfig?.ticketLogoPath || ''));
       setError('');
     } catch {
       setError('No se pudo cargar la información de productos.');
     }
-  }, []);
+  }, [resolveImageUrl]);
 
   useEffect(() => {
     loadData();
@@ -52,13 +70,25 @@ function AdminProducts() {
     [categories],
   );
   const sortedCategories = useMemo(() => sortByLabel(categories, (category) => category.name), [categories]);
-  const printableMenuItems = useMemo(
-    () => sortByLabel(
-      products.filter((row) => row.active === 1 || row.active === true),
-      (row) => `${categoryMap[Number(row.category_id ?? row.categoryId)] || ''} ${row.name || ''}`,
-    ),
-    [products, categoryMap],
-  );
+  const printableMenuByCategory = useMemo(() => {
+    const activeProducts = products.filter((row) => row.active === 1 || row.active === true);
+    const groupsMap = new Map();
+
+    activeProducts.forEach((row) => {
+      const categoryName = categoryMap[Number(row.category_id ?? row.categoryId)] || 'Sin categoría';
+      if (!groupsMap.has(categoryName)) {
+        groupsMap.set(categoryName, []);
+      }
+      groupsMap.get(categoryName).push(row);
+    });
+
+    return Array.from(groupsMap.entries())
+      .map(([categoryName, items]) => ({
+        categoryName,
+        items: sortByLabel(items, (row) => row.name || ''),
+      }))
+      .sort((a, b) => a.categoryName.localeCompare(b.categoryName, 'es-AR'));
+  }, [products, categoryMap]);
   const menuPrintDateLabel = useMemo(
     () => menuPrintDate.toLocaleString('es-AR', { dateStyle: 'long', timeStyle: 'short' }),
     [menuPrintDate],
@@ -239,19 +269,25 @@ function AdminProducts() {
 
         <section className="menu-print-sheet" aria-hidden="true">
           <header className="menu-print-header">
-            <p className="menu-print-subtitle">Restaurante</p>
+            {menuLogoUrl && (
+              <img src={menuLogoUrl} alt="Logo comercio" className="menu-print-logo" />
+            )}
+            <p className="menu-print-subtitle">{menuIssuerName || 'Restaurante'}</p>
             <h1>Nuestra carta</h1>
             <p className="menu-print-date">Fecha de impresión: {menuPrintDateLabel}</p>
           </header>
           <div className="menu-print-list">
-            {printableMenuItems.map((row) => (
-              <article key={row.id} className="menu-print-item">
-                <div>
-                  <h3>{row.name}</h3>
-                  <p>{row.description || categoryMap[Number(row.category_id ?? row.categoryId)] || 'Especialidad de la casa'}</p>
-                </div>
-                <strong>{formatCurrency(row.price)}</strong>
-              </article>
+            {printableMenuByCategory.map((group) => (
+              <section key={group.categoryName} className="menu-print-category">
+                <h2>{group.categoryName}</h2>
+                <div className="menu-print-category-separator" aria-hidden="true">-----------</div>
+                {group.items.map((row) => (
+                  <article key={row.id} className="menu-print-item">
+                    <h3>{row.name}</h3>
+                    <strong>{formatCurrency(row.price)}</strong>
+                  </article>
+                ))}
+              </section>
             ))}
           </div>
         </section>
