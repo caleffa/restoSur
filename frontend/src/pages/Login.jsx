@@ -47,6 +47,7 @@ function Login() {
   return (
     <main className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
+        <img className="auth-logo" src="/icons/icon-512.svg" alt="RestoSur" />
         <h2><strong>RestoSur</strong></h2><h4>Ingreso al sistema</h4>
 
         <label htmlFor="email">Email</label>
