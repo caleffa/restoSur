@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 function normalize(value) {
   if (value === null || value === undefined) return '';
   return String(value).toLowerCase();
@@ -26,6 +27,7 @@ function escapeHtml(value) {
 }
 
 function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
+  const { td } = useLanguage();
   const [search, setSearch] = useState('');
   const [selectedFilters, setSelectedFilters] = useState({});
   const [sortBy, setSortBy] = useState(null);
@@ -124,7 +126,7 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
           <h1>${escapeHtml(title)}</h1>
           <table>
             <thead><tr>${tableHeaders}</tr></thead>
-            <tbody>${tableRows || `<tr><td colspan="${exportableColumns.length}">Sin resultados</td></tr>`}</tbody>
+            <tbody>${tableRows || `<tr><td colspan="${exportableColumns.length}">${td('Sin resultados')}</td></tr>`}</tbody>
           </table>
         </body>
       </html>
@@ -176,7 +178,7 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
         <h3>{title}</h3>
         <input
           type="search"
-          placeholder="Buscar..."
+          placeholder={td('Buscar...')}
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -194,7 +196,7 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
                 value={selectedFilters[filter.key] || ''}
                 onChange={(event) => setFilter(filter.key, event.target.value)}
               >
-                <option value="">Todos</option>
+                <option value="">{td('Todos')}</option>
                 {sortOptions(filter.options).map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -208,13 +210,13 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
 
       <div className="admin-actions-row admin-export-row">
         <button type="button" className="touch-btn" onClick={handlePrint}>
-          Imprimir
+          {td('Imprimir')}
         </button>
         <button type="button" className="touch-btn" onClick={handlePdfExport}>
-          Descargar PDF
+          {td('Descargar PDF')}
         </button>
         <button type="button" className="touch-btn" onClick={handleExcelExport}>
-          Descargar Excel
+          {td('Descargar Excel')}
         </button>
       </div>
 
@@ -247,7 +249,7 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="text-center py-4">Sin resultados</td>
+                <td colSpan={columns.length} className="text-center py-4">{td('Sin resultados')}</td>
               </tr>
             )}
           </tbody>
@@ -256,15 +258,15 @@ function SimpleDataTable({ title, columns, rows, filters = [], pageSize = 8 }) {
 
       <div className="admin-pagination-row">
         <span>
-          Mostrando {sortedRows.length ? start + 1 : 0}-{Math.min(start + pageSize, sortedRows.length)} de {sortedRows.length}
+          {td('Mostrando')} {sortedRows.length ? start + 1 : 0}-{Math.min(start + pageSize, sortedRows.length)} {td('de')} {sortedRows.length}
         </span>
         <div className="admin-actions-row">
           <button type="button" className="touch-btn" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Anterior
+            {td('Anterior')}
           </button>
-          <span>Página {page} de {totalPages}</span>
+          <span>{td('Página')} {page} {td('de')} {totalPages}</span>
           <button type="button" className="touch-btn" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-            Siguiente
+            {td('Siguiente')}
           </button>
         </div>
       </div>
