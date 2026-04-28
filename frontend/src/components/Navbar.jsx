@@ -7,6 +7,7 @@ import { FaBell, FaPowerOff, FaReply } from 'react-icons/fa';
 import Modal from './Modal';
 import { getRuntimeConfigValue } from '../config/runtimeConfig';
 import { getAppVersion } from '../config/version';
+import { SUPPORTED_LANGUAGES, useLanguage } from '../context/LanguageContext';
 
 
 function Navbar() {
@@ -22,6 +23,7 @@ function Navbar() {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const menuItems = MENU_BY_ROLE[user?.role] || [];
   const appVersion = getAppVersion();
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -161,7 +163,7 @@ function Navbar() {
           type="button"
           className="navbar-toggle"
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          aria-label="Abrir menú"
+          aria-label={t('navbar.open_menu', 'Abrir menú')}
           aria-expanded={mobileMenuOpen}
         >
           ☰
@@ -202,22 +204,36 @@ function Navbar() {
           type="button"
           className={`btn-label-2 touch-btn-2 navbar-bell-btn ${lowStockCount > 0 ? 'has-alert' : ''}`}
           onClick={() => setShowAlertsModal(true)}
-          title={lowStockCount > 0 ? `Hay ${lowStockCount} artículo(s) en stock mínimo` : 'Sin alertas de stock mínimo'}
+          title={lowStockCount > 0 ? `${lowStockCount} ${t('navbar.alerts_title', 'Alertas')}` : t('navbar.no_alerts', 'No hay mensajes de alerta.')}
         >
           <FaBell />
           {lowStockCount > 0 ? <span className="navbar-alert-badge">{lowStockCount}</span> : null}
         </button>
+        <label className="navbar-language-selector" htmlFor="language-select">
+          <span>{t('navbar.language', 'Idioma')}</span>
+          <select
+            id="language-select"
+            value={language}
+            onChange={(event) => setLanguage(event.target.value)}
+          >
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <option key={lang} value={lang}>
+                {lang.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="button" className="btn-label-2 touch-btn-danger-2" onClick={logout}>
           <FaPowerOff />
         </button>
       </nav>
       {showAlertsModal && (
         <Modal
-          title="Alertas"
+          title={t('navbar.alerts_title', 'Alertas')}
           onClose={() => setShowAlertsModal(false)}
           actions={(
             <button type="button" className="touch-btn-danger" onClick={() => setShowAlertsModal(false)}>
-              Cerrar
+              {t('navbar.close', 'Cerrar')}
             </button>
           )}
         >
@@ -228,7 +244,7 @@ function Navbar() {
               ))}
             </ul>
           ) : (
-            <p>No hay mensajes de alerta.</p>
+            <p>{t('navbar.no_alerts', 'No hay mensajes de alerta.')}</p>
           )}
         </Modal>
       )}

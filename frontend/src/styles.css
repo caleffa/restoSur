@@ -39,6 +39,24 @@ textarea {
   padding: 1rem;
 }
 
+
+.navbar-language-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.navbar-language-selector select {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  padding: 0 0.45rem;
+  background: #fff;
+  color: #111827;
+}
+
 .auth-page {
   min-height: 100vh;
   display: flex;

@@ -22,6 +22,18 @@ CREATE TABLE users (
   FOREIGN KEY (branch_id) REFERENCES branches(id)
 );
 
+
+CREATE TABLE system_texts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  reference_key VARCHAR(180) NOT NULL,
+  language_code ENUM('es','en','pt') NOT NULL,
+  title VARCHAR(200) NULL,
+  message TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_system_texts_reference_lang (reference_key, language_code)
+);
+
 CREATE TABLE cash_registers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   branch_id INT NOT NULL,
