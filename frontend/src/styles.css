@@ -278,6 +278,58 @@ textarea {
   color: #0f172a;
 }
 
+.help-screen {
+  display: grid;
+  gap: 1rem;
+}
+
+.help-header {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.help-header h2 {
+  margin: 0 0 0.4rem;
+}
+
+.help-header p {
+  margin: 0;
+  color: #374151;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0.9rem;
+}
+
+.help-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.help-card h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+}
+
+.help-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.help-example {
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed #d1d5db;
+}
+
 .waiter-card-meta {
   font-size: 0.78rem;
   color: #64748b;

@@ -33,6 +33,7 @@ import AdminSuppliers from '../pages/AdminSuppliers';
 import AdminCustomers from '../pages/AdminCustomers';
 import AdminPurchaseOrders from '../pages/AdminPurchaseOrders';
 import PurchaseOrderReception from '../pages/PurchaseOrderReception';
+import HelpManual from '../pages/HelpManual';
 import { ROLES } from '../utils/roles';
 
 function AppRouter() {
@@ -334,6 +335,15 @@ function AppRouter() {
         element={(
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO, ROLES.MOZO]}>
             <POS />
+          </ProtectedRoute>
+        )}
+      />
+
+      <Route
+        path="/help"
+        element={(
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.CAJERO, ROLES.MOZO, ROLES.COCINA]}>
+            <HelpManual />
           </ProtectedRoute>
         )}
       />
