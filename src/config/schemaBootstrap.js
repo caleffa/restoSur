@@ -53,6 +53,7 @@ async function ensureCashSchema() {
   await ensureArticlesSchema();
   await ensureStockSchema();
   await ensureCommerceSchema();
+  await ensureSystemTextsSchema();
   await ensureColumn(
     'tables_restaurant',
     'table_type',
@@ -580,6 +581,45 @@ async function ensureAfipSchema() {
        FOREIGN KEY (created_by) REFERENCES users(id)`
     );
   }
+}
+
+
+async function ensureSystemTextsSchema() {
+  await query(
+    `CREATE TABLE IF NOT EXISTS system_texts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      reference_key VARCHAR(180) NOT NULL,
+      language_code ENUM('es','en','pt') NOT NULL,
+      title VARCHAR(200) NULL,
+      message TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_system_texts_reference_lang (reference_key, language_code)
+    )`
+  );
+
+  await query(
+    `INSERT INTO system_texts (reference_key, language_code, title, message)
+     VALUES
+      ('navbar.open_menu', 'es', 'Menú', 'Abrir menú'),
+      ('navbar.open_menu', 'en', 'Menu', 'Open menu'),
+      ('navbar.open_menu', 'pt', 'Menu', 'Abrir menu'),
+      ('navbar.alerts_title', 'es', 'Alertas', 'Alertas de stock mínimo'),
+      ('navbar.alerts_title', 'en', 'Alerts', 'Low stock alerts'),
+      ('navbar.alerts_title', 'pt', 'Alertas', 'Alertas de estoque mínimo'),
+      ('navbar.close', 'es', 'Cerrar', 'Cerrar'),
+      ('navbar.close', 'en', 'Close', 'Close'),
+      ('navbar.close', 'pt', 'Fechar', 'Fechar'),
+      ('login.access', 'es', 'Ingreso al sistema', 'Ingreso al sistema'),
+      ('login.access', 'en', 'System login', 'System login'),
+      ('login.access', 'pt', 'Acesso ao sistema', 'Acesso ao sistema'),
+      ('login.submit', 'es', 'Iniciar sesión', 'Iniciar sesión'),
+      ('login.submit', 'en', 'Sign in', 'Sign in'),
+      ('login.submit', 'pt', 'Entrar', 'Entrar')
+     ON DUPLICATE KEY UPDATE
+      title = VALUES(title),
+      message = VALUES(message)`
+  );
 }
 
 module.exports = {
