@@ -8,6 +8,7 @@ export const ROLES = {
 export const MENU_BY_ROLE = {
   [ROLES.ADMIN]: [
     { label: 'Dashboard', path: '/dashboard', icon: 'FaBeer' },
+    { label: 'Ayuda', path: '/help' },
     { label: 'Usuarios', path: '/admin/management/users', icon: 'FaUser' },
     {
       label: 'Mesas',
@@ -89,6 +90,7 @@ export const MENU_BY_ROLE = {
   ],
   [ROLES.CAJERO]: [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Ayuda', path: '/help' },
     { label: 'Mesas', path: '/tables' },
     {
       label: 'Caja',
@@ -108,10 +110,12 @@ export const MENU_BY_ROLE = {
   ],
   [ROLES.MOZO]: [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Ayuda', path: '/help' },
     { label: 'Mesas', path: '/tables' },
   ],
   [ROLES.COCINA]: [
     { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Ayuda', path: '/help' },
     { label: 'Comandas', path: '/comandas' },
     { label: 'Productos', path: '/admin/management/products' },
     { label: 'Recetas', path: '/admin/management/recipes' },
