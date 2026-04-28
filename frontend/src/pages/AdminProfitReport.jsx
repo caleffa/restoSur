@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
 import Navbar from '../components/Navbar';
 import { getProfitReport } from '../services/profitsService';
 import { formatCurrency, formatNumber } from '../utils/formatters';
@@ -19,6 +21,34 @@ function formatIsoDate(value) {
   if (!value) return '-';
   return new Date(value).toLocaleDateString('es-AR');
 }
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
+const CHART_COLORS = ['#0d6efd', '#198754', '#fd7e14', '#dc3545', '#6f42c1', '#20c997', '#ffc107', '#0dcaf0'];
+
+function buildDoughnutData(items, labelKey, valueKey) {
+  if (!items.length) return null;
+  return {
+    labels: items.map((item) => item[labelKey]),
+    datasets: [
+      {
+        data: items.map((item) => item[valueKey] || 0),
+        backgroundColor: CHART_COLORS,
+        borderWidth: 1,
+      },
+    ],
+  };
+}
+
+const doughnutOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+    },
+  },
+};
 
 function downloadCsv(report) {
   const rows = [
@@ -81,6 +111,19 @@ function AdminProfitReport() {
   const topProducts = reportData?.breakdown?.topProducts || [];
   const peakHours = reportData?.breakdown?.bySchedule || [];
   const paymentMethods = reportData?.breakdown?.byChannel || [];
+  const categoryBreakdown = reportData?.breakdown?.byCategory || [];
+  const categoryChartData = useMemo(
+    () => buildDoughnutData(categoryBreakdown, 'category', 'total'),
+    [categoryBreakdown],
+  );
+  const paymentMethodsChartData = useMemo(
+    () => buildDoughnutData(paymentMethods, 'channel', 'total'),
+    [paymentMethods],
+  );
+  const operatingExpensesChartData = useMemo(() => {
+    const rowsWithValue = operatingRows.filter((item) => (item.value || 0) > 0);
+    return buildDoughnutData(rowsWithValue, 'label', 'value');
+  }, [operatingRows]);
 
   return (
     <div className="app-layout">
@@ -154,14 +197,20 @@ function AdminProfitReport() {
               <div className="row g-3">
                 <div className="col-md-6">
                   <h5>Desglose por categoría</h5>
+                  <div style={{ height: '280px' }} className="mb-3">
+                    {categoryChartData ? <Doughnut data={categoryChartData} options={doughnutOptions} /> : <p className="text-muted">Sin datos para graficar.</p>}
+                  </div>
                   <ul>
-                    {(reportData.breakdown.byCategory || []).map((item) => (
+                    {categoryBreakdown.map((item) => (
                       <li key={item.category}>{item.category}: {formatCurrency(item.total)} ({formatPercent(item.percentage)})</li>
                     ))}
                   </ul>
                 </div>
                 <div className="col-md-6">
                   <h5>Ingresos por método de pago</h5>
+                  <div style={{ height: '280px' }} className="mb-3">
+                    {paymentMethodsChartData ? <Doughnut data={paymentMethodsChartData} options={doughnutOptions} /> : <p className="text-muted">Sin datos para graficar.</p>}
+                  </div>
                   <ul>
                     {paymentMethods.map((item) => (
                       <li key={item.channel}>{item.channel}: {formatCurrency(item.total)} ({formatPercent(item.percentage)})</li>
@@ -188,6 +237,9 @@ function AdminProfitReport() {
 
             <section className="admin-card">
               <h4>5. Gastos operativos básicos</h4>
+              <div style={{ height: '300px' }} className="mb-3">
+                {operatingExpensesChartData ? <Doughnut data={operatingExpensesChartData} options={doughnutOptions} /> : <p className="text-muted">Sin datos para graficar.</p>}
+              </div>
               <table className="table table-sm">
                 <thead>
                   <tr><th>Categoría</th><th>Monto</th><th>% sobre ventas netas</th></tr>
