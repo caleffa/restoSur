@@ -24,6 +24,14 @@ function resolveLanguageValue(entry, language, fallback) {
   return entry[language] || entry.message || entry.title || fallback;
 }
 
+function normalizeReference(text = '') {
+  return String(text)
+    .trim()
+    .toLowerCase()
+    .replaceAll(/\s+/g, '_')
+    .replaceAll(/[^a-z0-9_]/g, '');
+}
+
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY) || 'es';
@@ -69,6 +77,27 @@ export function LanguageProvider({ children }) {
 
       const localEntry = FALLBACK_TEXTS[reference];
       return resolveLanguageValue(localEntry, language, fallback);
+    },
+    td: (defaultText = '', reference = '') => {
+      const referenceCandidates = [
+        reference,
+        defaultText,
+        `ui.${normalizeReference(defaultText)}`,
+      ].filter(Boolean);
+
+      for (const key of referenceCandidates) {
+        const remoteEntry = remoteTexts[key];
+        if (remoteEntry) {
+          return resolveLanguageValue(remoteEntry, language, defaultText);
+        }
+
+        const localEntry = FALLBACK_TEXTS[key];
+        if (localEntry) {
+          return resolveLanguageValue(localEntry, language, defaultText);
+        }
+      }
+
+      return defaultText;
     },
   }), [language, remoteTexts]);
 
